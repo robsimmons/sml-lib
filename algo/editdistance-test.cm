@@ -1,0 +1,19 @@
+
+group is
+
+(* to compile with sml/nj *)
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+#endif
+
+
+../crypt/DES/des-sig.sml
+../crypt/DES/des.sml
+
+../util/stringutil-sig.sml
+../util/stringutil.sml
+
+edit-distance-sig.sml
+edit-distance.sml
+
+edit-distance-test.sml

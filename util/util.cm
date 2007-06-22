@@ -1,0 +1,18 @@
+(* Utilities of general interest that depend on
+   only core ML and the Basis. *)
+
+Group is 
+
+$/basis.cm
+
+util-sig.sml
+util.sml
+
+listutil-sig.sml
+listutil.sml
+
+stringutil-sig.sml
+stringutil.sml
+
+fsutil-sig.sml
+fsutil.sml

@@ -1,0 +1,24 @@
+
+A collection of modules for reading and writing file formats.
+
+reader-sig.sml             
+reader.sml             An abstract interface to "readable" things
+                       (with the ability to do arbitrary seeking);
+                       currently files on disk or in memory. This
+                       is also useful for parsing packets in a
+                       binary oriented network protocol.
+
+                       (Note that files are currently loaded into
+                       memory, so this implementation is not 
+                       efficient for large files yet!)
+
+elf - Reads ELF "executable and linking format" files. This is
+      incomplete, but could be useful if you just need minimal
+      functionality.
+
+midi - Reads standard MIDI files into a stream of events. This is
+       pretty much complete, except for some support for obscure
+       features like split SYSEX data. However, the interpretation
+       of the MIDI data is left to the user...
+
+mp3 - Read/write MP3 ID3v1.1 tags.

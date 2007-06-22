@@ -1,0 +1,16 @@
+(* Utilities of general interest that depend on
+   only core ML and the Basis. *)
+
+$(MLTON_ROOT)/basis/basis.mlb
+
+util-sig.sml
+util.sml
+
+listutil-sig.sml
+listutil.sml
+
+stringutil-sig.sml
+stringutil.sml
+
+fsutil-sig.sml
+fsutil.sml

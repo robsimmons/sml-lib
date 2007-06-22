@@ -1,0 +1,7 @@
+
+These libraries are specific to mlton because they use mlton's FFI system.
+
+x     -  Bare interface to X11. Incomplete, but usable.
+
+mysql -  Simple interface to the mysql database. Incomplete, but a good
+         starting point.

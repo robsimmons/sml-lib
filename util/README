@@ -1,0 +1,18 @@
+
+Utility functions of general interest.
+
+listutil  -  Utilities for managing the built-in 'a list type.
+
+stringutil  -  Utilities for manipulating the built-in string type.
+
+util  -  General utilities.
+
+maputil  -  Utilities for manipulating the njlib "ord map" type.
+
+fsutil  -  Utilities for the filesystem.
+
+streamutil  -  Utilities for manipulating streams (parse/stream-sig.sml).
+
+growarray  -  Arrays that can be appended to, growing automatically.
+
+vectorutil - Utilities for the built-in polymorphic vector type.

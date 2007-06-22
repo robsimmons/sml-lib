@@ -1,0 +1,6 @@
+(* General-purpose streams. *)
+
+$(MLTON_ROOT)/basis/basis.mlb
+
+stream-sig.sml
+stream.sml

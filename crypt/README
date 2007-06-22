@@ -1,0 +1,21 @@
+
+
+blowfish/        An implementation of the Blowfish block cipher.
+
+MD2/             A partial implementation of the MD2 hash function.
+
+MD5/             An implementation of the MD5 hash function.
+
+SHA1/            An implementation of the SHA-1 hash function.
+
+RSA/             A partial implementation of the RSA public key cryptosystem.
+
+DES/             An implementation of the DES block cipher.
+
+prime.sml        Utilities for prime number generation and testing.
+
+number.sml       Number theoretic algorithms for IntInf.int types that are
+                 useful in cryptography.
+
+cryptrand.sml    Utilities for cryptographic random numbers. CURRENTLY ONLY
+                 STUB IMPLEMENTATIONS -- DON'T USE!

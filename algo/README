@@ -1,0 +1,9 @@
+
+Algorithms.
+
+toposort -    Generate a topological sort of some items with
+              ordering constraints of the form "a must appear
+              before b".
+
+heap     -    Efficient implementation of binary heaps, supporting
+              insertion, deletion, find_min and update.

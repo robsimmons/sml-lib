@@ -1,0 +1,7 @@
+(* General-purpose streams. *)
+Group is
+
+$/basis.cm
+
+stream-sig.sml
+stream.sml

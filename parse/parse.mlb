@@ -1,0 +1,15 @@
+(* Combinator parsing *)
+
+$(MLTON_ROOT)/basis/basis.mlb
+
+(* We need streams *)
+../util/stream.mlb
+
+pos-sig.sml
+pos.sml
+
+parse-sig.sml
+parse.sml
+
+simpletok-sig.sml
+simpletok.sml

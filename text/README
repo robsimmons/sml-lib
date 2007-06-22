@@ -1,0 +1,17 @@
+
+  layout - Simple pretty-printing package designed for abstract 
+           syntax trees.
+              (Modified from the mlton project.)
+
+  stringonce - Symbol table for uniquely versioning variables or
+           labels, but only if a symbol is used more than once.
+           Relies on njlib:
+                njlib/lib-base-sig.sml
+                njlib/lib-base.sml
+                njlib/ord-key-sig.sml
+                njlib/ord-map-sig.sml
+                njlib/splaytree-sig.sml
+                njlib/splaytree.sml
+                njlib/splay-map-fn.sml
+
+  See also ../util/stringutil for many string manipulation utilities.

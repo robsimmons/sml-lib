@@ -1,0 +1,10 @@
+
+Combinator parsing.
+
+You must first include stream-sig.sml and stream.sml from the ../util/
+directory. You may find the streamutils found there interesting as well.
+
+SimpleTok is optional. It's designed to lower the "barrier to entry"
+for writing parsers. Just create a tokenizer and put in some settings
+(beginning and ending strings for comments, etc.) and it will try to
+"do the right thing" for you. Great for parsing config files.

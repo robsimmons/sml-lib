@@ -1,0 +1,25 @@
+(* compile everything *)
+group is
+
+../files/reader-sig.sml
+../files/reader.sml
+
+(*
+number.sml
+cryptrand.sml
+
+prime.sml
+*)
+
+(*
+MD2/digest-sig.sml
+MD2/md2.sml
+*)
+
+(* RSA/rsa.sml *)
+
+DES/des-sig.sml
+DES/des.sml
+
+test.sml
+

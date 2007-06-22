@@ -1,0 +1,17 @@
+
+ann 
+   "allowImport true"
+   "allowPrim true"
+   "sequenceUnit true"
+   "warnMatch true"
+   "warnUnused true"
+in
+   $(MLTON_ROOT)/basis/basis.mlb
+   $(MLTON_ROOT)/basis/mlton.mlb
+   /usr0/src/sml-lib/util/util.mlb
+   (* _prim *)
+   mysql-sig.sml
+   mysql.sml
+   test.sml
+end
+

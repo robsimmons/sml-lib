@@ -1,0 +1,42 @@
+(* regexp-lib.cm
+ *
+ * COPYRIGHT (c) 1998 Bell Labs, Lucent Technologies.
+ *)
+
+Library
+
+(*
+signature REGEXP_SYNTAX
+signature REGEXP_PARSER
+signature MATCH_TREE
+signature REGEXP_ENGINE
+signature REGEXP
+
+structure RegExpSyntax
+structure MatchTree
+structure AwkSyntax
+structure BackTrackEngine
+structure DfaEngine
+
+functor RegExpFn
+ *)
+
+is
+
+  regexp/frontend/syntax-sig.sml
+  regexp/frontend/syntax.sml
+
+  regexp/glue/match-tree.sml
+  regexp/backend/fsm.sml
+
+  regexp/frontend/parser-sig.sml
+  regexp/backend/engine-sig.sml
+
+  regexp/frontend/awk-syntax.sml
+
+  regexp/backend/bt-engine.sml
+  regexp/backend/dfa-engine.sml
+
+  regexp/glue/regexp-sig.sml
+  regexp/glue/regexp-fn.sml
+

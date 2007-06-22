@@ -1,0 +1,26 @@
+(* Includes all the algorithms in the directory, and also imports
+ * all files from util/util.mlb.
+
+ * In some cases you might prefer just including individual files, though
+ * then you need to make sure you get dependencies from the util directory
+ * correct. *)
+
+Group is
+
+$/basis.cm
+
+(* We only need util-sig.sml and util.sml, but including the whole
+ * directory is more convienent. *)
+../util/util.cm
+
+edit-distance-sig.sml
+edit-distance.sml
+
+heap-sig.sml
+heap.sml
+
+lzw-sig.sml
+lzw.sml
+
+toposort-sig.sml
+toposort.sml

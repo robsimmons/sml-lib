@@ -1,0 +1,16 @@
+(* Combinator parsing *)
+Group is
+
+$/basis.cm
+
+(* We need streams *)
+../util/stream.cm
+
+pos-sig.sml
+pos.sml
+
+parse-sig.sml
+parse.sml
+
+simpletok-sig.sml
+simpletok.sml

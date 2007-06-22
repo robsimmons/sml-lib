@@ -1,0 +1,15 @@
+(* compile everything *)
+group is
+
+/usr/share/smlnj/lib/smlnj-lib.cm
+/usr/share/smlnj/lib/unix-lib.cm
+
+number.sml
+cryptrand.sml
+
+prime.sml
+
+MD2/digest-sig.sml
+MD2/md2.sml
+
+RSA/rsa.sml
