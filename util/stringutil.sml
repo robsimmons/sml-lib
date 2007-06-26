@@ -543,8 +543,6 @@ struct
 
   in
 
-      (* XXX bounds: StringUtil.token (StringUtil.ischar #"=") "asdf=" *)
-
       fun token f s =
           try (losespecl f) f 0 (losespecl f s)
 

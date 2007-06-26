@@ -14,6 +14,16 @@ struct
             if eq (a, key) then SOME b
             else find eq t key
 
+        fun extract eq al x =
+          let
+            fun ex _ nil = NONE
+              | ex h ((a,b)::t) = if eq (a, x)
+                                  then SOME (b, rev h @ t)
+                                  else ex ((a,b)::h) t
+          in
+            ex nil al
+          end
+
         fun get eq nil key = NONE
           | get eq ((h as (a,b))::t) key =
             if eq (a, key) then SOME h

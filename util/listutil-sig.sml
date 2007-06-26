@@ -10,6 +10,11 @@ sig
             val find : ('a * 'a -> bool) -> ('a * 'b) list -> 'a -> 'b option
             val get : ('a * 'a -> bool) -> ('a * 'b) list -> 'a -> 
                          ('a * 'b) option
+
+            (* return also the rest of the list *)
+            val extract : ('a * 'a -> bool) -> ('a * 'b) list -> 'a ->
+                                            ('b * ('a * 'b) list) option 
+
             val haskey : ('a * 'a -> bool) -> ('a * 'b) list -> 'a -> bool
 
             val removeall : ('a * 'a -> bool) -> 
