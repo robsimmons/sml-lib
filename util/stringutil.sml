@@ -230,7 +230,9 @@ struct
   fun filter f = implode o (List.filter f) o explode
 
   (* nb. this is broken in SML/NJ on win32, for unknown
-     reasons. *)
+     reasons. Also, note that this does CRLF conversion
+     on Win32, which might not be the desired behavior.
+     Should probably rewrite to use BinIO. *)
   fun readfile f = 
     let
       val l = TextIO.openIn f
