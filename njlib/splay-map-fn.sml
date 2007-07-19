@@ -122,7 +122,7 @@ functor SplayMapFn (K: ORD_KEY): ORD_MAP =
       | appi af (MAP{root, ...}) =
           let fun apply SplayNil = ()
                 | apply (SplayObj{value, left, right}) = 
-                    (apply left; af value; apply right)
+                    (apply left; ignore (af value); apply right)
         in
           apply (!root)
         end
@@ -131,7 +131,7 @@ functor SplayMapFn (K: ORD_KEY): ORD_MAP =
       | app af (MAP{root, ...}) =
           let fun apply SplayNil = ()
                 | apply (SplayObj{value=(_, value), left, right}) = 
-                    (apply left; af value; apply right)
+                    (apply left; ignore (af value); apply right)
         in
           apply (!root)
         end

@@ -142,10 +142,10 @@ struct
       | mapfirst  f ((a,b)::t) = (f a, b) :: mapfirst f t
 
     fun appsecond f nil = ()
-      | appsecond f ((_,b)::t) = (f b; appsecond f t)
+      | appsecond f ((_,b)::t) = (ignore (f b); appsecond f t)
 
     fun appfirst  f nil = ()
-      | appfirst  f ((a,_)::t) = (f a; appfirst f t)
+      | appfirst  f ((a,_)::t) = (ignore (f a); appfirst f t)
 
     fun existfirst f nil = false
       | existfirst f ((a,b)::t) = f a orelse existfirst f t
@@ -162,7 +162,7 @@ struct
 
     fun appi f l =
         let fun mm n nil = ()
-              | mm n (h::t) = (f (h, n); mm (n + 1) t)
+              | mm n (h::t) = (ignore (f (h, n)); mm (n + 1) t)
         in
             mm 0 l
         end
@@ -282,7 +282,7 @@ struct
     fun apppairssym f l = 
         let 
             fun apa _ nil = ()
-              | apa a (b::t) = (f (a, b); apa a t)
+              | apa a (b::t) = (ignore (f (a, b)); apa a t)
 
             fun ap nil = ()
               | ap [_] = ()
