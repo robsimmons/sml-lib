@@ -18,8 +18,8 @@ struct
             rest ^ "\n" ^
             (foldl (fn (s, b) => b ^ " " ^ s) "" sl)) "" sll) ^ "\n"
 
-  fun ischar (c : char) (d : char) = c = d
-  fun isn'tchar (c : char) (d : char) = c <> d
+  fun ischar c d = c = d
+  fun isn'tchar c d = c <> d
       
   (* XXX probably more efficient to use String.concat.
      I use this a LOT, so good to check... *)
@@ -228,6 +228,30 @@ struct
 
   (* XXX this could be a lot more efficient. *)
   fun filter f = implode o (List.filter f) o explode
+
+  fun filter f s = 
+    let
+      val len = size s
+      fun count acc i =
+        if i >= len
+        then acc
+        else count (acc + (if f (String.sub(s, i)) then 1 else 0)) (i + 1)
+
+      val ct = count 0 0
+
+      (* offset into original *)
+      val off = ref 0
+      fun get () =
+        let val c = String.sub(s, !off)
+        in 
+          off := !off + 1;
+          if f c
+          then c
+          else get ()
+        end
+    in
+      CharVector.tabulate (ct, fn _ => get ())
+    end
 
   (* nb. this is broken in SML/NJ on win32, for unknown
      reasons. Also, note that this does CRLF conversion
