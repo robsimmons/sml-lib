@@ -18,8 +18,8 @@ struct
             rest ^ "\n" ^
             (foldl (fn (s, b) => b ^ " " ^ s) "" sl)) "" sll) ^ "\n"
 
-  fun ischar c d = c = d
-  fun isn'tchar c d = c <> d
+  fun ischar (c : char) (d : char) = c = d
+  fun isn'tchar (c : char) (d : char) = c <> d
       
   (* XXX probably more efficient to use String.concat.
      I use this a LOT, so good to check... *)
