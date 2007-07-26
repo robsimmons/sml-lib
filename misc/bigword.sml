@@ -1,7 +1,4 @@
 (* WordN for arbitrary positive N. 
-   This seems not to treat negative numbers in
-   conversions according to the basis specification. 
-
 
    Contributed by Sean McLaughlin,
    July 2007. *)
@@ -92,8 +89,7 @@ struct
      no over/underflow *)
   fun x >> y = I.~>>(x,y) 
 
-  (* Arithmetic shift??  Why is this here for words?  Annoying.  
-     Check the msb, and do an orb mask. 
+  (* For arithmetic shift, check the msb, and do an orb mask. 
      No need to worry about overflow or underflow. *)
   fun x ~>> y = 
       let
