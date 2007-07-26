@@ -2,6 +2,7 @@
    This seems not to treat negative numbers in
    conversions according to the basis specification. 
 
+
    Contributed by Sean McLaughlin,
    July 2007. *)
 
