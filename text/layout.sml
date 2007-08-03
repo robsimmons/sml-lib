@@ -196,8 +196,7 @@ struct
                                            (newline ()
                                             ; loop (t, {at = 0, printAt = printAt}))))
                 end
-        in loop (tree, {at = 0, printAt = 0})
-            ; ()
+        in ignore (loop (tree, {at = 0, printAt = 0}))
         end
 
     val defaultWidth: int = 80
