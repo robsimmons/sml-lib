@@ -18,9 +18,9 @@ struct
 
   fun length (ref (l, _)) = l
 
-  (* grow to accomodate at least n elements *)
+  (* grow to accommodate at least n elements *)
   (* XXX this appears to be one element too conservative *)
-  fun accomodate (r as ref(l, a)) n =
+  fun accommodate (r as ref(l, a)) n =
     if Array.length a >= (n + 1)
     then ()
     else
@@ -43,7 +43,7 @@ struct
     if n < 0 then raise Subscript
     else
       let 
-        val _ = accomodate r n
+        val _ = accommodate r n
         val (l, a) = !r
       in
         Array.update(a, n, SOME x);
@@ -55,7 +55,7 @@ struct
 
   fun append (r as ref(n, _)) x =
     let
-      val _ = accomodate r (n + 1)
+      val _ = accommodate r (n + 1)
       val (_, a) = !r
     in
       Array.update(a, n, SOME x);

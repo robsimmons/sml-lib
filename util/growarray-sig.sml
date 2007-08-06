@@ -3,7 +3,7 @@ signature GROWARRAY =
 sig
 
   (* imperative arrays that automatically grow to
-     accomodate new data. The array can have 'holes'
+     accommodate new data. The array can have 'holes'
      where no data are stored, though these are not
      treated efficiently. *)
   type 'a growarray
