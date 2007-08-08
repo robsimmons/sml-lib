@@ -364,8 +364,11 @@ struct
    fun mapto f nil = nil
      | mapto f (h :: t) = (h, f h) :: mapto f t
 
-   (* XXX PERF could be cheaper *)
-   fun cleave n l = (List.take (l,n), List.drop (l, n))
+   fun cleave' 0 l acc = (rev acc,l)
+     | cleave' n [] acc = raise Subscript
+     | cleave' n (h::t) acc = cleave' (n-1) t (h::acc)
+
+   fun cleave n l = if n < 0 then raise Subscript else cleave' n l []
 
    fun permutations nil = [[]]
      | permutations (h::t) =
