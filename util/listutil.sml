@@ -130,10 +130,30 @@ struct
       | map3 f (a::ta) (b::tb) (c::tc) = f (a, b, c) :: map3 f ta tb tc
       | map3 _ _ _ _ = raise ListUtil
 
+    fun app3 f nil nil nil = ()
+      | app3 f (a::ta) (b::tb) (c::tc) = (ignore (f (a, b, c)); app3 f ta tb tc)
+      | app3 _ _ _ _ = raise ListUtil
+
     fun foldl3 f acc nil nil nil = acc
       | foldl3 f acc (a::ta) (b::tb) (c::tc) = 
         foldl3 f (f((a, b, c), acc)) ta tb tc
       | foldl3 _ _ _ _ _ = raise ListUtil
+
+    fun foldli f b l =
+      let
+        fun go (acc, _, nil) = acc
+          | go (acc, n, h :: t) = go (f(n, h, acc), n + 1, t)
+      in
+        go (b, 0, l)
+      end
+
+    fun foldri f b l =
+      let
+        fun go (_, nil) = b
+          | go (n, h :: t) = f(n, h, go(n + 1, t))
+      in
+        go (0, l)
+      end
 
     fun mapsecond f nil = nil 
       | mapsecond f ((a,b)::t) = (a,f b) :: mapsecond f t

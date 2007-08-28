@@ -90,12 +90,14 @@ sig
     val all2 : ('a * 'b -> bool) -> 'a list -> 'b list -> bool
 
     (* the n-arg versions of these standard list functions all raise
-       ListPair if their argument lists are not the same length. *)
+       ListUtil if their argument lists are not the same length. *)
     val map3 : ('a * 'b * 'c -> 'd) -> 'a list -> 'b list -> 'c list -> 'd list
+    val app3 : ('a * 'b * 'c -> unit) -> 'a list -> 'b list -> 'c list -> unit
 
     val foldl3 : (('a * 'b * 'c) * 'e -> 'e) -> 'e -> 
                       'a list -> 'b list -> 'c list -> 'e
-
+    (* XXX foldr3 *)
+                      
     (* these don't check lengths, just like ListPair.zip,unzip *)
     val unzip3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
     val zip3 : 'a list -> 'b list -> 'c list -> ('a * 'b * 'c) list
@@ -116,6 +118,10 @@ sig
     val existfirst  : ('a -> bool) -> ('a * 'b) list -> bool
 
     val mapto : ('a -> 'b) -> 'a list -> ('a * 'b) list
+
+    (* get the list index as well. 0 based *)
+    val foldli : (int * 'a * 'b -> 'b) -> 'b -> 'a list -> 'b
+    val foldri : (int * 'a * 'b -> 'b) -> 'b -> 'a list -> 'b
 
     (* Return the first element for which the function returns true,
        or else NONE if no such element exists. *)
