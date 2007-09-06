@@ -6,7 +6,7 @@
  *
  *)
 
-functor SplayMapFn (K: ORD_KEY): ORD_MAP =
+functor SplayMapFn (K: ORD_KEY): (* XXX *) ORD_MAP =
   struct
     structure Key = K
     open SplayTree
@@ -21,7 +21,9 @@ functor SplayMapFn (K: ORD_KEY): ORD_MAP =
     fun cmpf k (k', _) = K.compare(k', k)
 
     val empty = EMPTY
-    
+    fun isempty EMPTY = true
+      | isempty _ = false
+
         (* Insert an item.  
          *)
     fun insert (EMPTY, key, v) =
