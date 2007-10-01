@@ -34,6 +34,10 @@ struct
     fun toLargeWordX x = raise Unimplemented
     fun fromLargeWord x = W.andb(mask, W.fromLargeWord x)
 
+    val toLarge = toLargeWord
+    val toLargeX = toLargeWordX
+    val fromLarge = fromLargeWord
+
     fun toInt x = W.toInt x
     fun toIntX x = raise Unimplemented
 
@@ -95,7 +99,7 @@ structure Word6 = WordNX(structure W = Word8 val bits = 6)
 structure Word7 = WordNX(structure W = Word8 val bits = 7)
 
 (* word32 is optional, but SML/NJ supports it *)
-structure Word9 = WordNX(structure W = Word32 val bits = 9)
+structure Word9  = WordNX(structure W = Word32 val bits = 9)
 structure Word10 = WordNX(structure W = Word32 val bits = 10)
 structure Word11 = WordNX(structure W = Word32 val bits = 11)
 structure Word12 = WordNX(structure W = Word32 val bits = 12)
