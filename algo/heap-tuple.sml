@@ -14,7 +14,6 @@ struct
       val update : ('a, 'b, 'c) array * int * ('a * 'b * 'c) -> unit
       val length : ('a, 'b, 'c) array -> int
       val tabulate : int * (int -> ('a * 'b * 'c)) -> ('a, 'b, 'c) array
-      val fromList : ('a * 'b * 'c) list -> ('a, 'b, 'c) array
   end =
   struct
       type ('a, 'b, 'c) array = 
@@ -45,7 +44,7 @@ struct
                   if n = m
                   then (a, b, c)
                   else let in
-                           update((a, b, c), m, f m);
+                           update((a, b, c), m, f n);
                            loop (m + 1)
                        end
           in
@@ -53,11 +52,6 @@ struct
           end
 
       fun length (a, _, _) = Array.length a
-
-      fun fromList (l : ('a * 'b * 'c) list) =
-          (Array.fromList (map #1 l),
-           Array.fromList (map #2 l),
-           Array.fromList (map #3 l))
   end
   
   (* XXX necessary? *)
@@ -69,17 +63,17 @@ struct
     | valid _ = true
 
   (* PERF perhaps as three arrays? *)
-  type 'a heap = (int * (priority, 'a, hand) Array3.array) ref
+  type 'a heap = (int * (priority * 'a * hand) Array.array) ref
 
 
-  fun empty () = ref (0, Array3.fromList nil)
+  fun empty () = ref (0, Array.fromList nil)
 
   (* assumes n > 0 *)
   fun removelast (heap as ref (n, a)) =
     let in
       (* don't bother shrinking the array *)
       heap := (n - 1, a);
-      Array3.sub(a, n - 1)
+      Array.sub(a, n - 1)
     end
 
   (* modify the heap to hold this element at i.
@@ -88,7 +82,7 @@ struct
   (* assumes i is in range *)
   fun setelem (ref (_, a)) i (pp, aa, hh) =
     let in
-      Array3.update(a, i, (pp, aa, hh));
+      Array.update(a, i, (pp, aa, hh));
       hh := i
     end
 
@@ -99,13 +93,13 @@ struct
     else
       let
         (* get it *)
-        val me = Array3.sub(a, i)
+        val me = Array.sub(a, i)
           
         val li = 2 * i + 1
         val ri = 2 * i + 2
 
         (* compare to the two children *)
-        val cl = Array3.sub(a, li)
+        val cl = Array.sub(a, li)
 
         fun swap child childi =
           let in
@@ -121,7 +115,7 @@ struct
             if ri >= n 
             then swap cl li
             else let
-                   val cr = Array3.sub(a, 2 * i + 2)
+                   val cr = Array.sub(a, 2 * i + 2)
                  in
                    (case compare (#1 cl, #1 cr) of
                       LESS => swap cl li
@@ -132,7 +126,7 @@ struct
                then () (* done -- less than left child,
                           no right child *)
                else let 
-                      val cr = Array3.sub(a, 2 * i + 2)
+                      val cr = Array.sub(a, 2 * i + 2)
                     in
                       case compare (#1 me, #1 cr) of
                         GREATER => swap cr ri
@@ -171,11 +165,11 @@ struct
   fun percolate_up _ 0 = () (* done -- root *)
     | percolate_up (heap as ref(_,a)) i =
     let
-      val me = Array3.sub(a, i)
+      val me = Array.sub(a, i)
 
       val pi = (i - 1) div 2
 
-      val parent = Array3.sub(a, pi)
+      val parent = Array.sub(a, pi)
     in
       case compare (#1 me, #1 parent) of
         LESS => (* swap *)
@@ -195,7 +189,7 @@ struct
       val (n, arr) = 
         let val (n, arr) = !heap
         in
-          if n = Array3.length arr
+          if n = Array.length arr
           then 
           let
             val newsize = if n = 0 then 512
@@ -208,11 +202,11 @@ struct
                just cook one up using the input (we'll never
                look at it) *)
             val dummy = (p, a, ref ~1)
-            val a2 = Array3.tabulate(newsize,
-                                     (fn i =>
-                                      if i < n
-                                      then Array3.sub(arr, i)
-                                      else dummy))
+            val a2 = Array.tabulate(newsize,
+                                    (fn i =>
+                                     if i < n
+                                     then Array.sub(arr, i)
+                                     else dummy))
           in
             heap := (n, a2);
             (n, a2)
@@ -239,7 +233,7 @@ struct
       val (pl, al, hl) = removelast heap
         
 
-      val (pold, _, _) = Array3.sub(#2 (!heap), i)
+      val (pold, _, _) = Array.sub(#2 (!heap), i)
     in
       (* invalidate it, since it's going away *)
       h := ~1;
@@ -263,14 +257,14 @@ struct
   fun min (ref (0, _)) = NONE
     | min (heap as ref(_, a)) = 
     let
-      val (p, a, h) = Array3.sub(a, 0)
+      val (p, a, h) = Array.sub(a, 0)
     in
       delete heap h;
       SOME (p, a)
     end
 
   fun get (heap as ref(_, a)) (ref n) =
-    let val (p, a, _) = Array3.sub(a, n)
+    let val (p, a, _) = Array.sub(a, n)
     in (p, a)
     end
 
@@ -301,7 +295,7 @@ struct
         if i < n
         then 
           let 
-            val (p, a, h) = Array3.sub(arr, i)
+            val (p, a, h) = Array.sub(arr, i)
           in
             print (CharVector.tabulate(d * 2, fn _ => #" "));
             if compare (p, par) = LESS then print "XXX<<<"
@@ -320,7 +314,7 @@ struct
       print ("num elements: " ^ Int.toString n ^ "\n");
       if n > 0 then
          (* need a start priority *)
-         let val (p, _, _) = Array3.sub(arr, 0)
+         let val (p, _, _) = Array.sub(arr, 0)
          in
            pchild p 0 0
          end
