@@ -43,6 +43,10 @@ struct
 
     structure SS = Substring
 
+    (* Called SS.all or SS.full, depending on basis version.
+       This always works. *)
+    fun ss_all s = SS.extract(s, 0, NONE)
+
     (*  This will return NONE if there is some error.
     *)
     fun decode str : string option =
@@ -119,7 +123,7 @@ struct
         end
 
     in
-        loop (SS.all str) []
+        loop (ss_all str) []
     end
     handle _ => NONE
 
@@ -201,7 +205,7 @@ struct
     in
         if the_str = ""
         then the_str (* spec appears to be undefined on this case *)
-        else loop (SS.all the_str) 3 0w0 []
+        else loop (ss_all the_str) 3 0w0 []
     end
 
 end
