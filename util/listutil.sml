@@ -411,5 +411,20 @@ struct
        end
 
     fun max f l = min (Sorted.reverse f) l
+(*
+    fun power l =
+      foldl (fn (elt, sofar) => 
+             (* sofar is power list of head *)
+             (* we can either add this element or not,
+                getting two lists *)
+             sofar @ (map (fn lis => elt :: lis) sofar)
+             ) [nil] l
+*)
+    (* cuter with folds! *)
+    fun power l =
+      foldl (fn (elt, sofar) => 
+             foldl (fn (lis, sets) =>
+                    (elt :: lis) :: sets) sofar sofar
+             ) [nil] l
 
 end

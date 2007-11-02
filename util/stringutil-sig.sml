@@ -205,7 +205,9 @@ sig
 
   (* more conservative than HTTP requires *)
   val urlencode : string -> string
-  (* decode an HTTP-urlencoded string *)
+  (* decode an HTTP-urlencoded string (%2A codes and +) *)
   val urldecode : string -> string option
+  (* same as javascript unescape function (just %2A codes) *)
+  val jsunescape : string -> string option
 
 end

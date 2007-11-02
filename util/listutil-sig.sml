@@ -178,5 +178,7 @@ sig
 
     (* generate a list of all permutations of the input list *)
     val permutations : 'a list -> 'a list list
+    (* list of all sublists of the input, in arbitrary order *)
+    val power : 'a list -> 'a list list
 
 end

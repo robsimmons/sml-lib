@@ -60,10 +60,10 @@ sig
   (* retrieve the size of a file *)
   val filesize : string -> int
   val filesize64 : string -> Position.int
-      
+
   (* splitext "file.0.txt" = ("file.0", "txt") *)
   val splitext : string -> string * string
-      
+
   (* chdir_excursion s f
      s is a path to a file, either relative or absolute.
      chdirs to the directory holding s for the purpose

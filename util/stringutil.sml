@@ -626,6 +626,8 @@ struct
 
 
   (* PERF *)
+  (* XXX note that js 'escape' function does not escape +,
+     so this thinks that's a space. *)
   fun urldecode s =
     let
       fun dec (#"%"::c1::c2::rest) = (chr (hexvalue c1 * 16 +
@@ -636,5 +638,16 @@ struct
     in
       SOME (implode (dec (explode s)))
     end handle _ => NONE
+
+  fun jsunescape s =
+    let
+      fun dec (#"%"::c1::c2::rest) = (chr (hexvalue c1 * 16 +
+                                           hexvalue c2)) :: dec rest
+        | dec (c::rest) = c :: dec rest
+        | dec nil = nil
+    in
+      SOME (implode (dec (explode s)))
+    end handle _ => NONE
+
 
 end

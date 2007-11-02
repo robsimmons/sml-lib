@@ -231,7 +231,7 @@ struct
   fun skipi 0 s = ()
     | skipi n s =
       if n < 0 then raise Seek
-      else if n < 32 then let in TextIO.input1 s; skipi (n - 1) s end
+      else if n < 32 then let in ignore (TextIO.input1 s); skipi (n - 1) s end
            else if n < 128 then let in seekn 32 s; skipi (n - 32) s end
                 else if n < 1024 then let in seekn 128 s; skipi (n - 128) s end
                      else let in seekn 1024 s; skipi (n - 1024) s end
