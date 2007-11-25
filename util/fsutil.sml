@@ -120,11 +120,15 @@ struct
       end
 *)
 
+(*
   fun dirplus "" p = p
     | dirplus d p =
       case CharVector.sub(d, size d - 1) of
           #"/" => d ^ p
         | _    => d ^ "/" ^ p
+*)
+  (* works on Windows too. *)
+  fun dirplus d p = OS.Path.concat (d, p)
 
   local open FS 
   in
