@@ -28,7 +28,7 @@ struct
         case List.partition 
               (fn (_,x) =>
                (* must something come before it? *)
-               List.exists (fn (a, b) => b = x) cl) nl of
+               List.exists (fn (a, b : 'a ref) => b = x) cl) nl of
               (_, nil) => raise TopoSort "sort impossible"
             | (wait, ready) =>
                   ready @ sort wait 
