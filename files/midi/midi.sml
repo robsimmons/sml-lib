@@ -121,6 +121,7 @@ struct
   val itos = Int.toString
 
   type track = (int * event) list
+
   fun merge trl =
       let
           val trl = List.filter (fn nil => false | _ => true) trl
@@ -171,10 +172,26 @@ struct
                   end
       end
 
+  fun mergei trl = 
+      let 
+          fun number _ nil = nil
+            | number x (h :: t) = map (fn (a, b) => (a, (x, b))) h :: number (x + 1) t
+          val trnl = number 0 trl
+      in
+          merge trnl
+      end
+
+  fun mergea atrl =
+      let
+          val trl = map (fn (a, b) => map (fn (x, y) => (x, (a, y))) b) atrl
+      in
+          merge trl
+      end
+
   fun etos evt =
     (case evt of
-       NOTEON (ch, n, vel) => "NOTEON " ^ itos ch ^ " " ^ itos n ^ 
-                             " " ^ itos vel
+        NOTEON (ch, n, vel) => "NOTEON " ^ itos ch ^ " " ^ itos n ^ 
+                               " " ^ itos vel
       | NOTEOFF (ch, n, vel) => "NOTEOFF " ^ itos ch ^ " " ^ itos n ^ 
                                 " " ^ itos vel
       | _ =>  "unimp")

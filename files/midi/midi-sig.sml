@@ -54,6 +54,11 @@ sig
   (* merge tracks into a single track (meta events are not treated
      specially, meaning the result may have multiple names, etc.) *)
   val merge : track list -> track
+  (* as above, but preserve the 0-based track number that the
+     event came from. *)
+  val mergei : track list -> (int * (int * event)) list
+  (* and with arbitrary data *)
+  val mergea : ('a * (int * event) list) list -> (int * ('a * event)) list
 
   exception MIDI of string
 
