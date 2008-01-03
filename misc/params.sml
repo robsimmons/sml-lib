@@ -23,7 +23,7 @@ struct
 
   fun I x = x
 
-  fun get lr name =
+  fun get lr (name : string) =
     let
       fun f nil = NONE
         | f ((r, _, _, n, _)::t) = 
@@ -34,7 +34,7 @@ struct
       f (!lr)
     end
 
-  fun argget selector lr name =
+  fun argget selector lr (name : string) =
     let
       fun f nil = NONE
         | f ((h as (r, _, SOME(n, _, _), _, _))::t) = 
