@@ -26,6 +26,9 @@ sig
 
   type 'a orderer = ('a * 'a) -> order
 
+  (* pow n m   gives n^m, defining 0^0 to be 1 *)
+  val pow : int -> int -> int
+
   val order_compare : order orderer
   val bool_compare : bool orderer
   val sum_compare : 'a orderer -> 'b orderer -> ('a, 'b) sum orderer

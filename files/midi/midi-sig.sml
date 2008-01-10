@@ -19,7 +19,10 @@ sig
 
       (* hr mn sec fr subfr *)
     | SMPTE of int * int * int * int * int
-      (* numerator log(denominator) clocksperclick bb *)
+      (* numerator log(denominator) clocksperclick bb 
+         bb is the number of 32nd notes in a MIDI quarter-note
+            (=24 clocks). 
+         *)
     | TIME of int * int * int * int
 
     (* sharps/flats maj/minor *)
@@ -46,6 +49,8 @@ sig
     | META of meta
 
   type reader = Reader.reader
+
+  val etos : event -> string
 
   (* a track is a list of delta-times (ticks since last event) and
      events *)

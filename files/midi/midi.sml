@@ -509,4 +509,44 @@ struct
       BinIO.closeOut f
     end
 
+
+
+  fun mtos m =
+      case m of
+          END => "END"
+        | SEQNO NONE => "SEQNO NONE"
+        | SEQNO (SOME n) => "SEQNO " ^ itos n
+        | TEMPO n => "TEMPO " ^ itos n
+        | TEXT s => "TEXT \"" ^ String.toString s ^ "\""
+        | COPY s => "COPY \"" ^ String.toString s ^ "\""
+        | NAME s => "NAME \"" ^ String.toString s ^ "\""
+        | INST s => "INST \"" ^ String.toString s ^ "\""
+        | LYRIC s => "LYRIC \"" ^ String.toString s ^ "\""
+        | MARK s => "MARK \"" ^ String.toString s ^ "\""
+        | CUE s => "CUE \"" ^ String.toString s ^ "\""
+        | PROG s => "PROG \"" ^ String.toString s ^ "\""
+        | DEV s => "DEV \"" ^ String.toString s ^ "\""
+        | PROP s => "PROP \"" ^ String.toString s ^ "\""
+        | OTHER (i, s) => "OTHER " ^ itos i ^ "\"" ^ String.toString s ^ "\""
+        | SMPTE (hr, mn, sec, fr, sf) => "SMPTE " ^ itos hr ^ ":" ^ itos mn ^
+                                         ":" ^ itos sec ^ ":" ^ itos fr ^
+                                         ":" ^ itos sf
+        | TIME (n, d, cpc, bb) => "TIME " ^ itos n ^ "/" ^ itos d ^
+                                      " " ^ itos cpc ^ " " ^ itos bb
+        | KEY (i, min) => "KEY " ^ itos i ^ " " ^ (if min then "min" else "maj")
+
+  val digits = "0123456789ABCDEF"
+  fun hexdig c = implode [CharVector.sub (digits, ord c div 16),
+                          CharVector.sub (digits, ord c mod 16)]
+
+  fun etos e =
+      case e of
+          META m => "META " ^ mtos m
+        | SYSEX s => "SYSEX " ^ (String.concat (map hexdig (String.explode s)))
+        | PITCH (p1, p2, p3) => "PITCH " ^ itos p1 ^ " " ^ itos p2 ^ " " ^ itos p3
+        | CONTROL (c1, c2, c3) => "CONTROL " ^ itos c1 ^ " " ^ itos c2 ^ " " ^ itos c3
+        | PCHANGE (a, b) => "PCHANGE " ^ itos a ^ " " ^ itos b
+        | NOTEON (ch, n, v) => "NOTEON " ^ itos ch ^ " " ^ itos n ^ "@" ^ itos v
+        | NOTEOFF (ch, n, v) => "NOTEOFF " ^ itos ch ^ " " ^ itos n ^ "@" ^ itos v
+
 end
