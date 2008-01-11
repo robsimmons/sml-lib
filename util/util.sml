@@ -67,7 +67,7 @@ struct
     end
 
   fun pow n 0 = 1
-    | pow n m = m * pow n (m - 1)
+    | pow n m = n * pow n (m - 1)
 
   fun I x = x
   fun K x y = x
