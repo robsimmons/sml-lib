@@ -19,14 +19,14 @@ sig
     exception Reader of string
 
     type reader =
-	{ size  : int,
-	  seek  : int -> unit,
-	  pos   : unit -> int,
-	  char  : unit -> char,
-	  vec   : int -> CharVector.vector,
+        { size  : int,
+          seek  : int -> unit,
+          pos   : unit -> int,
+          char  : unit -> char,
+          vec   : int -> CharVector.vector,
           (* may invalidate any subreader or superreader
              XXX need clone () *)
-	  close : unit -> unit }
+          close : unit -> unit }
 
     (* CharVector.vector = string *)
     val fromvec : CharVector.vector -> reader
@@ -62,15 +62,12 @@ sig
     val eof : reader -> bool
 
     (* read the remainder of the reader. Puts position at EOF. *)
-
     val rest : reader -> CharVector.vector
 
     (* grab a vector without altering the position *)
-
     val vecat : reader -> int -> int -> CharVector.vector
 
     (* grab a zero-terminated string without altering the position *)
-
     val strzat : reader -> int -> string
 
 end

@@ -22,3 +22,6 @@ midi - Reads standard MIDI files into a stream of events. This is
        of the MIDI data is left to the user...
 
 mp3 - Read/write MP3 ID3v1.1 tags.
+
+wave - Write AIFF 'WAVE' files.
+
