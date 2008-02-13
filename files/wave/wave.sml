@@ -28,13 +28,14 @@ struct
                   | Bit32 v => (Vector.length v, Vector.length (Vector.sub(v, 0)), 32)
 
             val databytes = (bits div 8) * nchannels * nframes
+            val blockalign = nchannels * (bits div 8)
         in
             { databytes = databytes,
               formatsize = 16,
               (* Not sure why these are present, since they could be calculuated
                  by the program that reads it... *)
-              blockalign = nchannels * (bits div 8),
-              bytespersec = Word32.toInt samplespersec * bits,
+              blockalign = blockalign,
+              bytespersec = Word32.toInt samplespersec * blockalign,
               nchannels = nchannels,
               nframes = nframes,
               bits = bits }
@@ -119,7 +120,12 @@ struct
             wu32 (#samplespersec w);
             w32 (Int32.fromInt bytespersec);
             w16 (Int16.fromInt blockalign);
-            w16 0; (* no extra format bytes *)
+            w16 (case #frames w of
+                     Bit8  _ => 8
+                   | Bit16 _ => 16
+                   | Bit32 _ => 32);
+            
+            (* w16 0; *) (* no extra format bytes *)
 
             (* Data chunk *)
             wid "data";
