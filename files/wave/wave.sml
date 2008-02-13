@@ -53,7 +53,11 @@ struct
             (databytes + 8)
         end
 
-    fun toany (wb : w8 -> unit) w =
+    fun for lo hi f =
+        if lo > hi then ()
+        else (ignore (f lo); for (lo + 1) hi f)
+
+    fun toany (wb : w8 -> unit) (w : wave) =
         let
             fun wid s =
                 case explode s of
@@ -81,8 +85,62 @@ struct
                     wb (Word8.fromInt (Int32.toInt (Int32.mod(Int32.div(w, 256 * 256 * 256), 256))))
                 end
 
+            fun wu32 (w : Word32.word) =
+                let in
+                    wb (Word8.fromInt (Word32.toInt (Word32.mod(w, 0w256))));
+                    wb (Word8.fromInt (Word32.toInt (Word32.mod(Word32.div(w, 0w256), 0w256))));
+                    wb (Word8.fromInt (Word32.toInt (Word32.mod(Word32.div(w, 0w256 * 0w256), 0w256))));
+                    wb (Word8.fromInt (Word32.toInt (Word32.mod(Word32.div(w, 0w256 * 0w256 * 0w256), 0w256))))
+                end
+
+            val { databytes, formatsize,
+                  blockalign, bytespersec,
+                  nchannels, nframes, bits } = info w
+            val filesize = bytesneeded w
+
+            val () = if (case #frames w of
+                             Bit8  v => Vector.all (fn ch => Vector.length ch = nframes) v
+                           | Bit16 v => Vector.all (fn ch => Vector.length ch = nframes) v
+                           | Bit32 v => Vector.all (fn ch => Vector.length ch = nframes) v)
+                     then ()
+                     else raise Wave "not all channels have the same number of samples!"
         in
-            raise Wave "XXX unimplemented" 
+            (* RIFF header *)
+            wid "RIFF";
+            (* minus RIFF, WAVE *)
+            w32 (filesize - 8);
+            wid "WAVE";
+
+            (* Format header *)
+            wid "fmt "; (* nb. space *)
+            w32 (Int32.fromInt formatsize);
+            w16 1; (* compression code 1 = PCM *)
+            w16 (Int16.fromInt nchannels);
+            wu32 (#samplespersec w);
+            w32 (Int32.fromInt bytespersec);
+            w16 (Int16.fromInt blockalign);
+            w16 0; (* no extra format bytes *)
+
+            (* Data chunk *)
+            wid "data";
+            w32 (Int32.fromInt databytes);
+            (* ... *)
+            case #frames w of
+                Bit8 v => for 0 (nframes - 1)
+                          (fn i =>
+                           for 0 (nchannels - 1)
+                           (fn c =>
+                            wb (Vector.sub(Vector.sub(v, c), i))))
+              | Bit16 v => for 0 (nframes - 1)
+                           (fn i =>
+                            for 0 (nchannels - 1)
+                            (fn c =>
+                             w16 (Vector.sub(Vector.sub(v, c), i))))
+              | Bit32 v => for 0 (nframes - 1)
+                           (fn i =>
+                            for 0 (nchannels - 1)
+                            (fn c =>
+                             w32 (Vector.sub(Vector.sub(v, c), i))))
         end
 
     fun tobytes w =
