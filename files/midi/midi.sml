@@ -404,11 +404,11 @@ struct
   fun wb8 c = implode [chr c]
 
   (* n >= 0 *)
-  fun wvar n =
-    if n < 128 
-    then wb8 n
-    else wb8 ((n mod 128) + 128) ^
-         wvar (n div 128)
+  fun wvar n = wvar' wb8 n
+  and wb8n x = wb8 (128 + x) (* with "next" marker *)
+  and wvar' f n = if n < 128
+                  then f n
+                  else wvar' wb8n (n div 128) ^ f (n mod 128)
 
   fun mktrack iel =
     let
@@ -457,7 +457,7 @@ struct
                  | CUE v => raw 7 v
                  | PROG v => raw 8 v
                  | DEV v => raw 9 v
-                 | TEMPO n => wb8 3 ^ wb8 0x51 ^ wb24 n
+                 | TEMPO n => wb8 0x51 ^ wb8 3 ^ wb24 n
                  | SMPTE (a, b, c, d, e) => 
                      wb8 0x54 ^ wb8 5 ^
                      concat (map wb8 [a, b, c, d, e])
