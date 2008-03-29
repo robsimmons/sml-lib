@@ -63,6 +63,12 @@ sig
        returns [f(l1, [l2...ln]), f(l2, [l1,l3...ln]), ...] *)
     val choosemap : ('a * 'a list -> 'b) -> 'a list -> 'b list
 
+    (* choosek k l
+       returns every size-k set of elements from the list l,
+       in the same order as they appeared in l.
+       If k < 0 or > length l, then this will naturally be the empty list. *)
+    val choosek : int -> 'a list -> 'a list list
+
     (* returns elements satisfying predicate until first failure *)
     val aslongas : ('a -> bool) -> 'a list -> 'a list
 

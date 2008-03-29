@@ -381,6 +381,32 @@ struct
        cm nil l
      end
 
+   fun choosek k l =
+       let
+           (* keep track of the length of l, so that we can stop early. *)
+
+           (* We can always choose 0 out of any list. *)
+           fun ck (0, _, _) = [nil]
+             (* but we need to have at least as many elements otherwise... *)
+             | ck (k, n, l) =
+               if k > n
+               then nil
+               else
+                   (* must succeed; k is <= n, and k is nonzero *)
+                   let val h = hd l
+                       val t = tl l
+
+                       (* we can take this one or not. *)
+                       val take = map (fn s => (h :: s)) (ck (k - 1, n - 1, t))
+                       val don't = ck (k, n - 1, t)
+                   in
+                       take @ don't
+                   end
+       in
+           ck (k, length l, l)
+       end
+       
+
    fun mapto f nil = nil
      | mapto f (h :: t) = (h, f h) :: mapto f t
 
