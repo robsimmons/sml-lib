@@ -9,7 +9,7 @@ struct
   open Reader
 
   exception MIDI of string
-
+                            
   fun padreader (r : Reader.reader) s =
     Reader.fromvec (#seek r 0; #vec r (#size r) ^ s)
 
@@ -415,19 +415,23 @@ struct
       fun twob sb ch = Word8.orb(Word8.<<(sb, 0w4),
                                  Word8.fromInt ch)
       fun wstatus status e =
-        let val ns =
+        let val (ns, mandatory) =
+          (* Sonar 7 doesn't like omitted status bytes
+             for META events. This is non-standard. 
+             But we should omit them for other events, 
+             like notes... *)
           (case e of
-             CONTROL (ch, _, _) => twob 0wxB ch
-           | NOTEOFF (ch, _, _) => twob 0wx8 ch
-           | NOTEON  (ch, _, _) => twob 0wx9 ch
-           | PCHANGE (ch, _)    => twob 0wxC ch
-           | PITCH   (ch, _, _) => twob 0wxE ch
-           | SYSEX _ => 0wxF0
-           | META _  => 0wxFF)
+             CONTROL (ch, _, _) => (twob 0wxB ch, false)
+           | NOTEOFF (ch, _, _) => (twob 0wx8 ch, false)
+           | NOTEON  (ch, _, _) => (twob 0wx9 ch, false)
+           | PCHANGE (ch, _)    => (twob 0wxC ch, false)
+           | PITCH   (ch, _, _) => (twob 0wxE ch, false)
+           | SYSEX _ => (0wxF0, true)
+           | META _  => (0wxFF, true))
         in
           (ns, 
            case status of
-             SOME os => if os = ns 
+             SOME os => if os = ns andalso not mandatory
                         then "" 
                         else implode [chr (Word8.toInt ns)]
            | NONE => implode [chr (Word8.toInt ns)])
