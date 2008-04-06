@@ -21,7 +21,7 @@ struct
   fun ischar (c : char) (d : char) = c = d
   fun isn'tchar (c : char) (d : char) = c <> d
       
-  (* XXX probably more efficient to use String.concat.
+  (* PERF probably more efficient to use String.concat.
      I use this a LOT, so good to check... *)
   fun delimit s nil = ""
     | delimit s (h::t) =
@@ -181,7 +181,7 @@ struct
                                    n + acc) 0 nc
 
                         (* allocate surplus proportionally *)
-                        fun alloc remain [(c, d, _)] = [(c + remain, d)]
+                        fun alloc remain [(c, d, n)] = [(Int.min(c + n, c + remain), d)]
                           | alloc _ nil = nil (* ??? *)
                           | alloc remain ((c,d,0)::rest) =
                             (c,d) :: alloc remain rest
@@ -226,7 +226,7 @@ struct
           implode (lc (explode s))
       end
 
-  (* XXX this could be a lot more efficient. *)
+  (* XXX PERF this could be a lot more efficient. *)
   fun filter f = implode o (List.filter f) o explode
 
   fun filter f s = 
