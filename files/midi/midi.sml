@@ -196,6 +196,17 @@ struct
                                 " " ^ itos vel
       | _ =>  "unimp")
 
+  fun filter f l =
+      let
+          fun filt plus nil = nil
+            | filt plus ((d, e) :: t) =
+              if f e
+              then (plus + d, e) :: filt 0 t
+              else filt (plus + d) t
+      in
+          filt 0 l
+      end
+
   local exception LastEvent of int
   in
   fun getevents stat r =

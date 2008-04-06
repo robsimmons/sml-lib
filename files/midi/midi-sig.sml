@@ -57,13 +57,24 @@ sig
   type track = (int * event) list
 
   (* merge tracks into a single track (meta events are not treated
-     specially, meaning the result may have multiple names, etc.) *)
-  val merge : track list -> track
+     specially, meaning the result may have multiple names, etc.) 
+     
+     note: this is a generalization of
+     track list list -> track list
+     *)
+  val merge : (int * 'event) list list -> (int * 'event) list
   (* as above, but preserve the 0-based track number that the
      event came from. *)
-  val mergei : track list -> (int * (int * event)) list
+  val mergei : (int * 'event) list list -> (int * (int * 'event)) list
   (* and with arbitrary data *)
-  val mergea : ('a * (int * event) list) list -> (int * ('a * event)) list
+  val mergea : ('a * (int * 'event) list) list -> (int * ('a * 'event)) list
+
+  (* filter f l
+
+     Filter out events for which f returns false. Adjusts deltas to maintain
+     the appropriate absolute positions of events that are kept. (But, it
+     may change the overall length of the song, for example when f is (K false)). *)
+  val filter : ('event -> bool) -> (int * 'event) list -> (int * 'event) list
 
   exception MIDI of string
 
