@@ -1,4 +1,3 @@
-
 (* String utilities by Tom 7. 
    See stringutil-sig for documentation. *)
 
