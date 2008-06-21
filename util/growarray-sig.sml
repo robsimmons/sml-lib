@@ -30,4 +30,7 @@ sig
      array. *)
   val finalize : 'a growarray -> 'a Array.array
 
+  (* clear all elements, making it length 0 *)
+  val clear : 'a growarray -> unit
+
 end

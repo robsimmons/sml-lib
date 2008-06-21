@@ -7,6 +7,8 @@ struct
   (* start with 16 cells, why not? *)
   fun empty () = ref (0, Array.array(16, NONE))
 
+  fun clear r = r := (0, Array.array(16, NONE))
+
   fun growarray n i = ref (n, (Array.array(n, SOME i)))
 
   fun sub (ref (used, a)) n =
