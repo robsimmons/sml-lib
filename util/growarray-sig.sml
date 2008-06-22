@@ -16,6 +16,9 @@ sig
 
   (* can raise Subscript when out of bounds *)
   val sub : 'a growarray -> int -> 'a
+  (* Is there an element at this position? 
+     Raises subscript for negative indices. *)
+  val has : 'a growarray -> int -> bool
 
   (* only raises subscript if index is negative. *)
   val update : 'a growarray -> int -> 'a -> unit

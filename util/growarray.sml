@@ -20,6 +20,10 @@ struct
 
   fun length (ref (l, _)) = l
 
+  fun has (ref (used, a)) n = 
+      if n < 0 then raise Subscript
+      else n < used andalso Option.isSome(Array.sub(a, n))
+
   (* grow to accommodate at least n elements *)
   (* XXX this appears to be one element too conservative *)
   fun accommodate (r as ref(l, a)) n =
@@ -64,6 +68,9 @@ struct
       r := (n + 1, a)
     end
 
+  (* XXX should just discard the existing array, replacing
+     with empty (and then change the semantics) to dispense with
+     aliasing problems. *)
   fun finalize (ref (n, a)) =
     Array.tabulate (n, (fn x => case Array.sub(a, x) of
                                    NONE => raise Subscript
