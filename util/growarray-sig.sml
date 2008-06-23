@@ -11,7 +11,7 @@ sig
   val growarray : int -> 'a -> 'a growarray
   val empty : unit -> 'a growarray
 
-  (* return actual length *)
+  (* return actual length, counting holes (position of last element + 1) *)
   val length : 'a growarray -> int
 
   (* can raise Subscript when out of bounds *)
