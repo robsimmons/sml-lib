@@ -1,15 +1,16 @@
 
-(* A reader allows the extraction of vectors of characters from arbitrary
-   points. We can think of it as an abstract interface to files on disk or
-   in memory. This is intended to work around the bizarre omission in the
-   BinIO basis structure of a way to seek arbitrarily in a file.
+(* A reader allows the extraction of vectors of characters from
+   arbitrary points. We can think of it as an abstract interface to
+   files on disk or in memory. This is intended to work around the
+   bizarre omission in the BinIO basis structure of a way to seek
+   arbitrarily in a file.
 
    The reader type is a record of all of the operations you can perform
    on it. All readers have the same type.
 
    The reader structure includes functions that generate readers from
-   files or CharVector.vectors in memory. Recall that CharVector.vector
-   is the same type as string.
+   files or CharVector.vectors in memory. Recall that
+   CharVector.vector is the same type as string. 
 *)
 
 signature READER =
@@ -69,5 +70,16 @@ sig
 
     (* grab a zero-terminated string without altering the position *)
     val strzat : reader -> int -> string
+
+    (* without terminating carraige return or newline. 
+       considers EOF to end the line, as well. *)
+    val line : reader -> string option
+
+    (* token f r 
+       Read the next token (if any) from the reader r. A
+       token is some sequence of characters for which f(c) is
+       false. Leading characters for which f(c) is true are
+       ignored. StringUtil.whitespec may be a useful value for f. *)
+    val token : (char -> bool) -> reader -> string option
 
 end

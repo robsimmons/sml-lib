@@ -141,7 +141,6 @@ struct
 
     fun rest ({vec,pos,size,...} : reader) = vec (size - pos())
 
-
     fun skip (r : reader) n = #seek r (#pos r () + n)
 
     (* could use save-excursion instead of this *)
@@ -164,4 +163,71 @@ struct
             seek p
             end handle e => (seek p; raise e)
         end
+
+
+    fun line reader =
+        if eof reader 
+        then NONE
+        else SOME (let
+                       (* find newline or EOF. *)
+                       val start = #pos reader ()
+                       fun findn () =
+                           let val p = #pos reader ()
+                           in
+                               if eof reader
+                               then (p, p)
+                               else
+                               (* annoying, since we want to treat
+                                  \n, \r\n, and \r (when not followed
+                                  by \n) as line terminators. *)
+                               case #char reader () of
+                                   #"\n" => (p, p + 1)
+                                 | #"\r" =>
+                                   if eof reader
+                                   then (p, p + 1)
+                                   else (case #char reader () of
+                                             #"\n" => (p, p + 2)
+                                           | _ => (p, p + 1))
+                                 | _ => findn ()
+                           end
+                       val (endp, skipp) = findn ()
+
+                       val l = vecat reader start (endp - start)
+                   in
+                       #seek reader skipp;
+                       l
+                   end)
+
+    fun token ws reader =
+        let
+            (* Start by eating characters until ws is false. *)
+            fun eat () =
+                if eof reader then NONE
+                else let val c = #char reader ()
+                     in
+                        if ws c
+                        then eat ()
+                        else munch (#pos reader () - 1)
+                     end
+            and munch start =
+                if eof reader 
+                then SOME (vecat reader start 
+                           (#pos reader () - start))
+                else
+                    let val c = #char reader ()
+                    in
+                        if ws c
+                        then let val p = #pos reader () - 1
+                                 val v = vecat reader start 
+                                         (p - start)
+                             in
+                                 #seek reader p;
+                                 SOME v
+                             end
+                        else munch start
+                    end
+        in
+            eat ()
+        end
+
 end
