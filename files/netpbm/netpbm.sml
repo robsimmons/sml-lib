@@ -9,27 +9,29 @@ struct
     exception NetPBM of string
     structure R = Reader
 
-    type 'radix graphic = { width : int,
-                            height : int,
-                            max : int,
-                            data : 'radix Array.array }
+    type ('radix, 'radixrange) graphic = 
+        { width : int,
+          height : int,
+          max : 'radixrange,
+          data : 'radix Array.array }
 
     val trim = StringUtil.losespecl StringUtil.whitespec o 
                StringUtil.losespecr StringUtil.whitespec
 
     fun tok r = 
-        case R.token StringUtil.whitespec of
-            SOME #"#" =>
+        case R.token StringUtil.whitespec r of
+            SOME "#" =>
             let in
                 ignore (R.line r);
                 tok r
             end
           | t => t
 
-    fun int r =
+    fun int r : int =
         case Option.map Int.fromString (tok r) of
             NONE => raise NetPBM "expected int."
-          | SOME i => i
+          | SOME NONE => raise NetPBM "bad int."
+          | SOME (SOME i) => i
 
     fun readpgm r =
         case tok r of
