@@ -36,4 +36,7 @@ sig
   (* clear all elements, making it length 0 *)
   val clear : 'a growarray -> unit
 
+  (* Apply to all non-missing elements in order *)
+  val app : ('a -> unit) -> 'a growarray -> unit
+
 end

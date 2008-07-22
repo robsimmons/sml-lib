@@ -88,7 +88,8 @@ struct
 
     fun fromfile name =
       let
-        val f = (BinIO.openIn name) handle _ => raise Reader "can't open file"
+        val f = (BinIO.openIn name) 
+            handle _ => raise Reader ("can't open file " ^ name)
         val v = inputall f
       in
         BinIO.closeIn f;
@@ -146,8 +147,10 @@ struct
     (* could use save-excursion instead of this *)
     fun vecat ({vec,seek,pos,...} : reader) beg len =
         let val p = pos ()
+            (*
             val _ = print ("vecat (...) " ^ Int.toString beg ^ 
                            " " ^ Int.toString len ^ "\n")
+            *)
         in  let in seek beg;
             vec len
             before

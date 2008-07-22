@@ -20,6 +20,16 @@ sig
 
     val empty : 'a stream
 
+    val unfold : ('a -> 'a option) -> 'a -> 'a stream
+
+    (* countup min max
+       A stream consisting of min, min + 1, min + 2, ... max.
+       If max is NONE, then counts up until overflow. *)
+    val countup : int -> int option -> int stream
+    val countdown : int -> int option -> int stream
+
+
+
     exception Empty
 
     (* Baroque interface *)

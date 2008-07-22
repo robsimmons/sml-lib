@@ -55,6 +55,39 @@ struct
             first
         end
 
+    fun unfold f =
+        let
+            fun s a () =
+                case f a of
+                    NONE => Nil
+                  | SOME x => Cons(x, s x)
+        in
+            s
+        end
+
+    fun countup min NONE =
+        let fun s x () = Cons(x, s (x + 1))
+        in s min
+        end
+      | countup min (SOME max) =
+        let fun s x () = if x <= max
+                         then Cons(x, s (x + 1))
+                         else Nil
+        in s min
+        end
+
+    fun countdown max NONE =
+        let fun s x () = Cons(x, s (x - 1))
+        in s max
+        end
+      | countdown max (SOME min) =
+        let fun s x () = if x >= min
+                         then Cons(x, s (x - 1))
+                         else Nil
+        in s max
+        end
+
+
     val empty = fn () => Nil
     fun cons (h, t) = fn () => Cons (h,t)
 

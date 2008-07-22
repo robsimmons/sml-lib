@@ -20,6 +20,19 @@ struct
 
   fun length (ref (l, _)) = l
 
+  fun app f (r as ref (l, a)) =
+      let
+          fun ap n = 
+              if n < l
+              then ((case Array.sub(a, n) of
+                        NONE => ()
+                      | SOME x => f x);
+                    ap (n + 1))
+              else ()
+      in
+          ap 0
+      end
+
   fun has (ref (used, a)) n = 
       if n < 0 then raise Subscript
       else n < used andalso Option.isSome(Array.sub(a, n))
