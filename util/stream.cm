@@ -5,3 +5,6 @@ $/basis.cm
 
 stream-sig.sml
 stream.sml
+
+streamutil-sig.sml
+streamutil.sml

@@ -6,13 +6,14 @@ struct
     fun stostream s =
       let
         val ss = size s
+
         fun next n () = 
           if n >= ss
-          then Stream.empty
-          else Stream.lcons (CharVector.sub(s, n),
-                             next (n + 1))
+          then Stream.Nil
+          else Stream.Cons(CharVector.sub(s, n), 
+                           Stream.delay (next (n + 1)))
       in
-        Stream.old_delay (next 0)
+        Stream.delay (next 0)
       end
 
 
@@ -21,13 +22,26 @@ struct
         let
             val ff = BinIO.openIn f
 
-            fun rd () =
+            fun step () =
                 case BinIO.input1 ff of
-                    NONE => (BinIO.closeIn ff; 
-                             Stream.empty)
-                  | SOME c => Stream.lcons(chr (Word8.toInt c), rd)
+                    NONE => (BinIO.closeIn ff; Stream.Nil)
+                  | SOME b => Stream.Cons(Byte.byteToChar b, 
+                                          Stream.delay step)
         in
-            Stream.old_delay rd
+            Stream.delay step
+        end
+
+    (* convert a file to a byte stream *)
+    fun ftobytestream f = 
+        let 
+          val ff = BinIO.openIn f
+
+          fun step () = 
+              case BinIO.input1 ff of
+                  NONE => (BinIO.closeIn ff; Stream.Nil)
+                | SOME b => Stream.Cons(b, Stream.delay step)
+        in 
+          Stream.delay step
         end
 
     fun ltostream l =
