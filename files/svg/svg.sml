@@ -132,8 +132,28 @@ struct
            { x2 = a, y2 = b, x = c, y = d })
   val smooth_curveto_argument_sequence = separate smooth_curveto_argument comma_wspq
   val smooth_curveto =
-      alt [ch #"S" >> repeat wsp >> smooth_curveto_argument sequence wth PC_S
-           ch #"s" >> repeat wsp >> smooth_curveto_argument sequence wth PC_s]
+      alt [ch #"S" >> repeat wsp >> smooth_curveto_argument_sequence wth PC_S,
+           ch #"s" >> repeat wsp >> smooth_curveto_argument_sequence wth PC_s]
+
+  val curveto_argument =
+      (coordinate_pair << comma_wspq) &&
+      (coordinate_pair << comma_wspq) &&
+      coordinate_pair wth (fn ((x1, y1), ((x2, y2), (x, y))) =>
+                           { x1 = x1, y1 = y1, x2 = x2, y2 = y2, x = x, y = y })
+  val curveto_argument_sequence = separate curveto_argument comma_wspq
+  val curveto =
+      alt [ch #"C" >> repeat wsp >> curveto_argument_sequence wth PC_C,
+           ch #"c" >> repeat wsp >> curveto_argument_sequence wth PC_c]
+
+  val vertical_lineto_argument_sequence = separate coordinate comma_wspq
+  val vertical_lineto = 
+      alt [ch #"V" >> repeat wsp >> vertical_lineto_argument_sequence wth PC_V,
+           ch #"v" >> repeat wsp >> vertical_lineto_argument_sequence wth PC_v]
+
+  val horizontal_lineto_argument_sequence = separate coordinate comma_wspq
+  val horizontal_lineto = 
+      alt [ch #"H" >> repeat wsp >> horizontal_lineto_argument_sequence wth PC_H,
+           ch #"h" >> repeat wsp >> horizontal_lineto_argument_sequence wth PC_h]
 
 (*
 svg_path:
@@ -168,23 +188,6 @@ lineto:
 lineto_argument_sequence:
     coordinate_pair
     | coordinate_pair comma_wsp? lineto_argument_sequence
-horizontal_lineto:
-    ( "H" | "h" ) wsp* horizontal_lineto_argument_sequence
-horizontal_lineto_argument_sequence:
-    coordinate
-    | coordinate comma_wsp? horizontal_lineto_argument_sequence
-vertical_lineto:
-    ( "V" | "v" ) wsp* vertical_lineto_argument_sequence
-vertical_lineto_argument_sequence:
-    coordinate
-    | coordinate comma_wsp? vertical_lineto_argument_sequence
-curveto:
-    ( "C" | "c" ) wsp* curveto_argument_sequence
-curveto_argument_sequence:
-    curveto_argument
-    | curveto_argument comma_wsp? curveto_argument_sequence
-curveto_argument:
-    coordinate_pair comma_wsp? coordinate_pair comma_wsp? coordinate_pair
 *)
 
   end
