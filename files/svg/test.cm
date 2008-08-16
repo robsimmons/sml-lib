@@ -1,6 +1,11 @@
 
 group is
 
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+#else
+#endif
+
 ../../util/stream-sig.sml
 ../../util/stream.sml
 ../../parse/pos-sig.sml
@@ -10,3 +15,4 @@ group is
 
 svg-sig.sml
 svg.sml
+

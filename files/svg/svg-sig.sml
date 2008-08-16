@@ -43,4 +43,6 @@ sig
       | PC_a of { rx : real, ry : real, rot : real, large : bool, sweep : bool, 
                   x : real, y : real } list
 
+    val parsepath : (pathcommand list, char) Parsing.parser
+    val parsepathstring : string -> pathcommand list option
 end
