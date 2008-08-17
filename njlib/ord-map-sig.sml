@@ -26,6 +26,7 @@ sig
 
   (* Look for an item, return NONE if the item doesn't exist *)
   val find: 'a map * Key.ord_key -> 'a option
+  val lookup: 'a map * Key.ord_key -> 'a
 
   (* Remove an item, returning new map and value removed.
      Raises LibBase.NotFound if not found. *)

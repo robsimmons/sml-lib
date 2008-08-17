@@ -54,7 +54,8 @@ functor SplayMapFn (K: ORD_KEY): (* XXX *) ORD_MAP =
       | find (MAP{root,nobj}, key) = (case splay (cmpf key, !root)
            of (EQUAL, r as SplayObj{value, ...}) => (root := r; SOME(#2 value))
             | (_, r) => (root := r; NONE))
-
+    fun lookup x = valOf(find x)
+    
         (* Remove an item.
          * Raise LibBase.NotFound if not found
          *)
