@@ -1,4 +1,4 @@
-structure SVG =
+structure SVG (* :> SVG *) =
 struct
 
   exception SVG of string
@@ -49,7 +49,10 @@ struct
     fun ch c = satisfy (fn x => x = c)
 
     (* This parser is written to follow the BNF in the spec as closely as I can bear,
-       which often means copying some really long names. *)
+       which often means using some really long names. I hope it is beneficial.
+
+       http://www.w3.org/TR/SVG11/paths.html
+       *)
     val flag = ch #"0" return false || ch #"1" return true
     val sign = satisfy (Char.contains "+-")
     val opt_sign = ch #"+" || ch #"-" || succeed #"+"
@@ -62,8 +65,43 @@ struct
     val comma_wsp = repeat1 wsp && opt comma && repeati wsp return ()
                  || comma && repeati wsp return ()
     val comma_wspq = opt comma_wsp
+
+    (* PERF:
+       The SVG spec has an annoying problem here. The string ".5" is a valid
+       fractional constant, even if preceded by "0". That means that "0.5" has
+       two parses: as [integer 0, fractional .5] and [fractional 0.5]. The spec
+       remarks that the BNF productions must "consume as much ... as possible",
+       but this does not do much to fix the ambiguity. The BNF for number
+       says (int | float); if we try int first we consume the 0 and that is as
+       much as possible. If we try float first then we consume the whole thing
+       and that is as much as possible. So you say the rule is, we should parse
+       as much of the input as possible, prefering float? Then let's think about
+       a series of numbers (which is a simplification of something that
+       really occurs, which is a series of number pairs). Now if we follow the
+       int-then-float path we consume the entire input, and if we follow the
+       float path we consume the entire input. How do we know which one to follow?
+       Well, in the ambiguous grammar we have to give some preference to one of
+       the paths. An obvious way to do this would be to try them in order and only
+       backtrack if we get stuck later. (This is precisely what would happen
+       by transcribing the BNF into parser combinators directly.) Unfortunately,
+       the spec actually gives number as (int | float), suggesting that we should
+       prefer to parse a leading int over a leading float. However, in the text
+       it gives the example "M 0.6.5" and indicates that this must parse as
+       the coordinates "0.6","0.5" (not "0", "0.6" as the prefix; not "0.0"
+       (in the grammar there do not need to be any digits after the decimal
+       point either) float "0.6" as the prefix; nor "0.0", "6.5", etc.). I take
+       this to mean that we should prefer to parse a floating point constant
+       over an integer. Fine. There's no clear message on whether
+            M 0.6.5 1 z
+       should parse (it has at least one legal parse as M 0.0 6 0.5 1
+       z). This code will parse it after backtracking, which seems to
+       be the only sensible answer. (XXX: actually, it appears that it
+       rejects that currently. I'm not going to try to track down this
+       "bug".) This can mean some mega backtracking, though. It might
+       make sense to figure out what they really mean and hand-write a
+       greedy parser for performance and compatibility. *)
+
     val fractional_constant =
-        (* PERF looks like this can backtrack *)
         alt [opt_digit_sequence && (ch #"." >> digit_sequence),
              digit_sequence && (ch #"." >> succeed [#"0"])]
 
@@ -87,12 +125,15 @@ struct
                                                   NONE => fail
                                                 | SOME i => succeed i)
 
-    val number = opt_sign && integer_constant wth (fn (#"-", i) => real (~i)
-                                                    | (_,    i) => real i)
-              || opt_sign && floating_point_constant wth (fn (#"-", r) => ~r
+    (* nb. these two cases are permuted wrt the spec in order to prefer
+       parsing floating point constants. *)
+    val number = opt_sign && floating_point_constant wth (fn (#"-", r) => ~r
                                                            | (_,    r) => r)
+              || opt_sign && integer_constant wth (fn (#"-", i) => real (~i)
+                                                    | (_,    i) => real i)
 
-    val nonnegative_number = integer_constant wth real || floating_point_constant
+    (* nb. also permuted *)
+    val nonnegative_number = floating_point_constant || integer_constant wth real
     val coordinate = number
     val coordinate_pair = (coordinate << comma_wspq) && coordinate
 
@@ -201,6 +242,26 @@ struct
 
   fun parsepathstring s = Parsing.parse parsepath (Pos.markstream (stringstream s))
 
+  fun parse p s = Parsing.parse p (Pos.markstream (stringstream s))
 
-        
+
+  datatype normalizedcommand =
+      PC_Move of real * real
+    | PC_Line of real * real
+    | PC_Close
+    | PC_Cubic of { x1 : real, y1 : real, x2 : real, y2 : real, x : real, y : real }
+    | PC_Quad of { x1 : real, y1 : real, x : real, y : real }
+    | PC_Arc of { rx : real, ry : real, rot : real, large : bool, sweep : bool, 
+                  x : real, y : real }
+      
+  datatype normalizedpath =
+      P_Empty
+    (* Either way, the normalized commands are all relative to the first
+       moveto. *)
+    | P_Absolute of real * real * normalizedcommand list
+    | P_Relative of real * real * normalizedcommand list
+
+  fun normalizepath nil = P_Empty
+    | normalizepath (PC_M ((x, y) :: 
+
 end

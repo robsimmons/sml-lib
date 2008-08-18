@@ -10,6 +10,8 @@
 signature SVG =
 sig
 
+    exception SVG of string
+
     (* Raw path command. *)
     datatype pathcommand =
         (* Moveto (and subsequently, lineto) *)
@@ -42,6 +44,29 @@ sig
                   x : real, y : real } list
       | PC_a of { rx : real, ry : real, rot : real, large : bool, sweep : bool, 
                   x : real, y : real } list
+        
+    (* Path commands are designed to compactly represent drawing intent as
+       text strings. For programs, it's better to only have to
+       implement a compact set of primitives. This normalizes commands
+       so that they are all in relative coordinates (except the first required
+       moveto command, which if it is absolute we have nothing to relativize it
+       with respect to.), do not have repetitions, and use the minimal set of
+       primitives. *)
+    datatype normalizedcommand =
+        PC_Move of real * real
+      | PC_Line of real * real
+      | PC_Close
+      | PC_Cubic of { x1 : real, y1 : real, x2 : real, y2 : real, x : real, y : real }
+      | PC_Quad of { x1 : real, y1 : real, x : real, y : real }
+      | PC_Arc of { rx : real, ry : real, rot : real, large : bool, sweep : bool, 
+                    x : real, y : real }
+
+    datatype normalizedpath =
+        P_Empty
+        (* Either way, the normalized commands are all relative to the first
+           moveto. *)
+      | P_Absolute of real * real * normalizedcommand list
+      | P_Relative of real * real * normalizedcommand list
 
     val parsepath : (pathcommand list, char) Parsing.parser
     val parsepathstring : string -> pathcommand list option
