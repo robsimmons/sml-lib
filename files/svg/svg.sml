@@ -327,6 +327,19 @@ struct
 
       | npath c _ (PC_z :: rest) = PC_Close :: npath c NO rest
 
+    (* Turn the absolute ones into relative commands, recurse on 'em. *)
+      | npath (x0, y0) prev (PC_H (x :: r) :: rest) =
+        npath (x0, y0) prev (PC_h [x - x0] :: PC_H r :: rest)
+      | npath (x0, y0) prev (PC_V (y :: r) :: rest) =
+        npath (x0, y0) prev (PC_v [y - y0] :: PC_V r :: rest)
+      | npath (x0, y0) prev (PC_L ((x, y) :: r) :: rest) =
+        npath (x0, y0) prev (PC_l [(x - x0, y - y0)] :: PC_L r :: rest)
+      | npath (x0, y0) prev (PC_M ((x, y) :: r) :: rest) =
+        (* not a typo; subsequent movetos become linetos *)
+        npath (x0, y0) prev (PC_m [(x - x0, y - y0)] :: PC_L r :: rest)
+
+        (* XXX missing the last few... *)
+
     and getprevs NO (x0, y0) = (x0, y0)
       | getprevs (C _) (x0, y0) = (x0, y0)
       | getprevs (Q (x1, y1)) (x0, y0) =
