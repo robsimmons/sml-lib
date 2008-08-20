@@ -261,7 +261,97 @@ struct
     | P_Absolute of real * real * normalizedcommand list
     | P_Relative of real * real * normalizedcommand list
 
-  fun normalizepath nil = P_Empty
-    | normalizepath (PC_M ((x, y) :: 
+  local
+    (* We need to keep track of something about the previous command
+       in order to implement the smooth curveto and quadratic-curveto
+       commands. If the previous one wasn't a curveto or quad, then
+       we just keep NO. *)
+    datatype previous = NO | C of real * real | Q of real * real
+    (* Normalize a path relative to a previous coordinate and previous
+       (optional) second control point. *)
+    fun npath _ _ nil = nil
+      (* We produce these degenerate commands. *)
+      | npath c p (PC_L nil :: rest) = npath c p rest
+      | npath c p (PC_l nil :: rest) = npath c p rest
+      | npath c p (PC_H nil :: rest) = npath c p rest
+      | npath c p (PC_h nil :: rest) = npath c p rest
+      | npath c p (PC_V nil :: rest) = npath c p rest
+      | npath c p (PC_v nil :: rest) = npath c p rest
+      | npath c p (PC_C nil :: rest) = npath c p rest
+      | npath c p (PC_c nil :: rest) = npath c p rest
+      | npath c p (PC_S nil :: rest) = npath c p rest
+      | npath c p (PC_s nil :: rest) = npath c p rest
+      | npath c p (PC_Q nil :: rest) = npath c p rest
+      | npath c p (PC_q nil :: rest) = npath c p rest
+      | npath c p (PC_T nil :: rest) = npath c p rest
+      | npath c p (PC_t nil :: rest) = npath c p rest
+      | npath c p (PC_A nil :: rest) = npath c p rest
+      | npath c p (PC_a nil :: rest) = npath c p rest
 
+      (* These turn into lineto commands and are always guaranteed to
+         have at least one coordinate, so they should never occur in legal
+         paths. *)
+      | npath _ _ (PC_M nil :: _) = raise SVG "empty Moveto command"
+      | npath _ _ (PC_m nil :: _) = raise SVG "empty Moveto command"
+
+      (* normalized commands that are already relative are easy. *)
+      | npath _ _ (PC_l (c :: r) :: rest) = PC_Line c :: npath c NO (PC_l r :: rest)
+      (* Not a typo: Subsequent coordinates in a moveto mean lineto. *)
+      | npath _ _ (PC_m (c :: r) :: rest) = PC_Move c :: npath c NO (PC_l r :: rest)
+
+      (* The end coordinate x,y is where the cursor is left. (spec @8.3.6) *)
+      | npath _ _ (PC_c ((c as { x, y, x2, y2, ... }) :: r) :: rest) =
+        PC_Cubic c :: npath (x, y) (C (x2, y2)) (PC_c r :: rest)
+      | npath _ _ (PC_q ((c as { x, y, x1, y1 }) :: r) :: rest) =
+        PC_Quad c :: npath (x, y) (Q (x1, y1)) (PC_q r :: rest)
+      | npath _ _ (PC_a ((c as { x, y, ... }) :: r) :: rest) =
+        PC_Arc c :: npath (x, y) NO (PC_a r :: rest)
+
+      (* These just need to be normalized *)
+      | npath (x0, y0) _ (PC_h (x :: r) :: rest) =
+        npath (x0, y0) NO (PC_l [(x, y0)] :: PC_h r :: rest)
+      | npath (x0, y0) _ (PC_v (y :: r) :: rest) =
+        npath (x0, y0) NO (PC_l [(x0, y)] :: PC_v r :: rest)
+      | npath (x0, y0) prev (PC_s ({ x2, y2, x, y } :: r) :: rest) =
+        let val (x1, y1) = getprevs prev (x0, y0)
+        in
+            PC_Cubic { x1 = x1, y1 = y1, x2 = x2, y2 = y2, x = x, y = y } ::
+            npath (x, y) (C (x2, y2)) (PC_s r :: rest)
+        end
+      | npath (x0, y0) prev (PC_t ({ x, y } :: r) :: rest) =
+        let val (x1, y1) = getprevq prev (x0, y0)
+        in
+            PC_Quad { x1 = x1, y1 = y1, x = x, y = y } ::
+            npath (x, y) (Q (x1, y1)) (PC_t r :: rest)
+        end
+
+      | npath c _ (PC_z :: rest) = PC_Close :: npath c NO rest
+
+    and getprevs NO (x0, y0) = (x0, y0)
+      | getprevs (C _) (x0, y0) = (x0, y0)
+      | getprevs (Q (x1, y1)) (x0, y0) =
+        (* The reflection of the previous control point about x0,y0.
+           Treat x0,y0 as the origin (by subtracting it out),
+           then negate, then translate back. *)
+        (x0 + (~(x1 - x0)),
+         y0 + (~(y1 - y0)))
+
+    and getprevq NO (x0, y0) = (x0, y0)
+      | getprevq (Q _) (x0, y0) = (x0, y0)
+      | getprevq (C (x1, y1)) (x0, y0) =
+        (* As above. *)
+        (x0 + (~(x1 - x0)),
+         y0 + (~(y1 - y0)))
+
+  in
+
+    fun normalizepath nil = P_Empty
+      | normalizepath (PC_M ((x, y) :: mr) :: rest) =
+        P_Absolute (x, y, npath (x, y) NO (PC_L mr :: rest))
+      | normalizepath (PC_m ((x, y) :: mr) :: rest) =
+        P_Relative (x, y, npath (x, y) NO (PC_l mr :: rest))
+      | normalizepath _ = 
+        raise SVG "Paths must be empty or start with a non-empty moveto command"
+
+  end
 end

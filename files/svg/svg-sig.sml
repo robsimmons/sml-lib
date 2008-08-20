@@ -12,7 +12,7 @@ sig
 
     exception SVG of string
 
-    (* Raw path command. *)
+    (* Raw path command. Uppercase means absolute, lowercase means relative. *)
     datatype pathcommand =
         (* Moveto (and subsequently, lineto) *)
         PC_M of (real * real) list
