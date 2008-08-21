@@ -37,16 +37,6 @@ struct
     implode (List.tabulate (4, fn _ => chr 0)) ^
     implode (w2b (Word32.fromInt (l * 8)))
 
-
-  (* the padding required to make a message of length l (bytes)
-     a proper SHA-1 input. *)
-  fun padding l =
-    let val v = l mod 64
-        val p = if v < 56 then 56 - v else 120 - v
-    in (str (chr 0x80)) ^
-       implode (List.tabulate (p - 1, fn _ => chr 0)) ^
-       lenbits l
-    end
     
   (* executes f for each index lo..hi-1 inclusive *)
   fun for lo hi f =
@@ -150,6 +140,29 @@ struct
   fun chunk_512 s =
     let
 
+      (* the padding required to make a message of length l (bytes)
+         a proper SHA-1 input. Returns either one or two Cons cells.
+         tail is the end of the input (63 bytes or less)
+         l is the total length of the input, *including* the length of the
+         tail end *)
+      fun padding tail l =
+          let val v = l mod 64 in
+            if v < 56 then
+              let val p = 56 - v
+                val padding = implode (List.tabulate (p - 1, fn _ => chr 0))
+              in Cons (tail ^ str (chr 0x80) ^ padding ^ lenbits l,
+                    fn _ => Nil) 
+              end
+            else if v < 64 then
+              let val p = 64 - v
+                val padding1 = implode (List.tabulate (p - 1, fn _ => chr 0))
+                val padding2 = implode (List.tabulate (56, fn _ => chr 0))
+              in Cons (tail ^ str (chr 0x80) ^ padding1,
+                    fn _ => Cons (padding2 ^ lenbits l, fn _ => Nil))
+              end
+            else raise Unimplemented (* Impossible? *)
+          end
+
       (* n is the bytes we've already output.
          cur is a string (of 64 bytes or less) that will
          be our next chunk.
@@ -183,8 +196,7 @@ struct
                SOME ss => ch n cur ss 0 ()
              | NONE => 
                  (* no more data. *)
-                 Cons(cur ^ padding (n + size cur),
-                      fn _ => Nil))
+                 padding cur (n + size cur))
     in
       ch 0 "" "" 0
     end
