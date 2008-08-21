@@ -1,4 +1,4 @@
-structure SVG (* :> SVG *) =
+structure SVG :> SVG =
 struct
 
   exception SVG of string
@@ -222,7 +222,7 @@ struct
     val svg_path_prefix = 
         repeati wsp >> (separate0 moveto_drawto_command_group (repeati wsp)) << repeati wsp
     val svg_path = 
-        svg_path_prefix << done()
+        svg_path_prefix << done() wth List.concat
 
   end
 
@@ -241,9 +241,6 @@ struct
     end
 
   fun parsepathstring s = Parsing.parse parsepath (Pos.markstream (stringstream s))
-
-  fun parse p s = Parsing.parse p (Pos.markstream (stringstream s))
-
 
   datatype normalizedcommand =
       PC_Move of real * real
