@@ -6,7 +6,14 @@
    be based around a proper XML parser. I don't have one of those in
    sml-lib yet, so until that exists all I'm implementing here are
    parsers for the string-literal parts of the SVG spec. So far this
-   is just the strings that are used to represent paths. *)
+   is just the strings that are used to represent paths. 
+
+   The raw representation of paths is somewhat more complicated than
+   it needs to be, because it offers various shortcuts and the
+   pervasive choice between absolute and relative coordinate
+   specifications. This structure also provides a minimalistic version
+   of the path command language and a normalizer for paths that targets
+   that smaller language. *)
 signature SVG =
 sig
 

@@ -267,6 +267,23 @@ struct
        commands. If the previous one wasn't a curveto or quad, then
        we just keep NO. *)
     datatype previous = NO | C of real * real | Q of real * real
+
+    fun getprevs NO (x0, y0) = (x0, y0)
+      | getprevs (C _) (x0, y0) = (x0, y0)
+      | getprevs (Q (x1, y1)) (x0, y0) =
+        (* The reflection of the previous control point about x0,y0.
+           Treat x0,y0 as the origin (by subtracting it out),
+           then negate, then translate back. *)
+        (x0 + (~(x1 - x0)),
+         y0 + (~(y1 - y0)))
+
+    fun getprevq NO (x0, y0) = (x0, y0)
+      | getprevq (Q _) (x0, y0) = (x0, y0)
+      | getprevq (C (x1, y1)) (x0, y0) =
+        (* As above. *)
+        (x0 + (~(x1 - x0)),
+         y0 + (~(y1 - y0)))
+
     (* Normalize a path relative to a previous coordinate and previous
        (optional) second control point. *)
     fun npath _ _ nil = nil
@@ -337,24 +354,26 @@ struct
       | npath (x0, y0) prev (PC_M ((x, y) :: r) :: rest) =
         (* not a typo; subsequent movetos become linetos *)
         npath (x0, y0) prev (PC_m [(x - x0, y - y0)] :: PC_L r :: rest)
-
-        (* XXX missing the last few... *)
-
-    and getprevs NO (x0, y0) = (x0, y0)
-      | getprevs (C _) (x0, y0) = (x0, y0)
-      | getprevs (Q (x1, y1)) (x0, y0) =
-        (* The reflection of the previous control point about x0,y0.
-           Treat x0,y0 as the origin (by subtracting it out),
-           then negate, then translate back. *)
-        (x0 + (~(x1 - x0)),
-         y0 + (~(y1 - y0)))
-
-    and getprevq NO (x0, y0) = (x0, y0)
-      | getprevq (Q _) (x0, y0) = (x0, y0)
-      | getprevq (C (x1, y1)) (x0, y0) =
-        (* As above. *)
-        (x0 + (~(x1 - x0)),
-         y0 + (~(y1 - y0)))
+      | npath (x0, y0) prev (PC_A ({ rx : real, ry : real, 
+                                     rot : real, large : bool, sweep : bool, 
+                                     x : real, y : real } :: r) :: rest) =
+        (* rx,ry are lengths, not points. rot is an angle, and the flags
+           obviously are not "relative". *)
+        npath (x0, y0) prev (PC_a [{ rx = rx, ry = ry, rot = rot, large = large,
+                                     sweep = sweep, x = x - x0, y = y - y0 }] ::
+                             PC_A r :: rest)
+      | npath (x0, y0) prev (PC_S ({ x2, y2, x, y } :: r) :: rest)=
+        npath (x0, y0) prev (PC_s [{ x2 = x2 - x0, y2 = y2 - y0, x = x - x0, y = y - y0 }]
+                             :: PC_S r :: rest)
+      | npath (x0, y0) prev (PC_T ({ x, y } :: r) :: rest) =
+        npath (x0, y0) prev (PC_t [{ x = x - x0, y = y - y0 }] :: PC_T r :: rest)
+      | npath (x0, y0) prev (PC_C ({ x1, y1, x2, y2, x, y } :: r) :: rest) =
+        npath (x0, y0) prev (PC_c [{ x1 = x1 - x0, y1 = y1 - y0,
+                                     x2 = x2 - x0, y2 = y2 - y0,
+                                     x  = x  - x0, y  = y  - y0 }] :: PC_C r :: rest)
+      | npath (x0, y0) prev (PC_Q ({ x1, y1, x, y } :: r) :: rest) =
+        npath (x0, y0) prev (PC_q [{ x1 = x1 - x0, y1 = y1 - y0, x = x - x0, y = y - y0 }]
+                             :: PC_Q r :: rest)
 
   in
 
