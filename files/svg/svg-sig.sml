@@ -77,4 +77,7 @@ sig
 
     val parsepath : (pathcommand list, char) Parsing.parser
     val parsepathstring : string -> pathcommand list option
+
+    (* Raises SVG for illegal paths. *)
+    val normalizepath : pathcommand list -> normalizedpath
 end
