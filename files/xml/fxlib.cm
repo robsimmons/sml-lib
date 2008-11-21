@@ -1,4 +1,9 @@
-Group is
+group is
+
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+#endif
+
   config.sml
   Util/utilCompare.sml
   Util/utilString.sml
@@ -33,7 +38,8 @@ Group is
   Unicode/Encode/encodeError.sml
   Unicode/Encode/encodeMisc.sml
   Unicode/Encode/encode.sml
-  Unicode/Decode/decodeFile.sml
+(*  Unicode/Decode/decodeFile.sml *)
+  Unicode/Decode/decodeReader.sml
   Unicode/Decode/decodeError.sml
   Unicode/Decode/decodeMisc.sml
   Unicode/Decode/decodeUtil.sml
@@ -93,4 +99,3 @@ Group is
   Catalog/catParse.sml
   Catalog/catalog.sml
   Catalog/catResolve.sml
-  genRandom.sml

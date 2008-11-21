@@ -32,7 +32,7 @@ signature DecodeUtil =
 
 structure DecodeUtil : DecodeUtil =
    struct
-      open UniChar DecodeFile DecodeError
+      open UniChar DecodeError
 
       fun isSurrogate c = Chars.orb(c,0wx7FF)=0wxDFFF
       fun isLowSurrogate c = Chars.orb(c,0wx3FF)=0wxDFFF
