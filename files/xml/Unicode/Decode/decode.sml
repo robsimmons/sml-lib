@@ -14,7 +14,7 @@ signature Decode =
 
       exception DecEof of DecFile
       exception DecError of DecFile * bool * Error.DecodeError
-      
+
       val decUri       : DecFile -> Uri.Uri 
       val decName      : DecFile -> string
       val decEncoding  : DecFile -> Encoding.Encoding
@@ -35,10 +35,10 @@ structure Decode : Decode =
       structure Error = DecodeError
       open
          UniChar Encoding Error 
-         DecodeReader DecodeMisc DecodeUcs2 DecodeUcs4 
+         DecodeFile DecodeMisc DecodeUcs2 DecodeUcs4 
          DecodeUtf16 DecodeUtf8 DecodeUtil
 
-      type DecFile = Encoding * DecodeReader.state
+      type DecFile = Encoding * File 
       exception DecEof of DecFile
       exception DecError of DecFile * bool * DecodeError
 
@@ -49,11 +49,11 @@ structure Decode : Decode =
       (*--------------------------------------------------------------------*)
       (* get the uri string of an encoded entity.                           *)
       (*--------------------------------------------------------------------*)
-      fun decName (_,f) = "file"
+      fun decName (_,f) = fileName f
       (*--------------------------------------------------------------------*)
       (* get the uri of an encoded entity.                                  *)
       (*--------------------------------------------------------------------*)
-      fun decUri (_,f) = Uri.emptyUri
+      fun decUri (_,f) = fileUri f
       (*--------------------------------------------------------------------*)
       (* get the encoding of an encoded entity.                             *)
       (*--------------------------------------------------------------------*)
@@ -204,11 +204,11 @@ structure Decode : Decode =
       (* 3C 3F 78 6D: UTF-8, ISO 646, ASCII, some part of ISO 8859, Shift-JIS,  *)
       (*           EUC, or any other 7-bit, 8-bit, or mixed-width encoding      *)
       (*           which ensures that the characters of ASCII have their        *)
-      (*            normal positions, width, and values; the actual encoding    *)
+      (*           normal positions, width, and values; the actual encoding     *)
       (*           declaration must be read to detect which of these            *)
       (*           applies, but since all of these encodings use the same       *)
       (*           bit patterns for the ASCII characters, the encoding          *)
-      (*            declaration itself may be read reliably                     *)
+      (*           declaration itself may be read reliably                      *)
       (* 4C 6F A7 94: EBCDIC (in some flavor; the full encoding declaration     *)
       (*           must be read to tell which code page is in use)              *)
       (* other: UTF-8 without an encoding declaration, or else the data stream  *)
@@ -264,8 +264,8 @@ structure Decode : Decode =
 
       (*--------------------------------------------------------------------*)
       (* open a Unicode file. Check whether it starts with a byte order     *)
-      (* mark. If yes, chose UTF16 encoding, otherwise use the default that *)
-      (* is provided as second argument.                                    *)
+      (* mark. If yes, choose UTF16 encoding, otherwise use the default     *)
+      (* that is provided as second argument.                               *)
       (*                                                                    *)
       (* return the encoded file, a list of bytes looked ahead and the      *)
       (* encoding.                                                          *)

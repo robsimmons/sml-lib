@@ -38,8 +38,7 @@ group is
   Unicode/Encode/encodeError.sml
   Unicode/Encode/encodeMisc.sml
   Unicode/Encode/encode.sml
-(*  Unicode/Decode/decodeFile.sml *)
-  Unicode/Decode/decodeReader.sml
+  Unicode/Decode/decodeFile.sml
   Unicode/Decode/decodeError.sml
   Unicode/Decode/decodeMisc.sml
   Unicode/Decode/decodeUtil.sml
