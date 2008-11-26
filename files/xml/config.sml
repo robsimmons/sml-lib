@@ -15,5 +15,5 @@ structure Config =
       (* val retrieveCommand = "got_it -o %2 %1"                             *)
       (* val retrieveCommand = "urlget -s -o %2 %1"                          *)
       (*---------------------------------------------------------------------*)
-      val retrieveCommand = "wget -qO %2 %1"                            
+      val retrieveCommand = "echo WHAT; exit 1"                            
    end

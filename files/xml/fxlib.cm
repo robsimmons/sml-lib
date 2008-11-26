@@ -98,3 +98,6 @@ group is
   Catalog/catParse.sml
   Catalog/catalog.sml
   Catalog/catResolve.sml
+
+  xml-sig.sml
+  xml.sml
