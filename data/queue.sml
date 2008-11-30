@@ -2,13 +2,14 @@ structure Queue :> QUEUE =
 struct
 
     (* The queue is, conceptually, front @ rev back.
-       We delay the application of rev to back, and memoize
-       this, so queues are references (memo cells) despite
-       having a functional interface. 
+       We delay the application of rev to back, and memoize this, so
+       queues are references (memo cells) despite having a functional
+       interface.
 
-       Because we have a functional interface, we only should
-       use a ref cell to represent the *same* queue (that is,
-       different cleavings into a front and back list). *)
+       Because we have a functional interface, we only should use a
+       ref cell to represent the *same* queue (that is, different
+       cleavings into a front and back list). Any time we push or pop,
+       therefore, we have to make a new reference cell. *)
     type 'a queue = ( 'a list * 'a list ) ref
 
     (* empty queues have empty lists *)
@@ -24,10 +25,10 @@ struct
 
     fun normalize (q as ref (front, back)) = q := (front @ rev back, nil)
 
-    (* deq returns SOME of the head element of the front.  If
-       there's nothing in the front, it reverses the back,
-       switches the two lists and returns SOME of the front.  
-       If the back list is empty, it returns NONE *)
+    (* deq returns SOME of the head element of the front. If there's
+       nothing in the front, it reverses the back, switches the two
+       lists and returns SOME of the front. If the back list is empty,
+       it returns NONE *)
     fun deq q =
       (case !q of
          (nil, nil) => (NONE, q)
