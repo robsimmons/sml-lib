@@ -38,6 +38,7 @@ in
   Unicode/encoding.sml
   Unicode/Encode/encodeBasic.sml
   Unicode/Encode/encodeError.sml
+  Unicode/Encode/encodeUtf8.sml
   Unicode/Encode/encodeMisc.sml
   Unicode/Encode/encode.sml
   Unicode/Decode/decodeFile.sml

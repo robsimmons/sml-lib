@@ -15,6 +15,30 @@ struct
 
   val d = Dtd.initDtdTables()
 
+  fun vectortoutf8 v =
+      let
+          val BUFFER_SIZE = 1024
+              
+          fun write ((s, arr, sz), w) =
+              let in
+                  CharArray.update(arr, sz, chr (Word8.toInt w));
+                  (s, arr, sz + 1)
+              end handle Subscript =>
+                  write ((CharArraySlice.vector(CharArraySlice.slice(arr, 0, NONE)) :: s, arr, 0), w)
+
+          fun finalize (s, arr, sz) = 
+              String.concat(rev (CharArraySlice.vector (CharArraySlice.slice(arr, 0, SOME sz)) :: s))
+
+          val start = (nil, CharArray.array(BUFFER_SIZE, chr 0), 0)
+
+          val finish = Vector.foldl (EncodeUTF8.writeCharUtf8 write) start v
+      in
+          finalize finish
+      end
+
+  (* PERF *)
+  fun datatoutf8 l = vectortoutf8 (Vector.fromList l)
+
   structure Hooks =
   struct
       open IgnoreHooks
@@ -26,28 +50,28 @@ struct
           
       fun hookStartTag ((content, stack),
                         (dtd, id, atts, _, empty)) =
-          let val t = UniChar.Data2String (Dtd.Index2Element d id)
+          let val t = datatoutf8 (Dtd.Index2Element d id)
           in
               if empty 
               then (Elem ((t, atts), nil) :: content, stack)
               else (nil, ((t, atts), content) :: stack)
           end
 
-      (* XXX should have message *)
       fun hookEndTag ((_, nil), _) = raise XML "ill-formed: no tag open"
         | hookEndTag ((content, (tag, content') :: stack), _) =
           (Elem (tag, rev content) :: content', stack)
 
       fun hookData ((content, stack), (_, vec, _)) =
-          (Text (UniChar.Vector2String vec) :: content, stack)
+          (Text (vectortoutf8 vec) :: content, stack)
 
       fun hookCData ((content, stack), (_, vec)) =
-          (Text (UniChar.Vector2String vec) :: content, stack)
+          (Text (vectortoutf8 vec) :: content, stack)
 
       fun hookCharRef ((content, stack), (_, c, _)) =
-          (Text (UniChar.Data2String [c]) :: content, stack)
+          (Text (datatoutf8 [c]) :: content, stack)
 
       fun hookFinish ([tree], nil) = tree
+        | hookFinish (nil, _) = raise XML "ill-formed: parsed zero trees"
         | hookFinish _ = raise XML "ill-formed: multiple trees?"
   end
 
@@ -57,7 +81,6 @@ struct
                            structure Resolve = ResolveNull)
 
   fun parsefile file = 
-      (Parser.parseDocument (SOME (Uri.String2Uri ((* "file://" ^ *) file))) 
-          (SOME d) Hooks.appstart)
+      Parser.parseDocument (SOME (Uri.String2Uri file)) (SOME d) Hooks.appstart
 
 end
