@@ -25,3 +25,8 @@ mp3 - Read/write MP3 ID3v1.1 tags.
 
 wave - Write AIFF 'WAVE' files.
 
+netpbm - Reads a subset of the trivial netPBM graphic format.
+
+xml - Andreas Naumann's FXP parser (only) for XML. BSD-like license.
+      This parser is highly featureful, but complex to use. I provide
+      simplified interface in xml/xml-sig.sml.

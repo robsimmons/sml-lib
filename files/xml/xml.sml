@@ -5,11 +5,11 @@ struct
 
   exception XML of string
   (* ?? *)
-  type tag = string * HookData.AttSpecList
+  type pretag = string * HookData.AttSpecList
 
-  datatype tree = 
-      Text of string
-    | Elem of tag * tree list
+  datatype pretree = 
+      PreText of string
+    | PreElem of pretag * pretree list
 
   val d = Dtd.initDtdTables()
 
@@ -17,33 +17,34 @@ struct
   struct
       open IgnoreHooks
           
-      type AppData = tree list * (tag * tree list) list
-      type AppFinal = tree
+      type AppData = pretree list * (pretag * pretree list) list
+      type AppFinal = pretree
           
       val appstart = (nil, nil)
           
       fun hookStartTag ((content, stack),
-                        (_, id, atts, _, empty)) =
-          let val t = UniChar.Data2String (Dtd.Index2Id d id)
+                        (dtd, id, atts, _, empty)) =
+          let val t = UniChar.Data2String (Dtd.Index2Element d id)
+              
           in
               if empty 
-              then (Elem ((t, atts), nil) :: content, stack)
+              then (PreElem ((t, atts), nil) :: content, stack)
               else (nil, ((t, atts), content) :: stack)
           end
 
       (* XXX should have message *)
       fun hookEndTag ((_, nil), _) = raise XML "ill-formed: no tag open"
         | hookEndTag ((content, (tag, content') :: stack), _) =
-          (Elem (tag, rev content) :: content', stack)
+          (PreElem (tag, rev content) :: content', stack)
 
       fun hookData ((content, stack), (_, vec, _)) =
-          (Text (UniChar.Vector2String vec) :: content, stack)
+          (PreText (UniChar.Vector2String vec) :: content, stack)
 
       fun hookCData ((content, stack), (_, vec)) =
-          (Text (UniChar.Vector2String vec) :: content, stack)
+          (PreText (UniChar.Vector2String vec) :: content, stack)
 
       fun hookCharRef ((content, stack), (_, c, _)) =
-          (Text (UniChar.Data2String [c]) :: content, stack)
+          (PreText (UniChar.Data2String [c]) :: content, stack)
 
       fun hookFinish ([tree], nil) = tree
         | hookFinish _ = raise XML "ill-formed: multiple trees?"
@@ -54,8 +55,20 @@ struct
                            structure ParserOptions = ParserOptions ()
                            structure Resolve = ResolveNull)
 
+  type tag = string * HookData.AttSpecList
+
+  datatype tree = 
+      Text of string
+    | Elem of tag * tree list
+
+  fun maketree (PreText s) = Text s
+    | maketree (PreElem ((id, a), tl)) = Elem((id, a), map maketree tl)
+(*      Elem((UniChar.Data2String (Dtd.Index2Element d id),
+                                               a), map maketree tl)*)
+
   fun parsefile file = 
-      Parser.parseDocument (SOME (Uri.String2Uri ((* "file://" ^ *) file))) 
-         (SOME d) Hooks.appstart
+      maketree 
+      (Parser.parseDocument (SOME (Uri.String2Uri ((* "file://" ^ *) file))) 
+          (SOME d) Hooks.appstart)
 
 end

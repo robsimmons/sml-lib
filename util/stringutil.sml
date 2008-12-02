@@ -397,7 +397,7 @@ struct
           go (size s - 1)
       end
 
-  (* Substring.all in 1997, Substring.full in 2002. 
+  (* Substring.all in 1997 basis, Substring.full in 2002.
      This works in both, but is perhaps not as fast. *)
   fun ss_all x = Substring.substring(x, 0, size x)
 
