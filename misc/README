@@ -1,7 +1,8 @@
 
 base64  -  Convert binary strings to/from ascii "base64" standard.
 crc32   -  Calculate the CRC32 of a binary string using the standard polynomial
-params  -  Support global flags / settings in your program that are settable from
-           the command line.
+params  -  Support global flags / settings in your program that are settable
+           from the command line.
 stamp   -  Generate and compare stamps.
 memoize -  Automatic memoization of functions.
+color   -  Routines for dealing with colors.

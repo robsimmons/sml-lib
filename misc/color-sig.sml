@@ -7,4 +7,6 @@ sig
     val hsvtorgb : (Word8.word * Word8.word * Word8.word) ->
                    (Word8.word * Word8.word * Word8.word)
 
+    val tohexstring : Word8.word * Word8.word * Word8.word -> string
+
 end
