@@ -16,6 +16,7 @@ sig
     val dist_feet : pos * pos -> real
     val dist_miles : pos * pos -> real
     val dist_nautical_miles : pos * pos -> real
+    val dist_km : pos * pos -> real
 
     (* ? *)
     val dist_rads : pos * pos -> real
