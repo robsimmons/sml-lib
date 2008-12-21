@@ -6,8 +6,10 @@
 
    NOTE:
 
-   MD5 has known collisions and is considered weak. Are you
-   sure you want to use this algorithm? 
+   MD5 has known collisions and is considered weak. Are you sure you
+   want to use this algorithm? The SHA1 implementation that's part of
+   SML-lib has a similar interface (except it can be more efficient by
+   allowing streamed access) and is still considered secure.
 
 *)
 

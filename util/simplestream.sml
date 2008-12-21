@@ -55,6 +55,25 @@ struct
            | SOME c => SOME c)
     end
 
+  fun fromfilechunks sz s =
+      let
+          val f = ref (SOME (BinIO.openIn s))
+      in
+          (fn () =>
+           case !f of
+               NONE => NONE
+             | SOME ff =>
+                   let val v = BinIO.inputN (ff, sz)
+                   in
+                       case Word8Vector.length v of
+                           0 => (BinIO.closeIn ff; f := NONE; NONE)
+                         | n => SOME (CharVector.tabulate
+                                      (n,
+                                       (fn i =>
+                                        chr (Word8.toInt (Word8Vector.sub(v, i))))))
+                   end)
+      end
+
   fun fromlist l =
     let
       val lr = ref l

@@ -20,7 +20,11 @@ sig
   val fromlist : 'a list -> 'a stream
   val fromvector : 'a Vector.vector -> 'a stream
   val fromarray : 'a Array.array -> 'a stream
-
+  (* Give the largest chunk size to return. The chunks
+     may be smaller than the requested size, particularly
+     the final chunk, but never zero length. *)
+  val fromfilechunks : int -> string -> string stream
+      
   val tolist : 'a stream -> 'a list
   val toarrayslice : 'a stream -> 'a ArraySlice.slice
   val tovector : 'a stream -> 'a Vector.vector

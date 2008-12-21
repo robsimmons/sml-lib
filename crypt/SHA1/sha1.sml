@@ -1,6 +1,6 @@
 
 (* RFC-3174 (SHA-1) hashing function. 
-   By Tom 7, 2004: Code placed in the Public Domain.
+   By Tom 7, 2004: Code placed in the public domain.
 *)
 
 structure SHA1 :> SHA1 =
