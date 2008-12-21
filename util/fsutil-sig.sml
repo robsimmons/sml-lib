@@ -8,6 +8,9 @@ sig
   (* imperative streams *)
   type 'a stream = unit -> 'a option
 
+  (* does the file exist? *)
+  val exists : string -> bool
+
   type fileinfo = { dir : bool,
                     lnk : bool,
                     mode : Posix.FileSys.S.mode,
