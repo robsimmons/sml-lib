@@ -1,0 +1,6 @@
+
+This directory contains some standard data structures.
+
+queue.sml  -  Efficient functional queues (double-list trick).
+lastn-buffer.sml  -  Efficient fixed-length array (circular buffer).
+trie.sml  -  Standard trie data structure, functorized.
