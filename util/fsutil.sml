@@ -34,6 +34,19 @@ struct
   fun exists f =
       (BinIO.closeIn (BinIO.openIn f); true) handle _ => false
 
+  fun tempfilename base =
+      let
+          fun tf n =
+              let val f = base ^ Int.toString n ^ ".tmp"
+              in
+                  if exists f
+                  then tf (n + 1)
+                  else f
+              end
+      in
+          tf 0
+      end
+
   (* imperative streams *)
   type 'a stream = unit -> 'a option
   (* but we want to implement them in a more efficient way *)

@@ -10,6 +10,9 @@ sig
 
   (* does the file exist? *)
   val exists : string -> bool
+  (* Given some base name (file/path prefix), find an extension of that
+     path that does not exist. Not thread safe. *)
+  val tempfilename : string -> string
 
   type fileinfo = { dir : bool,
                     lnk : bool,
