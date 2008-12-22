@@ -1,5 +1,7 @@
 
-This directory contains some standard data structures.
+This directory contains some standard data structures. Also see the
+parallel directory "algo" since it is sometimes difficult to
+distinguish an algorithm from a data structure.
 
 queue.sml  -  Efficient functional queues (double-list trick).
 lastn-buffer.sml  -  Efficient fixed-length array (circular buffer).

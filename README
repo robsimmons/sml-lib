@@ -1,0 +1,28 @@
+
+   sml-lib          Tom 7                                22 Dec 2008
+
+This is my library for Standard ML, which I use for pretty much every
+project. It is essentially a grab-bag library with a write-as-needed
+strategy. I import other people's stable libraries (if they have free
+licenses) when I use them and then sometimes make them conform to my
+personal style, unsophisticated build management practices, or
+distaste for boilerplate. Some other people use and contribute to this
+library, too. I welcome your contributions too but I use a dictatorial
+strategy for the library's arrangement.
+
+Where not indicated in the accompanying README, these utilities are
+licensed with the GNU Public License (GPL). See the file COPYING for
+details.
+
+The subdirectories are as follows:
+
+ algo - Algorithms (LZW, Heaps, Edit Distance, ...)
+ crypt - Cryptographic functions (MD5, SHA-1, DES, ...)
+ data - Data structures (functional queue, circular buffer, trie, ...)
+ files - Implementations of file formats (XML, MIDI, .wav, ...)
+ misc - Stuff that didn't fit elsewhere (base64, fixed words, parameter parsing, ...)
+ mlton - Glue for connecting MLton to external libraries through its FFI (mySql, X Windows)
+ njlib - My most-used parts of the SML/NJ library (splay trees)
+ parse - Combinator parsing library
+ text - Utilities for processing text
+ util - Utilities that go with existing structures (lists, strings, file system, etc.)
