@@ -29,7 +29,7 @@ struct
 
     fun sub (ref {zero, data}, x) = Array.sub(data, (zero + x) mod Array.length data)
     fun update (ref {zero, data}, x, e) = Array.update(data, (zero + x) mod Array.length data, e)
-    fun size (ref {zero = _, data}) = Array.length data
+    fun length (ref {zero = _, data}) = Array.length data
 
     (* In order from element 0 to sz-1, so can't use Array.app *)
     fun appi f (ref {zero, data}) =

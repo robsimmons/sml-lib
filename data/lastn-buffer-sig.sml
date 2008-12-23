@@ -29,7 +29,7 @@ sig
     val sub : 'a buffer * int -> 'a
     val update : 'a buffer * int * 'a -> unit
 
-    val size : 'a buffer -> int
+    val length : 'a buffer -> int
 
     val appi : (int * 'a -> unit) -> 'a buffer -> unit
     val app : ('a -> unit) -> 'a buffer -> unit
