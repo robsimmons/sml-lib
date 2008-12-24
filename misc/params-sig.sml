@@ -1,8 +1,10 @@
 
-(* mutable collection of flags and string constants 
+(* This library is for declaring and parsing command-line parameters.
+   Parameters are identified by name and can be shared by several
+   structures. There are a few different standard kinds of parameters.
 
-   Typically, you use this by writing at the top of each
-   structure that needs to refer to myflag.
+   Typically, you use this by writing at the top of each structure
+   that needs to refer to myflag:
 
    val myflag = Params.flag false NONE "myflag" 
 
@@ -19,6 +21,9 @@
    (of course, !myflag means to dereference the ref cell, not logical
    not.)
 
+   TODO: There should be a non-defining declaration that doesn't provide
+   the default and docstring (because these can easily get out of sync)
+   and fails at runtime if nobody declared it.
 *)
 
 signature PARAMS =
@@ -82,12 +87,11 @@ sig
      *)
   val paramacc : string list ->  (string * string * char) option -> string -> string list ref
 
-(* XXX to implement this I need to use exn hack, I think.
+(* XXX to implement this I need to use exn trick, I think.
   (* general f init commandline-spec name
 
      This is a generalized version of the above. It allows an arbitrary computation to be
      performed on the incoming string (and some arbitrary item 'b). 
-
   *)
   val general : (string * 'b -> 'a option) -> 'a -> (string * string * 'b) option -> string -> 'a ref
 *)
@@ -103,7 +107,6 @@ sig
 
   (* returns usage information as a string, listing all public
      flags/parameters and their documentation string *)
-
   val usage : unit -> string
 
   exception BadOption of string
@@ -115,5 +118,23 @@ sig
      -s as the last argument (but no corresponding value).
    *)
   val docommandline : unit -> string list
+
+  (* main0 usage go
+     Main function taking no arguments. Parses command line arguments
+     with docommandline. If there are too many, prints usage string and 
+     exits. Otherwise, calls the go function. *)
+  val main0 : string -> (unit -> 'a) -> unit
+
+  (* main1 usage go
+     Same, for a function taking a single command-line argument. *)
+  val main1 : string -> (string -> 'a) -> unit
+  (* etc. *)
+  val main2 : string -> (string * string -> 'a) -> unit
+  val main3 : string -> (string * string * string -> 'a) -> unit
+  val main4 : string -> (string * string * string * string -> 'a) -> unit
+  val main5 : string -> (string * string * string * string * string -> 'a) -> unit
+
+  (* Takes any number of arguments; never fails unless parsing fails *)
+  val main : string -> (string list -> 'a) -> unit
 
 end

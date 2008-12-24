@@ -155,4 +155,64 @@ struct
       f (CommandLine.arguments()) nil
     end
 
+  datatype res =
+      ExactArgs of string list
+    | Bad of string
+
+  fun require n =
+      let
+          val l = docommandline ()
+      in
+          if length l = n
+          then ExactArgs l
+          else Bad ("Expected " ^ Int.toString n ^ " args; got " ^
+                    Int.toString (length l))
+      end handle BadOption s => Bad s
+
+  fun nope u s =
+      let in
+          TextIO.output(TextIO.stdErr, s ^ "\n");
+          TextIO.output(TextIO.stdErr, "Usage: " ^ u ^ "\n\n");
+          TextIO.output(TextIO.stdErr, usage ())
+      end
+          
+  fun main0 u go =
+      case require 0 of
+        ExactArgs _ => ignore (go ())
+      | Bad s => nope u s
+
+  exception Impossible
+  fun main1 u go =
+      case require 0 of
+        ExactArgs [a] => ignore (go a)
+      | ExactArgs _ => raise Impossible
+      | Bad s => nope u s
+
+  fun main2 u go =
+      case require 0 of
+        ExactArgs [a, b] => ignore (go (a, b))
+      | ExactArgs _ => raise Impossible
+      | Bad s => nope u s
+
+  fun main3 u go =
+      case require 0 of
+        ExactArgs [a, b, c] => ignore (go (a, b, c))
+      | ExactArgs _ => raise Impossible
+      | Bad s => nope u s
+
+  fun main4 u go =
+      case require 0 of
+        ExactArgs [a, b, c, d] => ignore (go (a, b, c, d))
+      | ExactArgs _ => raise Impossible
+      | Bad s => nope u s
+
+  fun main5 u go =
+      case require 0 of
+        ExactArgs [a, b, c, d, e] => ignore (go (a, b, c, d, e))
+      | ExactArgs _ => raise Impossible
+      | Bad s => nope u s
+
+  fun main u go =
+      ignore (go (docommandline ())) handle BadOption s => nope u s
+
 end

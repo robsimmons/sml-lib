@@ -2,7 +2,7 @@
    the utilities in Util, StringUtil, and ListUtil but encapsulate
    idioms that are used frequently in small scripting tasks.
 
-   (Requires Util, StringUtil, ListUtil. XXX make CM.)
+   (Requires Util, StringUtil, ListUtil, Params. XXX make CM.)
 *)
 signature SCRIPT =
 sig
