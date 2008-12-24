@@ -38,7 +38,7 @@
     have to in order to comply with Matsumoto and Nishimura's
     license.) 
 *)
-structure MersenneTwister (*  :> MERSENNETWISTER *) =
+structure MersenneTwister :> MERSENNETWISTER =
 struct
     type w32 = Word32.word
     (* of length 624 *)
@@ -82,22 +82,15 @@ struct
         let
             val (mt, mti) = init32 0w19650218
             val k = Int.max(Vector.length init_key, N)
-            val () = print ("k: " ^ Int.toString k ^ "\n")
             fun loop1 (0, i, _) = i
               | loop1 (k, i, j) =
                 let 
-                    val () = print (Word32.toString (Array.sub(mt, i - 1)) ^ " " ^
-                                    Word32.toString (Array.sub(mt, i)) ^ "\n")
                     val () = Array.update(mt, i,
                                           (Array.sub(mt, i) ^^
                                            ((Array.sub(mt, i - 1) ^^
                                              (Array.sub(mt, i - 1) >> 0w30))) *
                                            0w1664525) +
                                           Vector.sub(init_key, j) + Word32.fromInt j)
-                    val () = print (Word32.toString (Array.sub(mt, i)) ^ " " ^
-                                    Int.toString i ^ " " ^
-                                    Int.toString k ^ " " ^
-                                    Int.toString j ^ "\n")
                     val i = i + 1
                     val j = j + 1
                     val i = if i >= N
@@ -124,26 +117,7 @@ struct
                     loop2 (k - 1, i)
                 end
 
-            val () = (* XXX *)
-                let in
-                    print ("%% " ^ Int.toString 1 ^ " @@\n");
-                    Util.for 0 (N - 1)
-                    (fn i =>
-                     print (Word32.toString (Array.sub(mt, i)) ^ "\n"));
-                    print "\n"
-                end
-
             val i = loop1 (k, 1, 0)
-
-            val () = (* XXX *)
-                let in
-                    print ("== " ^ Int.toString i ^ " @@\n");
-                    Util.for 0 (N - 1)
-                    (fn i =>
-                     print (Word32.toString (Array.sub(mt, i)) ^ "\n"));
-                    print "\n"
-                end
-
             val () = loop2 (N - 1, i)
         in
             Array.update(mt, 0, 0wx80000000);
