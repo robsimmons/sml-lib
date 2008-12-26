@@ -1,0 +1,21 @@
+
+I use these files to make my code compile in SML/NJ, MLton, and other
+ML compilers. SML/NJ and MLton in particular provide some common
+functionality (e.g. exception history) 
+
+I use this single conditional .cm declaration to include the proper
+port file (as well as the basis, whose declaration is required in
+SML/NJ and not in MLton).
+
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+ port/port-nj.sml
+#else
+ (* assume we are using mlton then *)
+ port/port-mlton.sml
+#endif
+
+
+TODO: Obviously, these Port structures badly need a corresponding PORT
+signature!
+
