@@ -21,7 +21,7 @@ sig
 
      recall that string = CharVector.vector.
      The input string may contain non-ascii data,
-     the output certainly will. *)
+     the output almost certainly will. *)
 
   val md5 : string -> string
 

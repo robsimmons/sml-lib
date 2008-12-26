@@ -23,4 +23,9 @@ sig
   (* convert a binary string to one built of hex digits *)
   val bintohex : string -> string
 
+  (* Parse a hexadecimal SHA-1 string. Uppercase and lowercase
+     are permitted. If the string is not the right length or
+     contains invalid characters, returns NONE. *)
+  val parse_hex : string -> string option
+
 end

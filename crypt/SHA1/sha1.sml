@@ -242,4 +242,23 @@ struct
     String.translate (fn c =>
                       implode [CharVector.sub (digits, ord c div 16),
                                CharVector.sub (digits, ord c mod 16)]) s
+
+  (* ASCII trick: (ch | 4400) % 55 *)
+  fun hexvalue ch =  
+    SysWord.toInt (SysWord.orb(SysWord.fromInt(ord ch), SysWord.fromInt 4400)) mod 55
+
+  fun parse_hex s =
+      if size s <> 40 
+         orelse not (CharVector.all (fn c => (ord c >= ord #"0" andalso
+                                              ord c <= ord #"9") orelse
+                                     (ord c >= ord #"a" andalso
+                                      ord c <= ord #"f") orelse
+                                     (ord c >= ord #"A" andalso
+                                      ord c <= ord #"F")) s)
+      then NONE
+      else SOME (CharVector.tabulate(20,
+                                     (fn i =>
+                                      chr(hexvalue (String.sub(s, i * 2)) * 16 + 
+                                          hexvalue (String.sub(s, i * 2 + 1))))))
+                                     
 end
