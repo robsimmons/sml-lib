@@ -124,4 +124,27 @@ struct
   fun parsefile file = 
       normalize(Parser.parseDocument (SOME (Uri.String2Uri file)) (SOME d) Hooks.appstart)
 
+  fun getleaves tree =
+      let 
+          val alist = ref nil
+          fun alist_insert (k, v) =
+              let
+                  fun r nil = [(k, [v])]
+                    | r ((k', vs) :: t) = if k = k' 
+                                          then (k', v :: vs) :: t
+                                          else (k', vs) :: r t
+              in
+                  alist := r (!alist)
+              end
+
+          fun process (Elem((tag, attrs_ignored), [Text text])) = alist_insert (tag, text)
+            | process (Elem((tag, attrs_ignored), nil)) = alist_insert (tag, "")
+            | process (e as Text _) = ()
+            | process (Elem(t, tl)) = app process tl
+
+      in
+          (* We accumulated it backwards, so undo that *)
+          rev (map (fn (k, vs) => (k, rev vs)) (!alist))
+      end
+
 end

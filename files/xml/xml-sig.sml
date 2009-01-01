@@ -20,4 +20,18 @@ sig
   (* Removes empty text nodes. Concatenates sibling text nodes. *)
   val normalize : tree -> tree
 
+
+  (* Utilities. *)
+
+  (* Get all of the leaves in the tree, Where a leaf is a <tag>only
+     applied to a series of text nodes</tag> or
+     <totheemptytree></totheemptytree> (then treated as the empty
+     string). Attributes and interior nodes are ignored. Text outside
+     of leaves is ignored. The results are collated by the tag name in
+     the order that they appear in the document. 
+
+     Expects the tree to be normalized.
+     *)
+  val getleaves : tree -> (string * string list) list
+
 end
