@@ -1,10 +1,14 @@
-(* I found out that numerical stability issues have a big effect, especially for
-   very short distances. This file contains a few implementations of the distance
-   calculation, but only the iterative solution is live code. *)
+(* For the distance calculations, I found out that numerical stability
+   issues have a big effect, especially for very short distances. This
+   file contains a few implementations of the distance calculation,
+   but only the iterative solution is live code. I recommend it unless
+   you need very fast approximations. *)
 structure LatLon :> LATLON =
 struct
 
     type pos = { lat : real, lon : real }
+    type projection = pos -> real * real
+
     exception LatLon of string
 
     structure LR = LargeReal
@@ -41,7 +45,8 @@ struct
     fun torad x = Real.toLarge x * (LRM.pi / 180.0)
 
     (* Using the Haversine formula, which has better numerical stability
-       for small distances. *)
+       for small distances (down to a meter or so). Treats the Earth
+       as a sphere, however. *)
     fun dist_km_haversine ({ lat = lat1, lon = lon1 },
                            { lat = lat2, lon = lon2 }) =
         let 
@@ -138,5 +143,46 @@ struct
     fun dist_miles (p, q) = dist_km (p, q) * 0.621371192
     fun dist_feet (p, q) = dist_miles (p, q) * 5280.0
     fun dist_nautical_miles (p, q) = dist_km (p, q) * 0.539956803
+
+    (* Projections. *)
+
+    fun mercator lambda0 ({ lat = phi, lon = lambda } : pos) =
+        let
+            (* Shift longitude to arrange for new central meridian, and make
+               sure the result has range ~180.0--180.0. *)
+            val lambda = Real.rem(lambda + 180.0 - lambda0, 360.0) - 180.0
+            (* Convert from degrees to radians. *)
+            val lambda = torad lambda
+            val phi = torad lambda
+
+            val sinphi = LRM.sin phi
+        in
+            (* This is probably slower *)
+            (* Math.ln(Math.tan(Math.pi / 4.0 + phi / 2.0)) *)
+            (lambda, 0.5 * LRM.ln((1.0 + sinphi) / (1.0 - sinphi)))
+        end
+
+    val prime_mercator = mercator 0.0
+
+    fun equirectangular phi1 { lat = phi, lon = lambda } =
+        (torad lambda * Math.cos(torad phi1), torad phi)
+
+    (* Same as equirectangular 0.0, but saves the degenerate cos and multiply *)
+    fun plate_carree { lat = phi, lon = lambda } = (torad lambda, torad phi)
+
+    (* http://mathworld.wolfram.com/GnomonicProjection.html *)
+    fun gnomonic { lat = phi1, lon = lambda0 } { lat = phi, lon = lambda } =
+        let
+            val phi1 = torad phi1
+            val lambda0 = torad lambda0
+            val phi = torad phi
+            val lambda = torad lambda
+
+            val cosc = LRM.sin phi1 * LRM.sin phi + LRM.cos phi1 * LRM.cos phi * LRM.cos (lambda - lambda0)
+        in
+            ((LRM.cos phi * LRM.sin (lambda - lambda0)) / cosc,
+             (LRM.cos phi1 * LRM.sin phi -
+              LRM.sin phi1 * LRM.cos phi * LRM.cos (lambda - lambda0)) / cosc)
+        end
 
 end

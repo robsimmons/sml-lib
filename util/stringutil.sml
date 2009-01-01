@@ -283,7 +283,7 @@ struct
                           CharVector.sub (digits, i mod 16)]
 
   fun inlist nil c = false
-    | inlist (h::t) (c : char) = c = h orelse inlist t c
+    | inlist (h :: t) (c : char) = c = h orelse inlist t c
 
   fun harden f esc l s =
       let
@@ -339,8 +339,8 @@ struct
      This hash function is taken from pages 56-57 of
      The Practice of Programming by Kernighan and Pike. *)
   fun hash s : Word.word =
-    CharVector.foldl (fn (c, h) => Word.fromInt (ord c) + Word.* (h, 0w31)) 0w0 s
-
+    CharVector.foldl (fn (c, h) => 
+                      Word.fromInt (ord c) + Word.* (h, 0w31)) 0w0 s
 
   fun all f s =
       let

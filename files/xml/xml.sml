@@ -1,12 +1,10 @@
 
 (* Simple parser and pretty-printer for XML. *)
-structure XML =
+structure XML :> XML =
 struct
 
   exception XML of string
-  (* ?? *)
 
-  (* XXX get rid of HookData *)
   type attribute = string * string option
   type tag = string * attribute list
 
@@ -57,7 +55,6 @@ struct
     | Base.AV_GROUP (il : int list, i : int) => raise XML "Unimplemented AV_GROUP" 
     | Base.AV_NOTATION (il : int list, i : int) => raise XML "Unimplemented AV_NOTATION"
 
-
   fun spectoattr (i : int, ap : HookData.AttPresent,
                   (* This is the text before the attribute name
                      and between the attribute and value (I think),
@@ -68,22 +65,7 @@ struct
            HookData.AP_IMPLIED => SOME "IMPLIED"
          | HookData.AP_MISSING => SOME "MISSING"
          | HookData.AP_DEFAULT (_, v2, ao) => SOME (vectortoutf8 v2)
-         | HookData.AP_PRESENT (_, v2, ao) => SOME (vectortoutf8 v2)
-(*
-               SOME ("PRESENT: " ^ vectortoutf8 v1 ^ "/" ^
-                     vectortoutf8 v2 ^
-                     (case ao of
-                          NONE => "NONE"
-                        | SOME _ => "S"))
-*)
-(*
-       case ap of
-           HookData.AP_IMPLIED => NONE (* ? *)
-         | HookData.AP_MISSING => NONE
-         | HookData.AP_DEFAULT (_, _, ao) => Option.map getvalue ao
-         | HookData.AP_PRESENT (_, _, ao) => Option.map getvalue ao
-*)
-)
+         | HookData.AP_PRESENT (_, v2, ao) => SOME (vectortoutf8 v2))
 
   structure Hooks =
   struct
@@ -126,7 +108,20 @@ struct
                            structure ParserOptions = ParserOptions ()
                            structure Resolve = ResolveNull)
 
+  fun normalize (Elem(tag, tl)) =
+      let
+          fun make s (Text "" :: rest) = make s rest
+            | make s (Text t :: rest) = make (t :: s) rest
+            | make nil ((e as Elem _) :: rest) = normalize e :: make nil rest
+            | make l ((e as Elem _) :: rest) = Text (String.concat (rev l)) :: normalize e :: make nil rest
+            | make nil nil = nil
+            | make l nil = [Text (String.concat (rev l))]
+      in
+          Elem(tag, make nil tl)
+      end
+    | normalize e = e
+
   fun parsefile file = 
-      Parser.parseDocument (SOME (Uri.String2Uri file)) (SOME d) Hooks.appstart
+      normalize(Parser.parseDocument (SOME (Uri.String2Uri file)) (SOME d) Hooks.appstart)
 
 end
