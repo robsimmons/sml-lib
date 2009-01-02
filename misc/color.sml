@@ -36,4 +36,31 @@ struct
     fun ws w = hexdig (Word8.toInt w)
     fun tohexstring (r, g, b) = ws r ^ ws g ^ ws b
 
+    (* ASCII trick: (ch | 4400) % 55 *)
+    fun hexvalue ch =  
+        Word8.fromInt (SysWord.toInt (SysWord.orb(SysWord.fromInt(ord ch), SysWord.fromInt 4400)) mod 55)
+
+    fun ishex c = ((ord c >= ord #"0" andalso
+                    ord c <= ord #"9") orelse
+                   (ord c >= ord #"a" andalso
+                    ord c <= ord #"f") orelse
+                   (ord c >= ord #"A" andalso
+                    ord c <= ord #"F"))
+
+    fun fromhexstring s =
+        if size s <> 6 orelse not (CharVector.all ishex s)
+        then NONE
+        else SOME (hexvalue (String.sub(s, 0)) * 0w16 +
+                   hexvalue (String.sub(s, 1)),
+                   hexvalue (String.sub(s, 2)) * 0w16 +
+                   hexvalue (String.sub(s, 3)),
+                   hexvalue (String.sub(s, 4)) * 0w16 +
+                   hexvalue (String.sub(s, 5)))
+
+    fun onefromhexstring s =
+        if size s <> 2 orelse not (CharVector.all ishex s)
+        then NONE
+        else SOME (hexvalue (String.sub(s, 0)) * 0w16 +
+                   hexvalue (String.sub(s, 1)))
+
 end

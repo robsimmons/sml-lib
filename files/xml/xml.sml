@@ -143,6 +143,7 @@ struct
             | process (Elem(t, tl)) = app process tl
 
       in
+          process tree;
           (* We accumulated it backwards, so undo that *)
           rev (map (fn (k, vs) => (k, rev vs)) (!alist))
       end
