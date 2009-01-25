@@ -126,7 +126,8 @@ sig
   (* erase characters matching spec from left side, right side *)
   val losespecl : (char -> bool) -> string -> string
   val losespecr : (char -> bool) -> string -> string
-
+  (* both sides *)
+  val losespecsides : (char -> bool) -> string -> string
 
   (* matchat n small big
      true if the string 'small' occurs within 'big'

@@ -8,8 +8,7 @@ struct
                                     | _ => false) s
         in
             List.mapPartial (fn s =>
-                             case StringUtil.losespecl StringUtil.whitespec
-                                 (StringUtil.losespecr StringUtil.whitespec s) of
+                             case StringUtil.losespecsides StringUtil.whitespec s of of
                                  "" => NONE
                                | w => SOME w) l
         end

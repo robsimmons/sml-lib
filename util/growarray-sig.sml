@@ -33,6 +33,10 @@ sig
      array. *)
   val finalize : 'a growarray -> 'a Array.array
 
+  (* Remove characters from the end so that it is the given length.
+     Raises subscript if the array is not at least this long already. *)
+  val truncate : 'a growarray -> int -> unit
+
   (* clear all elements, making it length 0 *)
   val clear : 'a growarray -> unit
 

@@ -31,7 +31,7 @@ struct
   fun length (ref (l, _)) = l
 
   (* grow to accommodate at least n elements *)
-  (* XXX this appears to be one element too conservative *)
+  (* PERF this appears to be one element too conservative *)
   fun accommodate (r as ref(l, a)) n =
     if A.length a >= (n + 1)
     then ()
@@ -72,6 +72,11 @@ struct
       A.update(a, n, x);
       r := (n + 1, a)
     end
+
+  fun truncate (r as ref(n, a)) x =
+    if x > n
+    then raise Subscript
+    else r := (x, a)
 
   fun finalize (ref (n, a)) =
     A.tabulate (n, (fn x => A.sub(a, x)))

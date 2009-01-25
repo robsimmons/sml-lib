@@ -27,6 +27,10 @@ sig
   (* stick an element at the end *)
   val append : growarray -> elem -> unit
 
+  (* Remove characters from the end so that it is the given length.
+     Raises subscript if the array is not at least this long already. *)
+  val truncate : growarray -> int -> unit
+
   (* after calling this, don't use the growarray
      any longer, since it may share data with the returned
      array. *)

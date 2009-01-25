@@ -1,4 +1,4 @@
-
+(* Various utilities operating on lists. *)
 signature LISTUTIL =
 sig
 

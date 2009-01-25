@@ -38,7 +38,7 @@ struct
       else n < used andalso Option.isSome(Array.sub(a, n))
 
   (* grow to accommodate at least n elements *)
-  (* XXX this appears to be one element too conservative *)
+  (* PERF this appears to be one element too conservative *)
   fun accommodate (r as ref(l, a)) n =
     if Array.length a >= (n + 1)
     then ()
@@ -80,6 +80,11 @@ struct
       Array.update(a, n, SOME x);
       r := (n + 1, a)
     end
+
+  fun truncate (r as ref(n, a)) x =
+    if x > n
+    then raise Subscript
+    else r := (x, a)
 
   (* XXX should just discard the existing array, replacing
      with empty (and then change the semantics) to dispense with
