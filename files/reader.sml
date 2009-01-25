@@ -133,6 +133,8 @@ struct
     fun rbw16 ({vec,...} : reader) = makew32 (rev (explode (vec 2)))
     fun rbw32 ({vec,...} : reader) = makew32 (rev (explode (vec 4)))
 
+    fun byte ({char,...} : reader) = Word8.fromInt (ord (char ()))
+
     fun strz (f as {char,...} : reader) =
         case char () of
             #"\000" => ""

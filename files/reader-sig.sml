@@ -6,7 +6,7 @@
    arbitrarily in a file.
 
    The reader type is a record of all of the operations you can perform
-   on it. All readers have the same type.
+   on it (like an object). All readers have the same type.
 
    The reader structure includes functions that generate readers from
    files or CharVector.vectors in memory. Recall that
@@ -45,7 +45,6 @@ sig
 
     (* read 16-bit and 32-bit ints from a file,
        little-endian or big-endian. *)
-
     val rl16 : reader -> int
     val rl32 : reader -> int
     val rb16 : reader -> int
@@ -55,6 +54,8 @@ sig
     val rlw32 : reader -> Word32.word
     val rbw16 : reader -> Word32.word
     val rbw32 : reader -> Word32.word
+
+    val byte : reader -> Word8.word
 
     (* skip n bytes, can be negative *)
     val skip : reader -> int -> unit

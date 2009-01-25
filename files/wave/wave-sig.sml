@@ -1,7 +1,5 @@
-
-(* Write uncompressed wave files from memory, 
-   and only with the minimal set of chunks (format 
-   and data). *)
+(* Read and write uncompressed wave files from memory, and only with
+   the minimal set of chunks (format and data). *)
 signature WAVE =
 sig
 
@@ -35,5 +33,7 @@ sig
           
     val tobytes : wave -> Word8.word Vector.vector
     val tofile : wave -> string -> unit
+
+    val read : Reader.reader -> wave
 
 end

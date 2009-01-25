@@ -172,5 +172,124 @@ struct
             BinIO.closeOut f
         end
 
+    (* To break dependency on Util *)
+    fun util_for lo hi f =
+        if lo > hi then ()
+        else (ignore (f lo); for (lo + 1) hi f)
+
+    (* To break dependency on ListUtil.Alist *)
+    fun alist_find eq nil key = NONE
+      | alist_find eq ((a,b)::t) key =
+        if eq (a, key) then SOME b
+        else alist_find eq t key
+
+    (* 4-byte descriptor and cloned reader *)
+    type chunk = CharVector.vector * Reader.reader
+    fun read r =
+        let
+            val riff = #vec r 4
+            val fsize = Reader.rl32 r
+            val wave = #vec r 4
+            val () = if riff <> "RIFF" orelse wave <> "WAVE"
+                     then raise Wave ("Bad magic numbers (RIFF/WAVE)")
+                     else ()
+
+            (* r must have sought to the beginning of a chunk *)
+            fun readchunks () =
+                if Reader.eof r
+                then nil
+                else
+                    let 
+                        val name = #vec r 4
+                        val csize = Reader.rl32 r
+                        (* Need to skip 1 zero byte at the end if the size is odd *)
+                        val skip = csize mod 2
+
+                        val this = (name, Reader.fromreader r csize)
+                    in
+                        Reader.skip r (csize + skip);
+                        this :: readchunks ()
+                    end
+
+            val chunks = readchunks ()
+
+            val (rate, data) =
+                case alist_find op= chunks "fmt " of
+                    NONE => raise Wave "No format chunk"
+                  | SOME r =>
+                        let 
+                            val dsize = Reader.rl32 r
+                            val ccode = Reader.rl16 r
+                            val channels = Reader.rl16 r
+                            (* Samples per second *)
+                            val rate = Reader.rlw32 r
+                            (* Redundant *)
+                            val average_bytes = Reader.rl32 r
+                            (* Redundant *)
+                            val align = Reader.rl32 r
+                            (* typically 8, 16, 24, or 32 *)
+                            val bits = Reader.rl16 r
+                            val extra = Reader.rl16 r
+                            (* And then extra format bytes, ignored. *)
+
+                            val () = if channels <= 0
+                                     then raise Wave "Channels is non-positive!"
+                                     else ()
+
+                            fun 'sample readsamples 
+                                 (wrap : 'sample vector channels -> frames)
+                                 (* Just used to initialize array *)
+                                 (example : 'sample)
+                                 (read : Reader.reader -> 'sample) 
+                                 (* Number of bytes in one sample *)
+                                 (sz : int) =
+                                case alist_find op= chunks "data" of
+                                     NONE => raise Wave "No data chunk"
+                                   | SOME r =>
+                                 let
+                                     val databytes = #size r
+                                     (* Samples per channel *)
+                                     val () = if databytes mod (channels * sz) <> 0
+                                              then raise Wave "Data size is not multiple of channels*bytes"
+                                              else ()
+                                     val samps = databytes div (channels * sz)
+                                     val frames = 
+                                         Array.tabulate (channels,
+                                                         (fn _ =>
+                                                          Array.array(samps, example)))
+
+                                 in
+                                     util_for 0 (samps - 1)
+                                     (fn s =>
+                                      util_for 0 (channels - 1)
+                                      (fn c =>
+                                       let val sample = read r
+                                       in Array.update(Array.sub(frames, c), s, sample)
+                                       end
+                                       ));
+                                     (rate,
+                                      wrap(Vector.tabulate
+                                           (channels,
+                                            (fn c =>
+                                             Array.vector (Array.sub(frames, c))))))
+                                 end
+                        in
+                            (* Only support PCM. *)
+                            if ccode <> 1
+                            then raise Wave ("Unsupported compression " ^ Int.toString ccode)
+                            else ();
+                            (case bits of
+                                 8 => readsamples Bit8 (0w0 : Word8.word) Reader.byte 1
+                               | 16 => readsamples Bit16 (0 : Int16.int) (Int16.fromInt o Reader.rl16) 2
+                               | 32 => readsamples Bit32 (0 : Int32.int) (Int32.fromInt o Reader.rl32) 4
+                               | _ => raise Wave ("Unsupported bit depth " ^ Int.toString bits))
+                        end
+
+        in
+            { frames = data,
+              samplespersec = rate }
+        end handle Reader.Bounds => raise Wave ("Ill-formatted file (out-of-bounds)")
+                 | Reader.Reader s => raise Wave ("Problem reading file (" ^ s ^ ")")
+
 
 end
