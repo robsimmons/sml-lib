@@ -216,9 +216,11 @@ struct
 
             val chunks = readchunks ()
 
+            (*
             val () =
                 app (fn (ch, r) =>
                      print (ch ^ ": " ^ Int.toString (#size r) ^ "\n")) chunks
+                *)
 
             val (rate, data) =
                 case alist_find op= chunks "fmt " of
@@ -239,13 +241,6 @@ struct
                                and it doesn't appear in some files I've seen. Ignore. *)
                             (* val extra = Reader.rl16 r *)
                             (* And then extra format bytes, also ignored. *)
-
-                            val () =
-                                let in
-                                    print ("Channels: " ^ Int.toString channels ^ "\n");
-                                    (* print ("Rate: " ^ Int.toString (Word32.fromInt rate) ^ "\n"); *)
-                                    print ("Bits: " ^ Int.toString bits ^ "\n")
-                                end
 
                             val () = if channels <= 0
                                      then raise Wave "Channels is non-positive!"
