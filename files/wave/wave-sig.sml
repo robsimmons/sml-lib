@@ -22,8 +22,10 @@ sig
     datatype frames =
         (* eight-bit is unsigned samples *)
         Bit8 of Word8.word Vector.vector channels 
-        (* but anything else is signed *)
-      | Bit16 of Int16.int Vector.vector channels
+        (* but anything else is signed.
+           Int16 structure is not standard, so use
+           system int. *)
+      | Bit16 of int Vector.vector channels
       | Bit32 of Int32.int Vector.vector channels
 
     (* Everything else is computed from input *)

@@ -7,6 +7,9 @@ struct
     type w8 = Word8.word
 
     type 'a channels = 'a Vector.vector
+
+    (* Int16 is not standard. Use Int instead. *)
+    structure Int16 = Int
     
     datatype frames =
         (* eight-bit is unsigned samples *)
@@ -109,7 +112,7 @@ struct
             (* RIFF header *)
             wid "RIFF";
             (* minus RIFF, WAVE *)
-            w32 (filesize - 8);
+            w32 (Int32.fromInt (filesize - 8));
             wid "WAVE";
 
             (* Format header *)
@@ -213,12 +216,15 @@ struct
 
             val chunks = readchunks ()
 
+            val () =
+                app (fn (ch, r) =>
+                     print (ch ^ ": " ^ Int.toString (#size r) ^ "\n")) chunks
+
             val (rate, data) =
                 case alist_find op= chunks "fmt " of
                     NONE => raise Wave "No format chunk"
                   | SOME r =>
                         let 
-                            val dsize = Reader.rl32 r
                             val ccode = Reader.rl16 r
                             val channels = Reader.rl16 r
                             (* Samples per second *)
@@ -226,11 +232,20 @@ struct
                             (* Redundant *)
                             val average_bytes = Reader.rl32 r
                             (* Redundant *)
-                            val align = Reader.rl32 r
+                            val align = Reader.rl16 r
                             (* typically 8, 16, 24, or 32 *)
                             val bits = Reader.rl16 r
-                            val extra = Reader.rl16 r
-                            (* And then extra format bytes, ignored. *)
+                            (* Some specs allege this field, but we don't need it
+                               and it doesn't appear in some files I've seen. Ignore. *)
+                            (* val extra = Reader.rl16 r *)
+                            (* And then extra format bytes, also ignored. *)
+
+                            val () =
+                                let in
+                                    print ("Channels: " ^ Int.toString channels ^ "\n");
+                                    (* print ("Rate: " ^ Int.toString (Word32.fromInt rate) ^ "\n"); *)
+                                    print ("Bits: " ^ Int.toString bits ^ "\n")
+                                end
 
                             val () = if channels <= 0
                                      then raise Wave "Channels is non-positive!"
@@ -272,7 +287,7 @@ struct
                                            (channels,
                                             (fn c =>
                                              Array.vector (Array.sub(frames, c))))))
-                                 end
+                                 end handle Reader.Bounds => raise Wave "Out-of-bounds reading data"
                         in
                             (* Only support PCM. *)
                             if ccode <> 1
@@ -283,7 +298,7 @@ struct
                                | 16 => readsamples Bit16 (0 : Int16.int) (Int16.fromInt o Reader.rl16) 2
                                | 32 => readsamples Bit32 (0 : Int32.int) (Int32.fromInt o Reader.rl32) 4
                                | _ => raise Wave ("Unsupported bit depth " ^ Int.toString bits))
-                        end
+                        end handle Reader.Bounds => raise Wave "Out-of-bounds reading fmt chunk"
 
         in
             { frames = data,
