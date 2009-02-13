@@ -227,6 +227,7 @@ struct
 
   (* XXX PERF this could be a lot more efficient. *)
   fun filter f = implode o (List.filter f) o explode
+  fun vconcat vec = Vector.foldr (op ^) "" vec
 
   fun filter f s = 
     let

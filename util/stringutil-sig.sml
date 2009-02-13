@@ -85,6 +85,12 @@ sig
   *)
   val filter : (char -> bool) -> string -> string
 
+  (* vconcat vec
+     Same as:
+     Vector.foldr (op ^) "" vec
+   *)
+  val vconcat : string vector -> string
+
   (* "0123456789ABCDEF" *)
   val digits : string
 
