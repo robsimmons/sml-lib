@@ -7,9 +7,9 @@
  *)
 
 signature ORD_KEY =
-  sig
-    type ord_key
+sig
+  type ord_key
 
-    val compare: ord_key * ord_key -> order
+  val compare: ord_key * ord_key -> order
 
-  end (* ORD_KEY *)
+end (* ORD_KEY *)

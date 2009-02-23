@@ -33,7 +33,7 @@ sig
   val remove: 'a map * Key.ord_key -> 'a map * 'a
 
   (* Return the number of items in the map *)
-  val numItems: 'a map ->  int
+  val numItems: 'a map -> int
 
   (* Return an ordered list of the items (and their keys) in the map. *)
   val listItems : 'a map -> 'a list

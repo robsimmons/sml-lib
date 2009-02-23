@@ -20,6 +20,7 @@ The subdirectories are as follows:
  crypt - Cryptographic functions (MD5, SHA-1, DES, ...)
  data - Data structures (functional queue, circular buffer, trie, ...)
  files - Implementations of file formats (XML, MIDI, .wav, ...)
+ geom - Geometric algorithms and data structures
  misc - Stuff that didn't fit elsewhere (base64, fixed words, parameter parsing, ...)
  mlton - Glue for connecting MLton to external libraries through its FFI (mySql, X Windows)
  njlib - My most-used parts of the SML/NJ library (splay trees)

@@ -1,0 +1,17 @@
+group is
+
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+ ../port/nj.sml
+#else
+ ../port/mlton.sml
+#endif
+
+  quadtree-sig.sml
+  quadtree.sml
+
+  polygon-sig.sml
+  polygon.sml
+
+
+  quadtree-test.sml
