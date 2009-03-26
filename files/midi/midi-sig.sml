@@ -76,6 +76,10 @@ sig
      may change the overall length of the song, for example when f is (K false)). *)
   val filter : ('event -> bool) -> (int * 'event) list -> (int * 'event) list
 
+  (* Give the total number of midi delta time consumed by this event list.
+     note: This is a generalization of track -> int *)
+  val total_ticks : (int * 'event) list -> int
+
   exception MIDI of string
 
   (* returns (midi type, division, tracks)

@@ -13,5 +13,7 @@ group is
   polygon-sig.sml
   polygon.sml
 
+  pointlocation-sig.sml
+  pointlocation.sml
 
   quadtree-test.sml

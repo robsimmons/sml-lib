@@ -207,6 +207,10 @@ struct
           filt 0 l
       end
 
+  (* trivial: just sum the delta times *)
+  fun total_ticks nil = 0
+    | total_ticks ((d, _) :: rest) = d + total_ticks rest
+
   local exception LastEvent of int
   in
   fun getevents stat r =

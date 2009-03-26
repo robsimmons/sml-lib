@@ -1,23 +1,29 @@
 (* "Quadtree" doesn't seem to describe one specific data structure. I
    use the term suggestively here. The data structure is my own design
-   (though I think obvious). There are two kinds of trees:
-   horizontally- and vertically-split. A node in each kind of tree is
-   either empty or a point. If it is a point, then it has two
-   children. For horizontally-split trees, the left child is a
-   vertically-split tree with all points therein being to the west of
-   (or colinear) with the point at this node; and the right child with
-   all points (strictly) to the east. Vertically-split nodes have
-   horizontal trees as children, but of course split into north and
-   south parts. (I'm using a y axis where north trends towards
-   negative infinity, as is common in computer graphics. This doesn't
-   affect the client interface in any way.)
+   (though I think obvious). (XXX I found out this is basically a
+   kd-tree.) There are two kinds of trees: horizontally- and
+   vertically-split. A node in each kind of tree is either empty or a
+   point. If it is a point, then it has two children. For
+   horizontally-split trees, the left child is a vertically-split tree
+   with all points therein being to the west of (or colinear) with the
+   point at this node; and the right child with all points (strictly)
+   to the east. Vertically-split nodes have horizontal trees as
+   children, but of course split into north and south parts. (I'm
+   using a y axis where north trends towards negative infinity, as is
+   common in computer graphics. This doesn't affect the client
+   interface in any way.)
 
    This structure doesn't attempt to be smart about the splitting
    direction; it is wasteful when all the points lie on a line, or
    when their horizontal and vertical dispersion is not the same.
    Also, like other naive binary trees, it is not necessarily balanced
    and so certain sequences of insertions will produce trees that have
-   linear-time lookups. *)
+   linear-time lookups. 
+
+   XXX: It would be easy to generalize this to n-dimensions, though
+   keeping the specialized two-dimensional one around is probably good
+   for simplicity and efficiency.
+*)
 structure Quadtree :> QUADTREE =
 struct
 

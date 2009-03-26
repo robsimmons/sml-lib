@@ -6,22 +6,21 @@ sig
 
   exception PointLocation of string
 
-  (* A pre-built point locator. Each region has associated with it
-     an arbitrary piece of data. *)
+  (* A pre-built point locator. Each region has associated with it an
+     arbitrary piece of data. *)
   type 'a locator
 
-  (* The polygons must not overlap. May raise PointLocation if
-     they do, or the locator will return an arbitrarily chosen
-     polygon. *)
+  (* The polygons must not overlap. May raise PointLocation if they do,
+     or the locator will return an arbitrarily chosen polygon. *)
   val locator : ('a * Polygon.polygon) list -> 'a locator
 
   (* Give epsilon, the distance within which close vertices (on
      different polygons) will be merged. *)
   val locatorex : real -> ('a * Polygon.polygon) list -> 'a locator
 
-  (* Give the list of polygons that have no external-facing
-     edges. This can be used to find inadvertent slivers of
-     empty space between regions. *)
+  (* Give the list of polygons that have no external-facing edges. This
+     can be used to find inadvertent slivers of empty space between
+     regions. *)
   val interior : 'a locator -> 'a list
 
   (* If the point is outside all the polygons, returns NONE. Boundary
