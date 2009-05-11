@@ -7,6 +7,9 @@ group is
  ../port/mlton.sml
 #endif
 
+  ../util/listutil-sig.sml
+  ../util/listutil.sml
+
   quadtree-sig.sml
   quadtree.sml
 
@@ -17,3 +20,4 @@ group is
   pointlocation.sml
 
   quadtree-test.sml
+

@@ -20,7 +20,8 @@ struct
 
   (* The point-inside-polygon algorithm is a reimplementation of a short
      piece of C code covered by the following license (BSD-style). I
-     (Tom) do not claim any copyright. If you think that this
+     (Tom) do not claim any copyright, or if you prefer, relinquish
+     any rights to the public domain. If you think that this
      provenance makes it a derivative work, then you ought to abide by
      its terms:
 

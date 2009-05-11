@@ -9,8 +9,8 @@
    point at this node; and the right child with all points (strictly)
    to the east. Vertically-split nodes have horizontal trees as
    children, but of course split into north and south parts. (I'm
-   using a y axis where north trends towards negative infinity, as is
-   common in computer graphics. This doesn't affect the client
+   describing a y axis where north trends towards negative infinity,
+   as is common in computer graphics. This doesn't affect the client
    interface in any way.)
 
    This structure doesn't attempt to be smart about the splitting
