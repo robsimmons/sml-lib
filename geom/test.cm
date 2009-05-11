@@ -10,6 +10,9 @@ group is
   ../util/listutil-sig.sml
   ../util/listutil.sml
 
+  ../crypt/mersenne-twister-sig.sml
+  ../crypt/mersenne-twister.sml
+
   quadtree-sig.sml
   quadtree.sml
 
