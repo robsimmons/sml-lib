@@ -30,7 +30,7 @@ struct
             val mt = MT.init32 0wxBED
             (* random number in epsilon. *)
 
-            fun wr w = Real.fromLargeInt (Word32.toLargeInt x)
+            fun wr w = Real.fromLargeInt (Word32.toLargeInt w)
             fun rand_eps() = (wr (MT.rand32 mt) / wr 0wxFFFFFFFF) * (epsilon / Math.sqrt 2.0)
 
             fun perturb (x, y) = (x + rand_eps() - (epsilon / 2.0),
@@ -45,12 +45,25 @@ struct
             val t = (4.0, 13.0)
             val z = (11.5, 14.0)
 
-            val a = P.polygon [u, v, x]
-            val b = P.polygon [u, t, x]
-            val c = P.polygon [v, w, x]
-            val d = P.polygon [x, w, y]
-            val e = P.polygon [s, z, y]
+            val a = P.frompoints [perturb u, perturb v, perturb x]
+            val b = P.frompoints [perturb u, perturb t, perturb x]
+            val c = P.frompoints [perturb v, perturb w, perturb x]
+            val d = P.frompoints [perturb x, perturb w, perturb y]
+            val e = P.frompoints [perturb s, perturb z, perturb y]
         in
-            Locator.locatorex epsilon [(A, a), (B, b), (C, c), (D, d), (E, e)]
+            (PointLocation.locatorex epsilon [(A, a), (B, b), (C, c), (D, d), (E, e)])
+        end
+
+    fun show () = 
+        let
+            val f = TextIO.openOut "pointlocation-test.svg"
+            fun wr s = TextIO.output(f, s)
+            val l = make 1.0
+        in
+            PointLocation.tosvg l wr;
+            TextIO.closeOut f
         end
 end
+
+structure PL = PointLocation
+structure PLT = PointLocationTest

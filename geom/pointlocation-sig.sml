@@ -28,4 +28,9 @@ sig
      cases are handled arbitrarily, but consistently. *)
   val location : 'a locator -> real * real -> 'a option
 
+  (* tosvg l f
+     Write an svg document describing l by repeatedly calling f to
+     output the data. This is just for diagnostic purposes. *)
+  val tosvg : 'a locator -> (string -> unit) -> unit
+
 end
