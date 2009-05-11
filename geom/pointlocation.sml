@@ -235,6 +235,26 @@ struct
                       nil => ()
                     | pairs => 
                           let 
+                              val () = print "All pairs:\n";
+                              fun printidx i =
+                                  let 
+                                      val p as { poly, winding, ... } = point i
+                                      val (x, y) = getloc p
+                                  in
+                                      print (Int.toString i ^ ": " ^
+                                             Real.fmt (StringCvt.FIX (SOME 3)) x ^ ", " ^
+                                             Real.fmt (StringCvt.FIX (SOME 3)) y ^ ", poly " ^
+                                             Int.toString poly ^ "." ^
+                                             Int.toString winding)
+                                  end
+                              val () = List.app (fn (i, ii) =>
+                                                 let in                                          
+                                                     print "  ";
+                                                     printidx i;
+                                                     printidx ii;
+                                                     print "\n"
+                                                 end) pairs
+
                               val (p1, p2) = ListUtil.min comparepairidx pairs
                               (* Always merge to the left. *)
                               val (pl, pr) = 
@@ -243,7 +263,8 @@ struct
                                     | _ => (p2, p1)
                           in
                               print "merge.\n";
-                              #loc (point pr) := Via pl
+                              #loc (point pr) := Via pl;
+                              mergeloop ()
                           end
               end
 
@@ -326,6 +347,18 @@ struct
                       print "\"/>\n" (* " *)
                   end
 
+              fun printboxes (_, { topx, topy, botx, boty }, _) =
+                  let
+                  in
+                      print ("<polyline fill=\"none\" opacity = \"0.4\" stroke=\"#AA0000\" stroke-width=\"0.1\" points=\""); (* " *)
+                      print (rtos topx ^ "," ^ rtos topy ^ " " ^
+                             rtos botx ^ "," ^ rtos topy ^ " " ^
+                             rtos botx ^ "," ^ rtos boty ^ " " ^
+                             rtos topx ^ "," ^ rtos boty ^ " " ^
+                             rtos topx ^ "," ^ rtos topy);
+                      print "\"/>\n" (* " *)
+                  end
+
           in
               print "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
               print "<!-- Generator: pointlocation.sml -->\n";
@@ -339,7 +372,7 @@ struct
               print " x=\"0px\" y=\"0px\" width=\"100px\" height=\"100px\"\n";
               print " xml:space=\"preserve\">\n";
               Vector.app printpolygon locator;
-              (* Vector.app printoverlay (PacTom.overlays pt); *)
+              Vector.app printboxes locator;
               print "</svg>\n"
           end
 
