@@ -13,6 +13,9 @@ sig
     (* convert a file to a byte stream *)
     val ftobytestream : string -> Word8.word Stream.stream
 
+    (* convert a file to a UTF8 stream *)
+    val ftoUTF8stream : string -> string Stream.stream
+
     (* convert a list to a stream *)
     val ltostream : 'a list -> 'a Stream.stream
 
