@@ -23,6 +23,9 @@ sig
 
     val flatten : 'a Stream.stream Stream.stream -> 'a Stream.stream
 
+    val foldstream : 
+        ('a * 'b -> 'c * 'b) -> 'b -> 'a Stream.stream -> 'c Stream.stream
+
     val headn : int -> 'a Stream.stream -> 'a list
 
 end

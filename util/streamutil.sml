@@ -106,4 +106,15 @@ struct
          Stream.Nil => nil
        | Stream.Cons (a, t) => a :: headn (n - 1) t)
 
+    fun foldstream f state s =
+        let 
+          fun push state s = 
+          (fn () => 
+           (case Stream.force s of 
+              Stream.Nil => Stream.Nil
+            | Stream.Cons (a, t) => 
+              let val (c, state') = f(a, state)
+              in Stream.Cons(c, Stream.delay (push state' t)) end))
+        in Stream.delay (push state s) end
+
 end
