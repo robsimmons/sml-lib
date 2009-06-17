@@ -51,6 +51,8 @@ sig
             (* ... *)
         end
 
+    (* Result will be sorted by 'a in increasing order. 'b elements have
+       arbitrary order. *)
     val stratify : ('a * 'a -> order) -> ('a * 'b) list -> ('a * 'b list) list
 
     val combiner : ('a * 'a -> 'a) -> 'a list -> 'a

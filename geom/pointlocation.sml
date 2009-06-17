@@ -120,7 +120,7 @@ struct
      (Or just to the smallest element?) This clearly always terminates
      because each step reduces the finite number of classes by one.
   *)
-  fun locatorex epsilon (polys : ('a * Polygon.polygon) list) =
+  fun normalize epsilon (polys : ('a * Polygon.polygon) list) =
       let
           (* We're going to be messing with the points in the polygons.
              Remember each polygon's identity, by putting them in a
@@ -235,6 +235,7 @@ struct
                       nil => ()
                     | pairs => 
                           let 
+                              (*
                               val () = print "All pairs:\n";
                               fun printidx i =
                                   let 
@@ -254,6 +255,7 @@ struct
                                                      printidx ii;
                                                      print "\n"
                                                  end) pairs
+                              *)
 
                               val (p1, p2) = ListUtil.min comparepairidx pairs
                               (* Always merge to the left. *)
@@ -262,7 +264,7 @@ struct
                                       LESS => (p1, p2)
                                     | _ => (p2, p1)
                           in
-                              print "merge.\n";
+                              (* print "merge.\n";*)
                               #loc (point pr) := Via pl;
                               mergeloop ()
                           end
@@ -289,18 +291,13 @@ struct
           val polys : ('a * Polygon.polygon) list =
               ListUtil.mapsecond (Polygon.frompoints o map #2) polys
 
-          (* Now all that's left is to generate the bounding boxes. *)
-          val locator : 'a locator =
-              Vector.fromList
-              (map (fn (data, poly) => (data, Polygon.boundingbox poly, poly)) polys)
       in
-          locator
+          polys
       end
 
-  (* Not really reasonable to force some notion of "small" on the client,
-     so never merge points unless they are exactly equal. *)
-  fun locator polys = locatorex 0.0 polys
-      
+  fun locator polys =
+      Vector.fromList
+      (map (fn (data, poly) => (data, Polygon.boundingbox poly, poly)) polys)
 
   fun interior _ = raise PointLocation "unimplemented"
 
@@ -341,7 +338,7 @@ struct
                   let val pts = Polygon.points poly
                       val pts = pts @ [hd pts]
                   in
-                      print ("<polyline fill=\"none\" opacity=\"0.6\" stroke=\"#000000\" stroke-width=\"0.1\" points=\""); (* " *)
+                      print ("<polyline fill=\"none\" opacity=\"0.6\" stroke=\"#000000\" stroke-width=\"0.5\" points=\""); (* " *)
                       List.app (fn (x, y) =>
                                 print (rtos x ^ "," ^ rtos y ^ " ")) pts;
                       print "\"/>\n" (* " *)
@@ -350,7 +347,7 @@ struct
               fun printboxes (_, { topx, topy, botx, boty }, _) =
                   let
                   in
-                      print ("<polyline fill=\"none\" opacity = \"0.4\" stroke=\"#AA0000\" stroke-width=\"0.1\" points=\""); (* " *)
+                      print ("<polyline fill=\"none\" opacity = \"0.4\" stroke=\"#AA0000\" stroke-width=\"0.5\" points=\""); (* " *)
                       print (rtos topx ^ "," ^ rtos topy ^ " " ^
                              rtos botx ^ "," ^ rtos topy ^ " " ^
                              rtos botx ^ "," ^ rtos boty ^ " " ^

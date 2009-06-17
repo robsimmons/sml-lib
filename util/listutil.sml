@@ -146,7 +146,7 @@ struct
       in
         go (b, 0, l)
       end
-
+  
     fun foldri f b l =
       let
         fun go (_, nil) = b
@@ -437,15 +437,7 @@ struct
        end
 
     fun max f l = min (Sorted.reverse f) l
-(*
-    fun power l =
-      foldl (fn (elt, sofar) => 
-             (* sofar is power list of head *)
-             (* we can either add this element or not,
-                getting two lists *)
-             sofar @ (map (fn lis => elt :: lis) sofar)
-             ) [nil] l
-*)
+
     (* cuter with folds! *)
     fun power l =
       foldl (fn (elt, sofar) => 

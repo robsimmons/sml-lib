@@ -17,5 +17,8 @@ prime.sml        Utilities for prime number generation and testing.
 number.sml       Number theoretic algorithms for IntInf.int types that are
                  useful in cryptography.
 
+mersenne-twister.sml   Good fast pseudorandom number generator.
+
 cryptrand.sml    Utilities for cryptographic random numbers. CURRENTLY ONLY
-                 STUB IMPLEMENTATIONS -- DON'T USE!
+                 STUB IMPLEMENTATIONS -- DON'T USE! Mersenne Twister is a good
+                 alternative.

@@ -10,14 +10,16 @@ sig
      arbitrary piece of data. *)
   type 'a locator
 
+  (* Merges nearby points (on different polygons). Nearby means within
+     the supplied epsilon. The algorithm is insensitive to the order
+     of the polygons or order of the points in the polygons, but is not
+     rotationally invariant. *)
+  val normalize : real -> ('a * Polygon.polygon) list -> ('a * Polygon.polygon) list
+
   (* The polygons must not overlap. If they do, this function may raise
      PointLocation. Or, the constructed locator may return an arbitrarily
      chosen overlapping polygon when queries. *)
   val locator : ('a * Polygon.polygon) list -> 'a locator
-
-  (* Give epsilon, the distance within which close vertices (on
-     different polygons) will be merged. *)
-  val locatorex : real -> ('a * Polygon.polygon) list -> 'a locator
 
   (* Give the list of polygons that have no external-facing edges. This
      can be used to find inadvertent slivers of empty space between

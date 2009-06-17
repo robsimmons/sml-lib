@@ -50,8 +50,12 @@ struct
             val c = P.frompoints [perturb v, perturb w, perturb x]
             val d = P.frompoints [perturb x, perturb w, perturb y]
             val e = P.frompoints [perturb s, perturb z, perturb y]
+
+            val normed = 
+                PointLocation.normalize epsilon 
+                [(A, a), (B, b), (C, c), (D, d), (E, e)]
         in
-            (PointLocation.locatorex epsilon [(A, a), (B, b), (C, c), (D, d), (E, e)])
+            (PointLocation.locator normed)
         end
 
     fun show () = 
