@@ -21,13 +21,18 @@
    (of course, !myflag means to dereference the ref cell, not logical
    not.)
 
-   TODO: There should be a non-defining declaration that doesn't provide
-   the default and docstring (because these can easily get out of sync)
-   and fails at runtime if nobody declared it.
+   The use_ variants get a reference to the flag data by its name
+   without providing a default. If no other code calls the standard
+   version to give it a default value and docstring, then docommandline
+   will fail.
 *)
 
 signature PARAMS =
 sig
+
+  exception BadOption of string
+  (* Raised when the program is buggy (uses but does not define flags) *)
+  exception Params of string
 
   (* flag default commandline-spec name
 
@@ -40,6 +45,7 @@ sig
      of its default. s2 is used as help text in the usage message.
   *)
   val flag : bool -> (string * string) option -> string -> bool ref
+  val use_flag : string -> bool ref
 
   (* param default commandline-spec name
 
@@ -52,6 +58,7 @@ sig
      on the command line sets the param to new-value.
   *)
   val param : string -> (string * string) option -> string -> string ref
+  val use_param : string -> string ref
 
   (* paramlist default commandline-spec name 
      
@@ -75,7 +82,7 @@ sig
 
    *)
   val paramlist : string list -> (string * string * char) option -> string -> string list ref
-
+  val use_paramlist : string -> string list ref
 
   (* paramlist default commandline-spec name
 
@@ -85,7 +92,8 @@ sig
      ./hemlock -I .,/usr/include/hemlock
 
      *)
-  val paramacc : string list ->  (string * string * char) option -> string -> string list ref
+  val paramacc : string list -> (string * string * char) option -> string -> string list ref
+  val use_paramacc : string -> string list ref
 
 (* XXX to implement this I need to use exn trick, I think.
   (* general f init commandline-spec name
@@ -108,8 +116,6 @@ sig
   (* returns usage information as a string, listing all public
      flags/parameters and their documentation string *)
   val usage : unit -> string
-
-  exception BadOption of string
 
   (* process the command line, setting flags and parameters.
      returns strings that aren't flags or parameters.

@@ -1,24 +1,37 @@
 
 (* mutable collection of flags and string constants.
    see params-sig.sml.
+
+   I use this code all the time but it is poop city.
+   I should rewrite this and provide a legacy interface.
 *)
 
 structure Params :> PARAMS =
 struct
 
   exception BadOption of string
+  exception Params of string
 
-  val flags = (ref nil) 
-              : (bool ref * bool * (string * string * unit) option * 
+  (* If we use_ it before we declare it, then it goes in
+     ForwardDeclared state and we fail in docommandline
+     if we see one of these. *)
+  datatype 'a state =
+    ForwardDeclared
+  | Declared of 'a
+
+  val flags = ref nil 
+               (* cell      default   (commandlinename, docstring, nothing) *)
+              : (bool ref * (bool * (string * string * unit) option) state * 
+                (* name nothing *)
                  string * unit) list ref
 
-  val params = (ref nil)
-               : (string ref * string * (string * string * unit) option * 
+  val params = ref nil
+               : (string ref * (string * (string * string * unit) option) state * 
                   string * unit) list ref
 
   (* final bool: true if accumulator *)
-  val paramlists = (ref nil)
-               : (string list ref * string list * (string * string * char) option *
+  val paramlists = ref nil
+               : (string list ref * (string list * (string * string * char) option) state *
                   string * bool) list ref
 
   fun I x = x
@@ -26,7 +39,7 @@ struct
   fun get lr (name : string) =
     let
       fun f nil = NONE
-        | f ((r, _, _, n, _)::t) = 
+        | f ((r, _, n, _)::t) = 
           if name = n 
           then SOME r
           else f t 
@@ -37,17 +50,19 @@ struct
   fun argget selector lr (name : string) =
     let
       fun f nil = NONE
-        | f ((h as (r, _, SOME(n, _, _), _, _))::t) = 
+        | f ((h as (r, Declared(_, SOME(n, _, _)), _, _))::t) = 
           if name = n 
           then SOME (selector h)
           else f t 
+        | f ((_, ForwardDeclared, name, _) :: t) = 
+            raise Params ("Arg " ^ name ^ " was only forward declared!")
         | f (_::t) = f t
     in
       f (!lr)
     end
 
   fun make (f  : 'spec option -> (string * string * 'extra) option) 
-           (lr : ('output ref * 'output * (string * string * 'extra) option * 
+           (lr : ('output ref * ('output * (string * string * 'extra) option) state * 
                   string * 'flag) list ref)
            (flags : 'flag)
            (default : 'output)
@@ -59,10 +74,45 @@ struct
         let 
           val h = ref default
         in
-          lr := ((h,default,f cmd,name, flags) :: !lr);
+          lr := ((h, Declared(default, f cmd), name, flags) :: !lr);
           h
         end
-    (* XXX for paramacc, perhaps should merge the two defaults *)
+    (* XXX for paramacc, perhaps should merge the two defaults? *)
+    | SOME (r : 'output ref) =>
+        let
+          (* If it's there as ForwardDeclared, upgrade. *)
+          fun g b nil = r
+            | g b ((h as (rr, ForwardDeclared, n, fl)) :: t) =
+            if name = n
+            then
+              let in
+                (* because get returned r for this name *)
+                if rr <> r then raise Params "impossible" else ();
+                lr := rev b @ ((rr, Declared(default, f cmd), name, flags) :: t);
+                r
+              end
+            else g (h :: b) t
+            | g b (h :: t) = g (h :: b) t
+        in
+          g nil (!lr)
+        end
+
+  (* Same as make, but forward declares if it's not there. *)
+  fun use_ (lr : ('output ref * ('output * (string * string * 'extra) option) state * 
+                  string * 'flag) list ref)
+           (flags : 'flag)
+           (default : 'output)  (* this is the default for the type of arg.
+                                   in idiomatic uses it is never accessed. *)
+           (name : string)
+           : 'output ref =
+    case get lr name of
+      NONE =>
+        let
+          val h = ref default 
+        in
+          lr := ((h, ForwardDeclared, name, flags) :: !lr);
+          h
+        end
     | SOME r => r
 
   fun twotothree NONE = NONE
@@ -70,17 +120,21 @@ struct
 
   val getflag = get flags
   val flag = make twotothree flags ()
+  val use_flag = use_ flags () false
 
   val getparam = get params
   val param = make twotothree params ()
+  val use_param = use_ params () ""
 
   val getparamlist = get paramlists
   val paramlist = make I paramlists false
+  val use_paramlist = use_ paramlists false nil
 
   val getparamacc = get paramlists
   val paramacc = make I paramlists true
+  val use_paramacc = use_ paramlists true nil
 
-  fun plarg (r, _, SOME(_, _, c), _, b) = (r, c, b)
+  fun plarg (r, Declared(_, SOME(_, _, c)), _, b) = (r, c, b)
     | plarg _ = raise BadOption "impossible"
 
   fun asint def (ref a) = getOpt (Int.fromString a, def)
@@ -91,9 +145,10 @@ struct
     let
         fun smp ((cl, doc, _)) s = [cl, s, doc]
         fun pl ((cl, doc, c)) s = [cl, str c, s, doc]
-        fun f ml s ts l = rev (foldr (fn ((_, d, SOME xx, _, _), b) =>
-                                   ml xx (ts d) :: b 
-                                   | (_, b) => b) [s] l)
+        (* XXX fail for undeclared flags..? *)
+        fun f ml s ts l = rev (foldr (fn ((_, Declared(d, SOME xx), _, _), b) =>
+                                      ml xx (ts d) :: b 
+                                        | (_, b) => b) [s] l)
         fun bts d = (if d then "(true)" else "(false)")
     in
       (case !flags of
