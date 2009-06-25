@@ -1,9 +1,17 @@
 group is
 
-$/basis.cm
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+#else
+ (* assume we are using mlton then *)
+#endif
 
 edit-distance-sig.sml
 edit-distance.sml
+../util/stringutil-sig.sml
+../util/stringutil.sml
+../crypt/DES/des-sig.sml
+../crypt/DES/des.sml
 edit-distance-test.sml
 
 heap-sig.sml

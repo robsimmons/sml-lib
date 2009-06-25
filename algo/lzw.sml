@@ -52,6 +52,10 @@ struct
     CODE of int * int
   | RESET
 
+  fun util_for lo hi f =
+      if lo > hi then ()
+      else (ignore (f lo); util_for (lo + 1) hi f)
+
   (* imperative streams *)
   type 'a stream = unit -> 'a option
   (* but we want to implement them in a more efficient way *)
@@ -213,7 +217,7 @@ struct
       let
       in
         nextcode := C.radix;
-        Util.for 0 (C.radix - 1)
+        util_for 0 (C.radix - 1)
         (fn i =>
          Array.update(roots, i, 
                       (N { code = i, 
