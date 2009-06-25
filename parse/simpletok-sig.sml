@@ -13,26 +13,33 @@ sig
 
   type 'a tokenizer
     
-  datatype charstyle =
-      CHSPrefix of char
-    | CHSQuoted of char 
-    | CHSBracketed of string * string 
-    
+  (* Allow decimal integers, 0xHEX and 0bBINARY *)
   datatype intstyle =
       ISStandard
     | ISHex 
     | ISBinary
 
-  datatype floatstyle =
-      FSStandard
-
+  (* Can string literals span multiple lines? *)
   datatype stringstyle =
       SSStandard
     | SSMultiline
 
+  (* Comments bracketed or terminated by newlines. *)
   datatype commentstyle =
       CSBracketed of string * string
     | CSLine of string
+
+
+  (* Only one way to parse floating point constants. 
+     XXX It's not implemented yet. *)
+  datatype floatstyle =
+      FSStandard
+
+  (* XXX not implemented. *)
+  datatype charstyle =
+      CHSPrefix of char
+    | CHSQuoted of char 
+    | CHSBracketed of string * string 
 
   exception SimpleTok of string
 
@@ -47,8 +54,9 @@ sig
   val default : (string -> 'a) -> (int -> 'a) -> (string -> 'a) -> 'a tokenizer
 
 
-  (* setint intmaker styles negator 
-     *)
+  (* setint intmaker styles negation-character
+
+     Take a style and change the way it tokenizes ints. *)
   val setint : 'a tokenizer -> (int -> 'a) -> 
                intstyle list -> char option -> 
                   'a tokenizer
@@ -67,6 +75,7 @@ sig
 
   val setsep : 'a tokenizer -> (char -> bool) -> 'a tokenizer
 
+  (* Simple streams. *)
   val stringstream : string -> char Stream.stream
   val filestream   : string -> char Stream.stream
 

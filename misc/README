@@ -1,8 +1,23 @@
 
+Miscellaneous things that didn't seem to have a good place.
+
 base64  -  Convert binary strings to/from ascii "base64" standard.
+
 crc32   -  Calculate the CRC32 of a binary string using the standard polynomial
+
 params  -  Support global flags / settings in your program that are settable
            from the command line.
+
 stamp   -  Generate and compare stamps.
+
 memoize -  Automatic memoization of functions.
+
 color   -  Routines for dealing with colors.
+
+wordn   -  The WordN structure for 0 <= N <= 32.
+bigword -  The WordN structure for 0 < N (probably slower than wordn).
+
+latlon  -  Latitude and Longitude pairs on the Earth. Projections into two
+           dimensions and very accurate great circle distances between pairs
+           of locations.
+

@@ -1,18 +1,29 @@
 
 Utility functions of general interest.
 
-listutil  -  Utilities for managing the built-in 'a list type.
+listutil     -  Utilities for managing the built-in 'a list type.
 
-stringutil  -  Utilities for manipulating the built-in string type.
+stringutil   -  Utilities for manipulating the built-in string type.
 
-util  -  General utilities.
+util         -  General utilities.
 
-maputil  -  Utilities for manipulating the njlib "ord map" type.
+maputil      -  Utilities for the njlib "ord map" type.
 
-fsutil  -  Utilities for the filesystem.
+setutil      -  Utilities for the njlib "ord set" type.
 
-streamutil  -  Utilities for manipulating streams (parse/stream-sig.sml).
+fsutil       -  Utilities for the filesystem.
 
-growarray  -  Arrays that can be appended to, growing automatically.
+streamutil   -  Utilities for manipulating streams (parse/stream-sig.sml).
 
-vectorutil - Utilities for the built-in polymorphic vector type.
+growarray    -  Arrays that can be appended to, growing automatically.
+                Growmonoarray works for monomorphic arrays, more efficiently.
+
+vectorutil   -  Utilities for the built-in polymorphic vector type.
+
+simplestream -  Some libraries use (unit -> 'a option) functions as a
+                simple imperative stream that does not need a dependency
+                on anything but the basis. Clients might like to use
+                these utilities for them.
+
+script       -  Utilities for simple scripting tasks.
+

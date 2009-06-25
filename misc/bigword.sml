@@ -94,7 +94,10 @@ struct
   fun x ~>> y = 
       let
         val msb = msb x
-        val mask = if msb then word_mask - get_mask(Int.-(wordSize,Word.toInt y)) else I.fromInt 0
+        val mask = 
+            if msb 
+            then word_mask - get_mask(Int.-(wordSize,Word.toInt y)) 
+            else I.fromInt 0
       in
         I.orb(mask,I.~>>(x,y))
       end

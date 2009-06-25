@@ -7,6 +7,8 @@
    sml-lib yet, so until that exists all I'm implementing here are
    parsers for the string-literal parts of the SVG spec. So far this
    is just the strings that are used to represent paths. 
+   (Just kidding; ../xml/ contains a full-featured XML parser, so this
+   could reasonably be fleshed out now.)
 
    The raw representation of paths is somewhat more complicated than
    it needs to be, because it offers various shortcuts and the

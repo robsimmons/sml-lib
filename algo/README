@@ -13,3 +13,4 @@ rsync          -   The rsync rolling hash algorithm.
 edit-distance  -   Computes the edit distance between two strings using
                    the classic dynamic programming algorithm.
 
+lzw            -   

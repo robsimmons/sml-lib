@@ -1,4 +1,6 @@
 
+Some utilities for text.
+
   layout - Simple pretty-printing package designed for abstract 
            syntax trees.
               (Modified from the mlton project.)

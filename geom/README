@@ -1,0 +1,11 @@
+
+Algorithms and data structures for computational geometry.
+
+polygon        -  Abstract representation of polygons.
+
+quadtree       -  (Actually kd-trees.) Stores points in two-dimensional 
+                  space, and supports efficient queries for all of the
+                  points within a circle.
+
+pointlocation  -  Given a bunch of non-overlapping polygons, quickly 
+                  return the polygon that a point is in.

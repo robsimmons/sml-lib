@@ -3,6 +3,7 @@ This directory contains some standard data structures. Also see the
 parallel directory "algo" since it is sometimes difficult to
 distinguish an algorithm from a data structure.
 
-queue.sml  -  Efficient functional queues (double-list trick).
-lastn-buffer.sml  -  Efficient fixed-length array (circular buffer).
-trie.sml  -  Standard trie data structure, functorized.
+queue         -  Efficient functional queues (double-list trick).
+lastn-buffer  -  Efficient fixed-length array (circular buffer).
+trie          -  Standard trie data structure, functorized.
+unionfind     -  Classic Union-Find algorithm for equivalence classes.

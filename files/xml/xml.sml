@@ -1,5 +1,9 @@
+(* Simplified interface for reading non-enormous XML documents into
+   a datatype.
+   Tom Murphy VII, 2009. 
+   This file only: Use and distribute freely.
+*)
 
-(* Simple parser and pretty-printer for XML. *)
 structure XML :> XML =
 struct
 
@@ -113,7 +117,8 @@ struct
           fun make s (Text "" :: rest) = make s rest
             | make s (Text t :: rest) = make (t :: s) rest
             | make nil ((e as Elem _) :: rest) = normalize e :: make nil rest
-            | make l ((e as Elem _) :: rest) = Text (String.concat (rev l)) :: normalize e :: make nil rest
+            | make l ((e as Elem _) :: rest) = 
+                Text (String.concat (rev l)) :: normalize e :: make nil rest
             | make nil nil = nil
             | make l nil = [Text (String.concat (rev l))]
       in

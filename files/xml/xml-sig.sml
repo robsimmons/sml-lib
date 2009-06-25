@@ -1,3 +1,8 @@
+(* Simplified interface for reading non-enormous XML documents into
+   a datatype.
+   Tom Murphy VII, 2009. 
+   This file only: Use and distribute freely.
+*)
 
 signature XML =
 sig

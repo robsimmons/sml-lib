@@ -5,6 +5,7 @@
    The trie is built as a functor (TrieFn) over the argument signature
    TRIEARG below. The structure Trie is also supplied with char = Char.char
    and string = String.string, since this is a very common case *)
+
 signature TRIE =
 sig
 
