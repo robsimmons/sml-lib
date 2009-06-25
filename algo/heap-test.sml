@@ -1,6 +1,5 @@
 
 (* Test the heap structure *)
-(* XXX should this be in the library?? *)
 
 structure H = HeapFn(type priority = int val compare = Int.compare)
 

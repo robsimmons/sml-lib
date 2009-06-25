@@ -1,9 +1,15 @@
 
 Algorithms.
 
-toposort -    Generate a topological sort of some items with
-              ordering constraints of the form "a must appear
-              before b".
+toposort       -   Generate a topological sort of some items with
+                   ordering constraints of the form "a must appear
+                   before b".
 
-heap     -    Efficient implementation of binary heaps, supporting
-              insertion, deletion, find_min and update.
+heap           -   Efficient implementation of binary heaps, supporting
+                   insertion, deletion, find_min and update.
+
+rsync          -   The rsync rolling hash algorithm.
+
+edit-distance  -   Computes the edit distance between two strings using
+                   the classic dynamic programming algorithm.
+

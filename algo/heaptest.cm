@@ -1,7 +1,0 @@
-
-group is
-
-  heap-sig.sml
-  heap.sml
-
-  heaptest.sml

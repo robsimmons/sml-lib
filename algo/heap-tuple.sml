@@ -1,4 +1,6 @@
 
+(* What is this??  - Tom 7   24 Jun 2009 *)
+
 functor HeapFn(type priority
                val compare : priority * priority -> order)
            :> HEAP where type priority = priority =

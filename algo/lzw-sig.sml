@@ -1,4 +1,6 @@
-
+(* The well-known Lempel-Ziv-Welch (LZW) compression algorithm.
+   The patent for this algorithm expired on 20 June 2003.
+*)
 signature LZW =
 sig
 

@@ -1,10 +1,12 @@
 
+(* The LZW implementation is functorized over the alphabet
+   that is being compressed. We just need to know what characters
+   are and how to convert them into a dense set of integers. *)
 signature LZWARG =
 sig
 
   (* characters in the input stream *)
   type ch
-  (* val compare : ch * ch -> order *)
 
   (* number of characters that exist *)
   val radix : int
@@ -16,8 +18,22 @@ sig
 
 end
 
+(* Most likely you want to compress strings of 8-bit characters. *)
+structure LZWCharArg =
+struct 
+    type ch = char 
+    val itoc = chr 
+    val ctoi = ord 
+    val radix = 256 
+end 
+
 functor LZWFn(structure C : LZWARG
-              (* allow case where code = sz + radix *)
+              (* LZW has a "special case" (where code = sz + radix) 
+                 that improves compression ratios at the expense of
+                 complexity in the decoder. If this is false, disable
+                 that special case when encoding (producing a slightly
+                 longer output) and fail if it is encountered when
+                 decoding. *)
               val allow_special : bool
               (* which must be at least C.radix *)
               val tablesize : int option) :> 
@@ -431,6 +447,3 @@ struct
     decompressex (smap (fn i => fn _ => ICODE i) is)
 
 end
-
-(* XXX test *)
-structure L = LZWFn(structure C = struct type ch = char val compare = Char.compare val itoc = chr val ctoi = ord val radix = 256 end val allow_special = true val tablesize = NONE);

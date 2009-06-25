@@ -4,4 +4,12 @@ $/basis.cm
 
 edit-distance-sig.sml
 edit-distance.sml
+edit-distance-test.sml
 
+heap-sig.sml
+heap.sml
+heap-test.sml
+
+lzw-sig.sml
+lzw.sml
+lzw-test.sml
