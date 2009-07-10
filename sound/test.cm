@@ -1,0 +1,13 @@
+
+group is
+
+  waveform-sig.sml
+  waveform.sml
+
+  ../files/reader-sig.sml
+  ../files/reader.sml
+
+  ../files/wave/wave-sig.sml
+  ../files/wave/wave.sml
+
+  test.sml
