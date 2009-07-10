@@ -33,5 +33,7 @@ sig
 
     val appi : (int * 'a -> unit) -> 'a buffer -> unit
     val app : ('a -> unit) -> 'a buffer -> unit
+
+    val tolist : 'a buffer -> 'a list
   
 end

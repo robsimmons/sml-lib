@@ -53,4 +53,6 @@ struct
             ArraySlice.app f second
         end
   
+    fun tolist b = List.tabulate (length b, fn x => sub(b, x))
+
 end
