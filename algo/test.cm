@@ -21,3 +21,6 @@ heap-test.sml
 lzw-sig.sml
 lzw.sml
 lzw-test.sml
+
+hillclimb-sig.sml
+hillclimb.sml

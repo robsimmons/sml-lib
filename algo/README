@@ -13,4 +13,9 @@ rsync          -   The rsync rolling hash algorithm.
 edit-distance  -   Computes the edit distance between two strings using
                    the classic dynamic programming algorithm.
 
-lzw            -   
+lzw            -   Full implementation of Lempel-Ziv-Welch compression
+                   and decompression over arbitrary alphabets. Compressor
+                   can also output a slightly degraded bit compatible 
+                   format that simplifies the decompression algorithm.
+
+hillclimb      -   Very simple generic hill-climbing optimization.
