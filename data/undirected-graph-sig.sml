@@ -21,9 +21,9 @@ sig
     val add : 'a graph -> 'a -> 'a node
     val get : 'a node -> 'a
 
-    (* Create an edge between the two nodes with the same weight.
-       Implies symmetric connection with same weight. Nodes must
-       not already have an edge. *)
+    (* Create an edge between the two nodes with a weight. 
+       Weights must be strictly positive. Implies symmetric connection
+       with same weight. Nodes must not already have an edge. *)
     val addedge : 'a node -> 'a node -> weight -> unit
 
     (* NONE if no edge, otherwise SOME of that weight *)

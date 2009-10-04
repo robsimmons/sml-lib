@@ -57,22 +57,25 @@ struct
       end
 
   fun addedge a b w =
-      let 
-          val g = gph a
-          fun add (ix, iy) =
-              let 
-                  val (a, l) = GA.sub g ix
+      case A.compare (w, A.zero) of
+          GREATER =>
+              let
+                  val g = gph a
+                  fun add (ix, iy) =
+                      let 
+                          val (a, l) = GA.sub g ix
+                      in
+                          GA.update g ix (a, (iy, w) :: l)
+                      end
               in
-                  GA.update g ix (a, (iy, w) :: l)
+                  (* nb. also checks same graph *)
+                  (case hasedge a b of
+                       NONE => ()
+                     | SOME _ => raise UndirectedGraph "Edge already exists.");
+                  add (idx a, idx b);
+                  add (idx b, idx a)
               end
-      in
-          (* nb. also checks same graph *)
-          (case hasedge a b of
-               NONE => ()
-             | SOME _ => raise UndirectedGraph "Edge already exists.");
-          add (idx a, idx b);
-          add (idx b, idx a)
-      end
+        | _ => raise UndirectedGraph "weights must be strictly positive"
 
   fun app f g =
       let fun loop ~1 = ()
