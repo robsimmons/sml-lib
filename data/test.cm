@@ -1,0 +1,16 @@
+group is
+
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+ ../port/nj.sml
+#else
+ ../port/mlton.sml
+#endif
+
+  ../util/growarray-sig.sml
+  ../util/growarray.sml
+
+  undirected-graph-sig.sml
+  undirected-graph.sml
+
+  undirected-graph-test.sml
