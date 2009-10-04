@@ -9,3 +9,5 @@ quadtree       -  (Actually kd-trees.) Stores points in two-dimensional
 
 pointlocation  -  Given a bunch of non-overlapping polygons, quickly 
                   return the polygon that a point is in.
+
+latlontree     -  Like Quadtree, but for points on the Earth.

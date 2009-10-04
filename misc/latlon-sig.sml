@@ -6,9 +6,17 @@ sig
     exception LatLon of string
 
     (* latitude measured in degrees. Positive is north and negative is south.
-       longitude measured in degrees. Positive is east and negative is west. *)
+       longitude measured in degrees. Positive is east and negative is west. 
+
+       The inputs are treated modularly, so that +100 latitude is the
+       same as -80. *)
     val fromdegs : { lat : real, lon : real } -> pos
 
+    (* latitude always in [-90, +90),
+       longitude always in [-180, +180). *)
+    val todegs : pos -> { lat : real, lon : real }
+
+    (* XXX val torads : pos -> { lat : real, lon : real } *)
     (* XXX from DMS, string, etc... *)
         
     (* Great circle distances between positions. *)

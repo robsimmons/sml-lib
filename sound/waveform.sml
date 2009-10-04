@@ -1,6 +1,22 @@
 structure Waveform :> WAVEFORM =
 struct
 
+
+    type wave = unit -> int
+
+    fun 'a makewave (state, next) =
+        let
+            val r = ref state
+            fun f () =
+                let val (state', sample) = next (!r)
+                in 
+                    r := state';
+                    sample
+                end
+        in
+            f
+        end
+
     (* This algorithm literally IS Bresenham's line drawing one. The idea
        is to draw a line starting at 0,0 to (+infinity,+infinity) with
        a slope m, but instead of drawing pixels at all y values, we
@@ -50,6 +66,23 @@ struct
                 ({ error = error, y = y, deltax = deltax, deltay = deltay, volume = volume }, sample)
             end
 
+        fun wave s = makewave (s, next)
     end
 
+    fun lowpass alpha w =
+        let
+            (* consume one start sample *)
+            val last = ref (w())
+            fun f () =
+                let
+                    val new = w()
+                    val sample = !last + Real.trunc (alpha * real (new - !last))
+                in
+                    last := sample;
+                    sample
+                end
+        in
+            f
+        end
+        
 end

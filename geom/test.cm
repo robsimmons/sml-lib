@@ -13,6 +13,9 @@ group is
   ../crypt/mersenne-twister-sig.sml
   ../crypt/mersenne-twister.sml
 
+  ../misc/latlon-sig.sml
+  ../misc/latlon.sml
+
   quadtree-sig.sml
   quadtree.sml
 
@@ -22,5 +25,9 @@ group is
   pointlocation-sig.sml
   pointlocation.sml
 
+  latlontree-sig.sml
+  latlontree.sml
+
   quadtree-test.sml
   pointlocation-test.sml
+  latlontree-test.sml

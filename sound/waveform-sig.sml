@@ -1,6 +1,14 @@
 signature WAVEFORM =
 sig
 
+    type wave = unit -> int
+    (* Give the alpha value (0..1) which determines the 
+       cutoff frequency (lower alpha means lower cutoff). 
+       TODO: There should be some formula for computing
+       alpha from a sample rate and desired cutoff.
+       *)
+    val lowpass : real -> wave -> wave
+
     (* Fast, good quality square wave.
        
        This uses an integer-only algorithm for efficiency,
@@ -26,6 +34,7 @@ sig
 
         (* Gets the next sample and state *)
         val next : square -> square * int
+        val wave : square -> wave
     end
 
 

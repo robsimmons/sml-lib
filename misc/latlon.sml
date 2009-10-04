@@ -14,8 +14,28 @@ struct
     structure LR = LargeReal
     structure LRM = LargeReal.Math
 
-    (* XXX should check range of degrees *)
-    fun fromdegs d = d
+    (* Return the unique x = d + r*max 
+       where x is in [-max, +max). Used to put
+       degrees in the range [-90, +90), for example,
+       since some computations cause them to 
+       "wrap around". *)
+       
+    fun plusminus_mod (d, max) =
+        (* PERF there may be a cleverer way to do this?
+           There's no equivalent of "mod" that works for
+           negative inputs as far as I can see in Real. *)
+        let
+            val twomax = 2.0 * max
+            val z = d + max
+        in
+            Real.rem(z, twomax) - max
+        end
+
+    fun fromdegs { lat, lon } =
+        { lat = plusminus_mod (lat, 90.0),
+          lon = plusminus_mod (lon, 180.0) }
+
+    fun todegs d = d
 
     (* This is not as accurate for short distances. *)
     fun dist_rads_fast ({ lat = lat1, lon = lon1 },
