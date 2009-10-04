@@ -14,6 +14,7 @@ struct
   type monoarray = A.array
 
   type growarray = (int * monoarray) ref
+  val eq = op =
 
   fun init n = ref (0, U.create n)
 

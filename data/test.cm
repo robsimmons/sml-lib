@@ -10,6 +10,9 @@ group is
   ../util/growarray-sig.sml
   ../util/growarray.sml
 
+  ../algo/heap-sig.sml
+  ../algo/heap.sml
+
   undirected-graph-sig.sml
   undirected-graph.sml
 

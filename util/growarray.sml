@@ -4,6 +4,8 @@ struct
 
   type 'a growarray = (int * ('a option) Array.array) ref
 
+  val eq = op = : 'a growarray * 'a growarray -> bool
+
   (* start with 16 cells, why not? *)
   fun empty () = ref (0, Array.array(16, NONE))
 
@@ -31,6 +33,24 @@ struct
               else ()
       in
           ap 0
+      end
+
+  fun appi f (r as ref (l, a)) =
+      let
+          fun ap n = 
+              if n < l
+              then ((case Array.sub(a, n) of
+                        NONE => ()
+                      | SOME x => f (n, x));
+                    ap (n + 1))
+              else ()
+      in
+          ap 0
+      end
+
+  fun tabulate n f =
+      let val a = Array.tabulate (n, SOME o f)
+      in  ref (n, a)
       end
 
   fun has (ref (used, a)) n = 

@@ -34,6 +34,11 @@ struct
           idx a = (idx b : int)
       end
 
+  fun get (g, i) =
+      let val (a, _) = GA.sub g i
+      in a
+      end
+
   val empty = GA.empty
   fun add g a =
       let val i = GA.length g
@@ -71,8 +76,9 @@ struct
 
   fun app f g =
       let fun loop ~1 = ()
-            | loop n = f (g, n)
-      in  loop (GA.length g - 1)
+            | loop n = (f (g, n); loop (n - 1))
+      in  
+          loop (GA.length g - 1)
       end
 
   fun edges (g, i) =
@@ -81,10 +87,105 @@ struct
       in  map (fn (i', w) => ((g, i'), w)) l
       end
 
+  structure H = HeapFn(type priority = weight
+                       val compare = A.compare)
+
+  fun shortestpaths ((g, src) : 'a node) =
+      let
+          (* Algorithm is Dijkstra's:
+             
+             - Heap contains frontier: index of points that we know a
+               distance to, but haven't yet determined the final
+               distance.
+               
+             - The minimum element in the heap is finalized. Put it
+               in the final set (new graph). Add its edges to the
+               frontier, repeat.
+             
+             *)
+          (* New graph starts with same structure, but NONE in
+             distance field. *)
+          val newg = GA.tabulate 
+              (GA.length g)
+              (fn i =>
+               let val (a, l) = GA.sub g i
+               in ((a, NONE), l)
+               end)
+
+          datatype state = NOTYET | IN of H.hand | DONE
+          (* To adjust the priority of something after the fact,
+             we need a handle to it in the heap. This is a mapping
+             from indices to handles. The handle only exists if the
+             node is in the frontier. *)
+          val handles = Array.array (GA.length g, NOTYET)
+
+          val h = H.empty ()
+          val () = Array.update (handles, src, IN (H.insert h A.zero src))
+
+          fun loop () =
+            case H.min h of
+                NONE => ()
+              | SOME (w, i) =>
+                let
+                    (* Distance is known. Finalize it. *)
+                in
+                  (case GA.sub newg i of
+                    ((a, NONE), l) => 
+                        let 
+                            fun neighbor (j, dist) =
+                              let val newdist = A.+(dist, w)
+                              in
+                                  (* Make sure it's in frontier with
+                                     the right distance, if it needs
+                                     to be. *)
+                                  case Array.sub (handles, j) of
+                                      NOTYET =>
+                                          Array.update (handles, j,
+                                                        IN (H.insert h newdist j))
+                                    | DONE => () (* already done. *)
+                                          (* could check that the final distance
+                                             is indeed better than the one we
+                                             computed. Maybe a good idea since
+                                             if the weight argument is garbage,
+                                             it would be good to detect that. *)
+                                    | IN hand => 
+                                      let val (olddist, _) = H.get h hand
+                                      in  case A.compare (newdist, olddist) of
+                                            LESS => H.adjust h hand newdist
+                                          | _ => () (* no change. *)
+                                      end
+                              end
+                        in
+                            (* No longer in heap. *)
+                            Array.update (handles, i, DONE);
+                            GA.update newg i ((a : 'a, SOME w), l);
+                            List.app neighbor l
+                        end
+
+                    | ((_, SOME _), _) => raise UndirectedGraph 
+                          "Bug: Already had finalized distance.");
+                    loop ()
+                end
+      in
+          loop ();
+          Array.app (fn (IN h) =>
+                     raise UndirectedGraph 
+                         "Bug: didn't process all nodes in frontier?"
+                      | _ => ()) handles;
+          { graph = newg,
+            promote = (fn (g', i) => 
+                       let in
+                           samegraph (g, g');
+                           (newg, i) 
+                       end) }
+      end
+
 end
 
 
 structure RealUndirectedGraph = UndirectedGraphFn(type weight = Real.real
+                                                  val zero = 0.0
                                                   open Real)
 structure IntUndirectedGraph = UndirectedGraphFn(type weight = Int.int
+                                                 val zero = 0
                                                  open Int)

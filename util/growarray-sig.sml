@@ -1,4 +1,3 @@
-
 signature GROWARRAY =
 sig
 
@@ -7,9 +6,11 @@ sig
      where no data are stored, though these are not
      treated efficiently. *)
   type 'a growarray
-    
+  val eq : 'a growarray * 'a growarray -> bool
+
   val growarray : int -> 'a -> 'a growarray
   val empty : unit -> 'a growarray
+  val tabulate : int -> (int -> 'a) -> 'a growarray
 
   (* return actual length, counting holes (position of last element + 1) *)
   val length : 'a growarray -> int
@@ -42,5 +43,6 @@ sig
 
   (* Apply to all non-missing elements in order *)
   val app : ('a -> unit) -> 'a growarray -> unit
+  val appi : (int * 'a -> unit) -> 'a growarray -> unit
 
 end

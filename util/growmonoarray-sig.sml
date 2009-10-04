@@ -10,6 +10,7 @@ sig
      where no data are stored, though these are not
      treated efficiently. *)
   type growarray
+  val eq : growarray * growarray -> bool
     
   val growarray : int -> elem -> growarray
   val empty : unit -> growarray
