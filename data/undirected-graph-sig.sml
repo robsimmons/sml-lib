@@ -45,6 +45,26 @@ sig
         { graph : ('a * weight option) graph,
           promote : 'a node -> ('a * weight option) node }
 
+    (* Compute a minimal spanning tree from a graph which has been
+       annotated with the minimum distance from each node to the
+       desired root (for example, the output of shortestpaths). May
+       fail or produce a nonsense tree if the distances are not
+       correct. Otherwise, the output is a tree (acyclic graph) which
+       connects all points that are reachable from the root (the
+       single node with distance 0) by pointing at the next node on
+       the way to the root. Distances are copied from the
+       shortestpaths graph.
+
+       If some nodes are unreachable (they have distance NONE) then
+       they will have no parent in the output. The root also has
+       no parent. *)
+    datatype 'a span = S of { a : 'a, 
+                              dist : weight option,
+                              parent : 'a span option }
+    val spanningtree : ('a * weight option) node ->
+        { graph : 'a span graph,
+          promote : ('a * weight option) node -> 'a span node }
+
 end
 
 signature UNDIRECTEDGRAPHARG =

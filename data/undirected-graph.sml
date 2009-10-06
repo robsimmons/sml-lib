@@ -183,6 +183,10 @@ struct
                        end) }
       end
 
+    datatype 'a span = S of { a : 'a, 
+                              dist : weight option,
+                              parent : 'a span option }
+
 end
 
 
