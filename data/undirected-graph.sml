@@ -10,6 +10,11 @@ struct
 
   exception UndirectedGraph of string
 
+  fun util_for lo hi f =
+      if lo > hi then ()
+      else (ignore (f lo); util_for (lo + 1) hi f)
+
+
   (* The representation of the graph is an array of node
      data. Each node is represented by its index into this
      array. Node data is a list of connected nodes, with weights.
@@ -185,7 +190,62 @@ struct
 
     datatype 'a span = S of { a : 'a, 
                               dist : weight option,
-                              parent : 'a span option }
+                              parent : 'a span node option }
+
+    (* This is actually very simple. For each node with a non-NONE
+       positive distance, just choose the neighbor node with the minimum
+       distance as the parent. *)
+    fun 'a spanningtree (g : ('a * weight option) graph) =
+        let
+            val newg : 'a span graph = GA.empty()
+            val () =
+              util_for 0 (GA.length g - 1)
+              (fn i =>
+               GA.update newg i
+               (case GA.sub g i of
+                  ((a, SOME d), l as ((h, hw) :: t)) =>
+                      if A.compare (d, A.zero) = EQUAL
+                      then (* root *)
+                          (S { a = a, dist = SOME d, parent = NONE }, l)
+                      else
+                      let
+                          val best = case #2 (#1 (GA.sub g h)) of
+                              SOME d => A.+(d, hw)
+                            | _ => raise UndirectedGraph "First distance incomplete"
+
+                          (* Find the neighbor with the smallest distance;
+                             pick it *)
+                          fun m h best ((x, xw) :: t) =
+                              (case #2 (#1 (GA.sub g x)) of
+                                  SOME d => 
+                                      let val d = A.+(d, xw)
+                                      in
+                                          if LESS = A.compare (d, best)
+                                          then m x d t
+                                          else m h best t
+                                      end
+                                | NONE =>
+                                      raise UndirectedGraph "Distances are incomplete")
+                            | m h _ nil = h
+                      in
+                          (S { a = a, 
+                               dist = SOME d, 
+                               parent = SOME (newg, m h best t) }, 
+                           l)
+                      end
+                (* only possible if the source node is a singleton,
+                   and this is it *)
+                | ((a, SOME d), nil) => (S { a = a, dist = SOME d, parent = NONE }, nil)
+                | ((a, NONE), l) => (S { a = a, dist = NONE, parent = NONE }, l)))
+        in
+            { graph = newg,
+              promote = (fn (g', i) =>
+                         let in
+                             samegraph (g, g');
+                             (newg, i)
+                         end) }
+        end
+
 
 end
 

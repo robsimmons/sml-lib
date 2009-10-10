@@ -60,8 +60,8 @@ sig
        no parent. *)
     datatype 'a span = S of { a : 'a, 
                               dist : weight option,
-                              parent : 'a span option }
-    val spanningtree : ('a * weight option) node ->
+                              parent : 'a span node option }
+    val spanningtree : ('a * weight option) graph ->
         { graph : 'a span graph,
           promote : ('a * weight option) node -> 'a span node }
 

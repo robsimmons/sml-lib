@@ -51,20 +51,53 @@ struct
   val _ = Option.isSome (G.hasedge AA AA) andalso raise TestFail "Self-edges?!"
   val _ = Option.isSome (G.hasedge AA DD) andalso raise TestFail "unexpected edge"
 
-  val { graph = sp, promote } = G.shortestpaths AA
+  val { graph = sp, promote = _ } = G.shortestpaths AA
       handle G.UndirectedGraph s =>
           let in
-              print ("err: " ^ s ^ "\n");
+              print ("shortestpaths err: " ^ s ^ "\n");
               raise TestFail s
           end
 
   fun otos f NONE = "NONE"
     | otos f (SOME z) = f z
-  val () = print "Shortest paths:\n"
+  val () = print "Shortest distances:\n"
   val () = G.app (fn n => 
                   let val (name, dist) = G.get n
                   in  print ("  " ^ name ^ " : " ^ otos Int.toString dist ^ "\n")
                   end) sp
+
+  val { graph = span, promote = _ } = G.spanningtree sp
+      handle G.UndirectedGraph s =>
+          let in
+              print ("spanningtree err: " ^ s ^ "\n");
+              raise TestFail s
+          end
+  val () = print "Spanning tree:\n"
+  val () = G.app (fn n =>
+                  let val G.S { a = name, dist, parent } = G.get n
+                      val ppar = case parent of
+                          NONE => "(no parent)"
+                        | SOME x => let val G.S { a, ... } = G.get x
+                                    in a
+                                    end
+                  in
+                      print ("  " ^ name ^ " : " ^ otos Int.toString dist ^ " -> " ^
+                             ppar ^ "\n")
+                  end) span
+
+  (*
+
+      A<-- 3 --- C 
+                 ^  
+                 2   
+                 |   
+      B--- 1 --> D   
+                 ^   
+                 1  
+                 | 
+          E-- 3->F   G
+  *)
+
 
   val () = print "Success!\n"
 end
