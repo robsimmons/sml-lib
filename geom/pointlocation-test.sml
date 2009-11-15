@@ -52,7 +52,7 @@ struct
             val e = P.frompoints [perturb s, perturb z, perturb y]
 
             val normed = 
-                PointLocation.normalize epsilon 
+                SnapPoly.snap epsilon 
                 [(A, a), (B, b), (C, c), (D, d), (E, e)]
         in
             (PointLocation.locator normed)

@@ -10,4 +10,12 @@ quadtree       -  (Actually kd-trees.) Stores points in two-dimensional
 pointlocation  -  Given a bunch of non-overlapping polygons, quickly 
                   return the polygon that a point is in.
 
+latlon         -  Latitude and Longitude pairs on the Earth. Projections into
+                  two dimensions and very accurate great circle
+                  distances between pairs of locations.
+
 latlontree     -  Like Quadtree, but for points on the Earth.
+
+snappoints     -  Merges nearby points that aren't on the same polygon,
+                  for building exact subdivisions of space.
+

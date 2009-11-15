@@ -13,8 +13,8 @@ sig
   (* Merges nearby points (on different polygons). Nearby means within
      the supplied epsilon. The algorithm is insensitive to the order
      of the polygons or order of the points in the polygons, but is not
-     rotationally invariant. *)
-  val normalize : real -> ('a * Polygon.polygon) list -> ('a * Polygon.polygon) list
+     rotationally invariant. (See snappoints.sml for discussion.) *)
+  (* val snap : real -> ('a * Polygon.polygon) list -> ('a * Polygon.polygon) list *)
 
   (* The polygons must not overlap. If they do, this function may raise
      PointLocation. Or, the constructed locator may return an arbitrarily
