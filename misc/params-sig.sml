@@ -81,7 +81,8 @@ sig
      ./program -users root,tom,metroid
 
    *)
-  val paramlist : string list -> (string * string * char) option -> string -> string list ref
+  val paramlist : string list -> (string * string * char) option -> string -> 
+                  string list ref
   val use_paramlist : string -> string list ref
 
   (* paramlist default commandline-spec name
@@ -92,16 +93,18 @@ sig
      ./hemlock -I .,/usr/include/hemlock
 
      *)
-  val paramacc : string list -> (string * string * char) option -> string -> string list ref
+  val paramacc : string list -> (string * string * char) option -> string -> 
+                 string list ref
   val use_paramacc : string -> string list ref
 
 (* XXX to implement this I need to use exn trick, I think.
   (* general f init commandline-spec name
 
-     This is a generalized version of the above. It allows an arbitrary computation to be
-     performed on the incoming string (and some arbitrary item 'b). 
+     This is a generalized version of the above. It allows an arbitrary computation 
+     to be performed on the incoming string (and some arbitrary item 'b). 
   *)
-  val general : (string * 'b -> 'a option) -> 'a -> (string * string * 'b) option -> string -> 'a ref
+  val general : (string * 'b -> 'a option) -> 'a -> (string * string * 'b) option ->
+                string -> 'a ref
 *)
 
   (* get a reference to the flag or parameter, if it exists. *)

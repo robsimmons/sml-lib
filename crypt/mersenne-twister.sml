@@ -44,6 +44,8 @@ struct
     (* of length 624 *)
     type mt = w32 Array.array * int ref
 
+    exception MersenneTwister of string
+
     val N = 624
     val M = 397
     val MATRIX_A = 0wx9908b0df : w32
@@ -186,4 +188,53 @@ struct
             y
         end
 
+    (* Utilities (c) 2009 and onwards Tom Murphy VII *)
+    fun random_nat mt max =
+        if max <= 0
+        then raise MersenneTwister "in random_nat, max must be >0"
+        else
+            let
+                (* We only need to take as many random bits as cover
+                   the max *)
+                fun getmask m =
+                    let val newmask = Word32.>>(m, 0w1)
+                    in
+                        if Word32.toInt newmask < max
+                        then m
+                        else getmask newmask
+                    end
+                (* Never consider negative mask. *)
+                val mask = getmask 0wx7FFFFFFF
+
+                (* keep going until we get a non-rejected sample *)
+                fun loop () =
+                    let val sample = Word32.toInt (Word32.andb(mask, rand32 mt))
+                    in
+                        if sample < max
+                        then sample
+                        else loop()
+                    end
+            in
+                loop ()
+            end
+
+  fun util_for lo hi f =
+      if lo > hi then ()
+      else (ignore (f lo); util_for (lo + 1) hi f)
+
+    fun shuffle mt arr =
+        let
+            val radix = Array.length arr
+            fun swap (i, j) =
+                let
+                    val t = Array.sub(arr, i)
+                in
+                    Array.update(arr, i, Array.sub(arr, j));
+                    Array.update(arr, j, t)
+                end
+        in
+            util_for 0 (radix - 1)
+            (fn i =>
+             swap (i, random_nat mt radix))
+        end
 end

@@ -17,6 +17,7 @@
    3-30. *)
 signature MERSENNETWISTER =
 sig
+    exception MersenneTwister of string
 
     (* Mersenne twister state; imperative *)
     type mt
@@ -24,5 +25,18 @@ sig
     val init : Word32.word Vector.vector -> mt
 
     val rand32 : mt -> Word32.word
+
+    (* Some utilities. *)
+        
+    (* random_nat mt max
+       Produce a random natural number [0, max). This has
+       the correct distribution, but note that it
+       can take unbounded time to return.
+       (Expected worst case is two MT rand32 calls.) *)
+    val random_nat : mt -> int -> int
+
+    (* Shuffle an array. After calling, the array has
+       the same elements but in random order. *)
+    val shuffle : mt -> 'a Array.array -> unit
 
 end

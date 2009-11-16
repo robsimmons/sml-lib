@@ -127,6 +127,7 @@ struct
   fun c4312 f a4 a3 a1 a2 = f a1 a2 a3 a4
   fun c4321 f a4 a3 a2 a1 = f a1 a2 a3 a4
 
+  fun is a b = a = b
 
   structure Oneshot =
   struct

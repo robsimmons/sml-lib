@@ -104,6 +104,8 @@ sig
               ('a4 -> 'a3 -> 'a2 -> 'a1 -> 'b)
 
 
+  val is : ''a -> ''a -> bool
+
   (* useful combinators *)
   val I : 'a -> 'a
   val K : 'a -> 'b -> 'a
