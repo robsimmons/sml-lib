@@ -29,8 +29,10 @@ struct
 
   (* Two hemispheres. The west hemisphere is longitude [-180.0, 0.0);
      the east [0.0, +180.0). *)
-  type 'a latlontree = { w : 'a Q.quadtree,
-                         e : 'a Q.quadtree }
+  type 'a tree = { w : 'a Q.tree, e : 'a Q.tree }
+
+  type pos = LatLon.pos
+  type dist = real
 
   val empty = { w = Q.empty, e = Q.empty }
   fun insert { w, e } a p =
@@ -64,6 +66,9 @@ struct
   fun map f { w, e } = { w = Q.map f w, e = Q.map f e }
   fun app f { w, e } = (Q.app f w; Q.app f e)
 
+  fun apppoint (f : ('a * pos) -> unit) { w, e } : unit =
+      (Q.apppoint f w; Q.apppoint f e)
+
   fun closestpoint { w, e } p =
       case (Q.closestpoint w p, Q.closestpoint e p) of
           (SOME r, NONE) => SOME r
@@ -87,5 +92,4 @@ struct
           Q.tosvg t d proj print
       end
 
-  
 end

@@ -8,30 +8,26 @@ sig
     type dist
 
     (* Functional set of points with associated data of type 'a *)
-    type 'a quadtree
+    type 'a tree
         
     (* No points. *)
-    val empty : 'a quadtree
+    val empty : 'a tree
 
-    val insert : 'a quadtree -> 'a -> pos -> 'a quadtree
+    val insert : 'a tree -> 'a -> pos -> 'a tree
 
-    val lookup : 'a quadtree -> pos -> dist -> 'a list
-    val lookuppoint : 'a quadtree -> pos -> dist -> ('a * pos) list
+    val lookup : 'a tree -> pos -> dist -> 'a list
+    val lookuppoint : 'a tree -> pos -> dist -> ('a * pos) list
 
     (* Gets a single point with minimum distance (there may be many points
        that are equidistant). Only fails if the tree is empty.
        NOTE: Currently, linear time! *)
-    val closestpoint : 'a quadtree -> pos -> ('a * dist) option
+    val closestpoint : 'a tree -> pos -> ('a * dist) option
 
-    (* val bounds : 'a quadtree -> { minx : xpos, maxx : xpos, miny : ypos, maxy : ypos } *)
+    (* val bounds : 'a tree -> { minx : xpos, maxx : xpos, miny : ypos, maxy : ypos } *)
 
-    val map : ('a -> 'b) -> 'a quadtree -> 'b quadtree
-    val app : ('a -> unit) -> 'a quadtree -> unit
-    val apppoint : ('a * pos -> unit) -> 'a quadtree -> unit
-
-    (* tosvg tree maxdepth proj print
-       For visualization purposes. *)
-    val tosvg : 'a quadtree -> int -> (pos -> real * real) -> (string -> unit) -> unit
+    val map : ('a -> 'b) -> 'a tree -> 'b tree
+    val app : ('a -> unit) -> 'a tree -> unit
+    val apppoint : ('a * pos -> unit) -> 'a tree -> unit
 
 end
 

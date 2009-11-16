@@ -8,32 +8,11 @@
    are near the boundary, just queries both. *)
 signature LATLONTREE =
 sig
-
-    (* Functional set of points with associated data of type 'a *)
-    type 'a latlontree
-        
-    (* No points. *)
-    val empty : 'a latlontree
-
-    val insert : 'a latlontree -> 'a -> LatLon.pos -> 'a latlontree
-
-    (* lookup t p m
-       Get all the points within m meters of p. *)
-    val lookup : 'a latlontree -> LatLon.pos -> real -> 'a list
-    val lookuppoint : 'a latlontree -> LatLon.pos -> real -> ('a * LatLon.pos) list
-
-    (* Gets a single point with minimum distance (there may be many points
-       that are equidistant). Only fails if the tree is empty.
-       NOTE: Currently, linear time! *)
-    val closestpoint : 'a latlontree -> LatLon.pos -> ('a * real) option
-
-    val map : ('a -> 'b) -> 'a latlontree -> 'b latlontree
-    val app : ('a -> unit) -> 'a latlontree -> unit
-
+    include QUADTREE where type pos = LatLon.pos
+                       and type dist = real
     (* tosvg tree maxdepth west print
        For visualization purposes. Uses gnomonic projection with root of
        tree as center. If west is true, print west hemisphere. If false,
        print east. *)
-    val tosvg : 'a latlontree -> int -> bool -> (string -> unit) -> unit
-
+    val tosvg : 'a tree -> int -> bool -> (string -> unit) -> unit
 end

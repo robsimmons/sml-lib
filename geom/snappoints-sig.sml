@@ -34,5 +34,8 @@ sig
 
 end
 
-(* SnapPoly : SNAPPOINTS where type poly = Polygon.polygon
+(* Euclidan distances:
+   SnapPoly : SNAPPOINTS where type poly = Polygon.polygon
+
+   Distances are great circles, in meters:
    SnapLatLon : SNAPPOINts where type poly = LatLon.pos list *)

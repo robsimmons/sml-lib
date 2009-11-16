@@ -25,14 +25,14 @@ group is
   polygon-sig.sml
   polygon.sml
 
+  latlontree-sig.sml
+  latlontree.sml
+
   snappoints-sig.sml
   snappoints.sml
 
   pointlocation-sig.sml
   pointlocation.sml
-
-  latlontree-sig.sml
-  latlontree.sml
 
   quadtree-test.sml
   pointlocation-test.sml

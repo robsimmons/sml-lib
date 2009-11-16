@@ -24,8 +24,16 @@
    keeping the specialized two-dimensional one around is probably good
    for simplicity and efficiency.
 *)
-functor QuadtreeFn(Q : QUADTREEARG) :> QUADTREE where type pos = Q.pos
-                                                  and type dist = Q.dist =
+functor QuadtreeFn(Q : QUADTREEARG) :> 
+sig
+    include QUADTREE 
+    where type pos = Q.pos
+          and type dist = Q.dist 
+
+    (* tosvg tree maxdepth proj print
+       For visualization purposes. *)
+    val tosvg : 'a tree -> int -> (pos -> real * real) -> (string -> unit) -> unit
+end =
 struct
 
     open Q
@@ -40,7 +48,7 @@ struct
       | VEmpty
 
     (* choice of horiz or vertical is basically arbitrary. *)
-    type 'a quadtree = 'a horiztree
+    type 'a tree = 'a horiztree
     val empty = HEmpty
 
     fun insert' HEmpty a (x, y) = HPoint(VEmpty, a, x, y, VEmpty)

@@ -288,6 +288,21 @@ SnapPoints(structure A =
 structure SnapLatLon =
 SnapPoints(structure A =
            struct
+               type poly = LatLon.pos list
+               type pos = LatLon.pos
+               type dist = real
+               fun points p = p
+               fun poly p = p
 
+               (* ? *)
+               fun compare (p, pp) =
+                   let val { lat = x, lon = y } = LatLon.todegs p
+                       val { lat = xx, lon = yy } = LatLon.todegs p
+                   in
+                       case Real.compare (x, xx) of
+                           EQUAL => Real.compare (y, yy)
+                         | order => order
+                   end
+               val dist = LatLon.dist_meters
            end
            structure Q = LatLonTree)
