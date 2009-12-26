@@ -1,4 +1,4 @@
-
+(* General-purpose utilities. *)
 signature UTIL =
 sig
 
@@ -116,16 +116,16 @@ sig
 
   (* oneshot is a ref that can be set only once *)
   structure Oneshot :
-      sig
-          (* holding a value of type 'a *)
-          type 'a oneshot
-          (* create an uninitialized oneshot *)
-          val oneshot     : unit -> 'a oneshot
-          val init        : 'a   -> 'a oneshot
-          val set         : 'a oneshot * 'a -> unit
-          val deref       : 'a oneshot -> 'a option
-          val eq          : 'a oneshot * 'a oneshot -> bool
-          val wrap        : ('a -> 'a) -> 'a oneshot -> unit
-      end
+  sig
+      (* holding a value of type 'a *)
+      type 'a oneshot
+      (* create an uninitialized oneshot *)
+      val oneshot     : unit -> 'a oneshot
+      val init        : 'a   -> 'a oneshot
+      val set         : 'a oneshot * 'a -> unit
+      val deref       : 'a oneshot -> 'a option
+      val eq          : 'a oneshot * 'a oneshot -> bool
+      val wrap        : ('a -> 'a) -> 'a oneshot -> unit
+  end
 
 end

@@ -143,6 +143,10 @@ sig
        returns that mapped x *)
     val findpartial : ('a -> 'b option) -> 'a list -> 'b option
 
+    (* Like List.tabulate, but only include those elements
+       for which the function returns SOME. *)
+    val tabulatepartial : int * (int -> 'a option) -> 'a list
+
     (* like Vector.mapi, but no slice stuff. 0-based. 
        XXX these take the index and element in the opposite
        order from Vector. and Array... *)

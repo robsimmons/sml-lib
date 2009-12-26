@@ -347,9 +347,21 @@ struct
        NONE => findpartial f t 
      | yes => yes
 
+   fun tabulatepartial (n, f) =
+       let
+           fun tp m =
+               if m >=n then nil
+               else case f m of
+                   NONE => tp (m + 1)
+                 | SOME a => a :: tp (m + 1)
+       in
+           tp 0
+       end
+
    fun unzip3 abc_list =
        let fun unzip3_loop [] (aa,bb,cc) = (rev aa, rev bb, rev cc)
-             | unzip3_loop ((a,b,c)::rest) (aa,bb,cc) = unzip3_loop rest (a::aa,b::bb,c::cc)
+             | unzip3_loop ((a,b,c)::rest) (aa,bb,cc) = 
+           unzip3_loop rest (a::aa,b::bb,c::cc)
        in unzip3_loop abc_list ([],[],[])
        end
 
