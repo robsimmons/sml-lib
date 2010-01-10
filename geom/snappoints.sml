@@ -131,13 +131,23 @@ struct
 
         fun point i = Vector.sub(points, i)
 
-        (* The kd-tree never changes, but we ignore points that are
+        (* PERF: The kd-tree never changes, but we ignore points that are
            not canonical in the output. It would be faster if we could
-           remove them. *)
-        val kdtree = Vector.foldli
-            (fn (idx, pt, tree) =>
-             Q.insert tree idx (getloc pt))
-            Q.empty points
+           remove them. Maybe a second filtering pass once we know the
+           canonicity? *)
+
+        (* Insert in randomized order, since worst case is a series of
+           close-by horizontal or vertical points. *)
+        local
+            val all_points = ref nil
+            val () = Vector.appi
+                (fn (idx, pt) => all_points := (idx, getloc pt) :: !all_points) points
+            val all_points = Array.fromList (!all_points)
+            val mt = MersenneTwister.init32 0wxCAFEBABE
+            val () = MersenneTwister.shuffle mt all_points
+        in
+            val kdtree = Array.foldl (fn ((idx, pt), t) => Q.insert t idx pt) Q.empty all_points
+        end
 
         (* Compare ordered pairs so that we a deterministic for any set of
            points, regardless of insertion order. This is a
