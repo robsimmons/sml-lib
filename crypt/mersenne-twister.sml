@@ -20,15 +20,16 @@
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+   COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+   SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+   HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+   STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+   OF THE POSSIBILITY OF SUCH DAMAGE.
 
    (For my part, I don't actually care if you preserve this copyright
     notice and disclaimer in binary redistributions of this code.
@@ -87,12 +88,13 @@ struct
             fun loop1 (0, i, _) = i
               | loop1 (k, i, j) =
                 let 
-                    val () = Array.update(mt, i,
-                                          (Array.sub(mt, i) ^^
-                                           ((Array.sub(mt, i - 1) ^^
-                                             (Array.sub(mt, i - 1) >> 0w30))) *
-                                           0w1664525) +
-                                          Vector.sub(init_key, j) + Word32.fromInt j)
+                    val () = Array.update
+                        (mt, i,
+                         (Array.sub(mt, i) ^^
+                          ((Array.sub(mt, i - 1) ^^
+                            (Array.sub(mt, i - 1) >> 0w30))) *
+                          0w1664525) +
+                         Vector.sub(init_key, j) + Word32.fromInt j)
                     val i = i + 1
                     val j = j + 1
                     val i = if i >= N
@@ -157,10 +159,11 @@ struct
                                      (Array.sub(mt, kk + 1) &&
                                       LOWER_MASK)
                                       in
-                                          Array.update(mt, kk,
-                                                       Array.sub(mt, kk + (M - N)) ^^
-                                                       (y >> 0w1) ^^
-                                                       mag01 (y && 0w1));
+                                          Array.update
+                                          (mt, kk,
+                                           Array.sub(mt, kk + (M - N)) ^^
+                                           (y >> 0w1) ^^
+                                           mag01 (y && 0w1));
                                           loop2 (kk + 1)
                                       end
                                  else ()
@@ -189,6 +192,26 @@ struct
         end
 
     (* Utilities (c) 2009 and onwards Tom Murphy VII *)
+    fun initstring s =
+        let
+            (* Always pad at least one zero, since init requires
+               a non-empty vector. *)
+            val nwords = size s div 4 + 1
+            fun wordat i =
+                if i >= size s 
+                then 0w0
+                else Word32.fromInt (ord (CharVector.sub(s, i)))
+        in
+            init
+            (Vector.tabulate 
+             (nwords,
+              (fn w =>
+               (wordat (w * 4) << 0w24) ||
+               (wordat (w * 4 + 1) << 0w16) ||
+               (wordat (w * 4 + 2) << 0w8) ||
+               wordat (w * 4 + 3))))
+        end
+
     fun random_nat mt max =
         if max <= 0
         then raise MersenneTwister "in random_nat, max must be >0"

@@ -27,6 +27,10 @@ sig
     val rand32 : mt -> Word32.word
 
     (* Some utilities. *)
+
+    (* Nonstandard. Use input string as 32-bit words,
+       with zero padding. *)
+    val initstring : string -> mt
         
     (* random_nat mt max
        Produce a random natural number [0, max). This has

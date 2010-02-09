@@ -17,3 +17,5 @@ color   -  Routines for dealing with colors.
 wordn   -  The WordN structure for 0 <= N <= 32.
 bigword -  The WordN structure for 0 < N (probably slower than wordn).
 
+proprietary - Generate proprietary hash functions, for obfuscating
+	      "blessed" releases of open-source software.
