@@ -10,7 +10,7 @@ sig
   exception XML of string
 
   (* name and value *)
-  type attribute = string * string option
+  type attribute = string * string
   (* tag name, attributes *)
   type tag = string * attribute list
 

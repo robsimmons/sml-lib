@@ -9,7 +9,7 @@ struct
 
   exception XML of string
 
-  type attribute = string * string option
+  type attribute = string * string
   type tag = string * attribute list
 
   datatype tree = 
@@ -66,18 +66,20 @@ struct
                   uo : (UniChar.Data * UniChar.Data) option) =
       (datatoutf8 (Dtd.Index2AttNot d i), 
        case ap of
-           HookData.AP_IMPLIED => SOME "IMPLIED"
-         | HookData.AP_MISSING => SOME "MISSING"
-         | HookData.AP_DEFAULT (_, v2, ao) => SOME (vectortoutf8 v2)
-         | HookData.AP_PRESENT (_, v2, ao) => SOME (vectortoutf8 v2))
+           (* XXX ??? *)
+           HookData.AP_IMPLIED => "IMPLIED"
+         | HookData.AP_MISSING => "MISSING"
+         | HookData.AP_DEFAULT (_, v2, ao) => vectortoutf8 v2
+         | HookData.AP_PRESENT (_, v2, ao) => vectortoutf8 v2)
 
   structure Hooks =
   struct
       open IgnoreHooks
-          
+
+
       type AppData = tree list * (tag * tree list) list
       type AppFinal = tree
-          
+
       val appstart = (nil, nil)
           
       fun hookStartTag ((content, stack),
@@ -107,9 +109,15 @@ struct
         | hookFinish _ = raise XML "ill-formed: multiple trees?"
   end
 
-  structure Parser = Parse(structure Dtd = Dtd
+  structure Opt = ParserOptions ()
+  (* Turn off validation. Almost universally the DTD is given via a URL,
+     and fetching that is not easy to support and doesn't give much
+     benefit. If validation is on, then basically all attributes will
+     be rejected as errors, because they are undeclared. *)
+  val () = Opt.O_VALIDATE := false 
+  structure Parser = Parse(structure Dtd = Dtd 
                            structure Hooks = Hooks
-                           structure ParserOptions = ParserOptions ()
+                           structure ParserOptions = Opt
                            structure Resolve = ResolveNull)
 
   fun normalize (Elem(tag, tl)) =

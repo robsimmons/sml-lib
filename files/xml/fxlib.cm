@@ -71,6 +71,7 @@ group is
   Parser/Params/hookData.sml
   Parser/Params/hooks.sml
   Parser/Params/ignore.sml
+  Parser/Params/trace.sml
   Parser/Params/parserOptions.sml
   Parser/Params/resolve.sml
   Parser/entities.sml
