@@ -25,6 +25,7 @@ sig
   val curry4   : ('a * 'b * 'c * 'd -> 'e) -> 'a -> 'b -> 'c -> 'd -> 'e
 
   type 'a orderer = ('a * 'a) -> order
+  val order_field : ('a -> 'b) -> 'b orderer -> 'a orderer
 
   (* pow n m   gives n^m, defining 0^0 to be 1 *)
   val pow : int -> int -> int
@@ -35,10 +36,22 @@ sig
 
   val option_compare : 'a orderer -> 'a option orderer
 
+  (* Generalization of 'a orderer -> 'b orderer -> ('a * 'b) orderer *)
   val lex_order : ('a * 'b -> order) -> ('c * 'd -> order) ->
                   (('a * 'c) * ('b * 'd) -> order)
 
+  (* Generalization of 'a orderer -> 'a list orderer *)
   val lex_list_order : ('a * 'b -> order) -> ('a list * 'b list -> order)
+
+  (* Generalization of 'a orderer -> 'a Vector.vector orderer *)
+  val lex_vector_order : ('a * 'b -> order) -> 
+                         ('a Vector.vector * 'b Vector.vector) -> order
+
+  (* For example, on a record { b : bool, l : int list },
+     lexicographic [order_field #b bool_compare,
+                    order_field #l (lex_list_order Int.compare)]
+     *)
+  val lexicographic : 'a orderer list -> 'a orderer
 
   (* swap the order of curried arguments *)
 

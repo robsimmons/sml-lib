@@ -22,4 +22,11 @@ sig
     (* Modifies the left; leaves the right the same. Either may be empty. *)
     val union : bounds -> bounds -> unit
 
+    (* Add a margin of fixed size around the entire bounds, in absolute units. 
+       Must be non-empty. *)
+    val addmargin : bounds -> real -> unit
+    (* Add a margin that's a fraction of the longest dimension. If empty, does
+       nothing. *)
+    val addmarginfrac : bounds -> real -> unit
+
 end

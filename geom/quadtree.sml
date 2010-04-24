@@ -245,7 +245,6 @@ struct
                             if p < !min then min := p else ();
                             if p > !max then max := p else ()
                         end
-                    
                     fun onepoint (a, pt) =
                         let val (xx, yy) = proj pt
                         in bound xx minx maxx;

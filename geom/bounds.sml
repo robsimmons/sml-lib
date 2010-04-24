@@ -14,10 +14,10 @@ struct
                       maxy = ref (~1.0 / 0.0),
                       miny = ref (1.0 / 0.0) }
 
-  fun offsetx { empty = ref true, ... } _ = raise Empty
+  fun offsetx ({ empty = ref true, ... } : bounds) _ = raise Empty
     | offsetx { minx = ref r, ... } x = x - r
 
-  fun offsety { empty = ref true, ... } _ = raise Empty
+  fun offsety ({ empty = ref true, ... } : bounds) _ = raise Empty
     | offsety { miny = ref r, ... } y = y - r
 
   fun width (bounds : bounds) = offsetx bounds (! (#maxx bounds))
@@ -54,4 +54,22 @@ struct
           boundpoint b (!maxx, !miny);
           boundpoint b (!maxx, !maxy)
       end
+
+  (* XXX In the following two, negative margins can cause the bounding box
+     to go inside out. Raise Empty in that case? *)
+  fun addmargin { empty = ref true, ... } _ = raise Empty
+    | addmargin { maxx, minx, maxy, miny, empty = _ } r =
+      let in
+          maxx := !maxx + r;
+          maxy := !maxy + r;
+          minx := !minx - r;
+          miny := !miny - r
+      end
+
+  fun addmarginfrac { empty = ref true, ... } _ = ()
+    | addmarginfrac (b as { maxx, minx, maxy, miny, empty = _ }) f =
+      let val r = f * Real.max(width b, height b)
+      in  addmargin b r
+      end
+      
 end

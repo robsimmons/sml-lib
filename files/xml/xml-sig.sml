@@ -39,4 +39,8 @@ sig
      *)
   val getleaves : tree -> (string * string list) list
 
+  (* Render as a string, favoring compactness but with newlines for
+     readability. Does not include XML doctype. *)
+  val tostring : tree -> string
+
 end

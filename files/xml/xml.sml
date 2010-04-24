@@ -161,4 +161,56 @@ struct
           rev (map (fn (k, vs) => (k, rev vs)) (!alist))
       end
 
+  (* Written imperatively to avoid n^2 performance for big documents. *)
+  fun tostring tree =
+      let
+          val BUFFER_SIZE = 1024
+              
+          val buf = ref (nil, CharArray.array(BUFFER_SIZE, chr 0), 0)
+
+          fun write w =
+              let val (s, arr, sz) = !buf
+              in
+                  let in
+                      CharArray.update(arr, sz, w);
+                      buf := (s, arr, sz + 1)
+                  end handle Subscript =>
+                      (buf := (CharArraySlice.vector
+                               (CharArraySlice.slice(arr, 0, NONE)) :: s,
+                               arr, 0);
+                       write w)
+              end
+          fun writes s = CharVector.app write s
+
+          fun finalize (s, arr, sz) = 
+              String.concat(rev (CharArraySlice.vector
+                                 (CharArraySlice.slice(arr, 0, SOME sz)) :: s))
+
+          (* FIXME This is wrong; it needs to escape embedded <> " etc. *)
+          fun tos (Elem ((tag, attrs), tl)) =
+              let 
+                  fun oneattr (k, v) =
+                      let in
+                          write #" ";
+                          writes k;
+                          writes "=\""; (* " *)
+                          writes v;
+                          write #"\"" (* " *)
+                      end
+              in
+                  write #"<";
+                  writes tag;
+                  app oneattr attrs;
+                  write #">";
+                  app tos tl;
+                  writes "</";
+                  writes tag;
+                  write #">"
+              end
+            | tos (Text s) = writes s
+      in
+          tos tree;
+          finalize (!buf)
+      end
+
 end

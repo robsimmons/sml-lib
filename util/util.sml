@@ -25,6 +25,7 @@ struct
   datatype ('a, 'b) sum = A of 'a | B of 'b
 
   type 'a orderer = ('a * 'a) -> order
+  fun order_field proj f (l, r) = f (proj l, proj r)
 
   fun sum_compare ca cb (A a1, A a2) = ca (a1, a2)
     | sum_compare ca cb (B b1, B b2) = cb (b1, b2)
@@ -40,11 +41,51 @@ struct
     | order_compare (GREATER, EQUAL) = GREATER
     | order_compare (GREATER, GREATER) = EQUAL
 
-
   fun bool_compare (false, false) = EQUAL
     | bool_compare (false, true) = LESS
     | bool_compare (true, false) = GREATER
     | bool_compare (true, true) = EQUAL
+
+
+  fun option_compare _ (NONE, NONE) = EQUAL
+    | option_compare _ (SOME _, NONE) = GREATER
+    | option_compare _ (NONE, SOME _) = LESS
+    | option_compare f (SOME x, SOME y) = f(x, y)
+
+  fun lex_order oa ob ((a, b), (aa, bb)) =
+    (case oa (a, aa) of
+       LESS => LESS
+     | GREATER => GREATER
+     | EQUAL => ob (b, bb))
+
+  fun lex_list_order oi (nil, nil) = EQUAL
+    | lex_list_order oi (nil, _ :: _) = LESS
+    | lex_list_order oi (_ :: _, nil) = GREATER
+    | lex_list_order oi (a :: al, b :: bl) =
+    (case oi (a, b) of
+       EQUAL => lex_list_order oi (al, bl)
+     | neq => neq)
+
+  fun lex_vector_order oi (v, vv) =
+      case Int.compare (Vector.length v, Vector.length vv) of
+          EQUAL =>
+              let
+                  fun go n = if n >= Vector.length v
+                             then EQUAL
+                             else case oi (Vector.sub(v, n),
+                                           Vector.sub(vv, n)) of
+                                     EQUAL => go (n + 1)
+                                   | neq => neq
+              in
+                  go 0
+              end
+        | neq => neq
+
+  fun lexicographic nil _ = EQUAL
+    | lexicographic (f :: rest) (a, b) =
+      case f (a, b) of
+          EQUAL => lexicographic rest (a, b)
+        | neq => neq
 
   fun mapa f (A x) = A (f x)
     | mapa f (B x) = B x
@@ -74,25 +115,6 @@ struct
 
   fun opandalso (a, b) = a andalso b
   fun oporelse  (a, b) = a orelse b
-
-  fun option_compare _ (NONE, NONE) = EQUAL
-    | option_compare _ (SOME _, NONE) = GREATER
-    | option_compare _ (NONE, SOME _) = LESS
-    | option_compare f (SOME x, SOME y) = f(x, y)
-
-  fun lex_order oa ob ((a, b), (aa, bb)) =
-    (case oa (a, aa) of
-       LESS => LESS
-     | GREATER => GREATER
-     | EQUAL => ob (b, bb))
-
-  fun lex_list_order oi (nil, nil) = EQUAL
-    | lex_list_order oi (nil, _ :: _) = LESS
-    | lex_list_order oi (_ :: _, nil) = GREATER
-    | lex_list_order oi (a :: al, b :: bl) =
-    (case oi (a, b) of
-       EQUAL => lex_list_order oi (al, bl)
-     | neq => neq)
 
   fun c21 f a b = f b a
 

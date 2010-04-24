@@ -1,5 +1,6 @@
 functor SnapPoints(structure A : SNAPPOINTSARG
-                   structure Q : QUADTREE where type pos = A.pos and type dist = real) : SNAPPOINTS where type poly = A.poly =
+                   structure Q : QUADTREE where type pos = A.pos and type dist = real) : 
+        SNAPPOINTS where type poly = A.poly =
 struct
 
   type poly = A.poly
@@ -149,7 +150,7 @@ struct
             val kdtree = Array.foldl (fn ((idx, pt), t) => Q.insert t idx pt) Q.empty all_points
         end
 
-        (* Compare ordered pairs so that we a deterministic for any set of
+        (* Compare ordered pairs deterministically for any set of
            points, regardless of insertion order. This is a
            lexicographic order.
            First, the pair with shorter distance is smaller.
@@ -158,7 +159,6 @@ struct
            smaller second point.
            *)
         fun comparepair ((a, b), (aa, bb)) =
-        (* No need to take roots, because we're just comparing *)
             case Real.compare (A.dist (a, b), A.dist (aa, bb)) of
                 EQUAL => (case A.compare (a, aa) of
                               EQUAL => A.compare (b, bb)
