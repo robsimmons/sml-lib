@@ -106,12 +106,20 @@ struct
     then raise Subscript
     else r := (x, a)
 
-  (* XXX should just discard the existing array, replacing
-     with empty (and then change the semantics) to dispense with
-     aliasing problems. *)
-  fun finalize (ref (n, a)) =
-    Array.tabulate (n, (fn x => case Array.sub(a, x) of
-                                   NONE => raise Subscript
-                                 | SOME z => z))
+  fun finalize (ga as (ref (n, a))) =
+      let 
+          val ret =
+            Array.tabulate (n, (fn x => case Array.sub(a, x) of
+                                           NONE => raise Subscript
+                                         | SOME z => z))
+      in
+          clear ga;
+          ret
+      end
+
+  fun vector (ref (n, a)) =
+    Vector.tabulate (n, (fn x => case Array.sub(a, x) of
+                                    NONE => raise Subscript
+                                  | SOME z => z))
 
 end

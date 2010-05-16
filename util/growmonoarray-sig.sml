@@ -32,9 +32,10 @@ sig
      Raises subscript if the array is not at least this long already. *)
   val truncate : growarray -> int -> unit
 
-  (* after calling this, don't use the growarray
-     any longer, since it may share data with the returned
-     array. *)
+  (* converts the growarray to a regular array
+     and clears the growarray (constant time).
+
+     can raise subscript if the array has holes. *)
   val finalize : growarray -> monoarray
 
 end

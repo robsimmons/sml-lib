@@ -79,8 +79,13 @@ struct
     then raise Subscript
     else r := (x, a)
 
-  fun finalize (ref (n, a)) =
-    A.tabulate (n, (fn x => A.sub(a, x)))
+  fun finalize (ga as (ref (n, a))) =
+      let 
+          (* val ret = A.tabulate (n, (fn x => A.sub(a, x))) *)
+      in
+          clear ga;
+          a
+      end
 
 end
 

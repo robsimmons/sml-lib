@@ -27,12 +27,12 @@ sig
   (* stick an element at the end *)
   val append : 'a growarray -> 'a -> unit
 
-  (* can raise subscript if the array has holes.
-     
-     after calling this, don't use the growarray
-     any longer, since it may share data with the returned
-     array. *)
+  (* converts the growarray to a regular array
+     and clears the growarray.
+
+     can raise subscript if the array has holes. *)
   val finalize : 'a growarray -> 'a Array.array
+  val vector : 'a growarray -> 'a Vector.vector
 
   (* Remove characters from the end so that it is the given length.
      Raises subscript if the array is not at least this long already. *)
