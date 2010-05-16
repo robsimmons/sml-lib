@@ -57,10 +57,10 @@ sig
     (* Path commands are designed to compactly represent drawing intent as
        text strings. For programs, it's better to only have to
        implement a compact set of primitives. This normalizes commands
-       so that they are all in relative coordinates (except the first required
-       moveto command, which if it is absolute we have nothing to relativize it
-       with respect to.), do not have repetitions, and use the minimal set of
-       primitives. *)
+       so that they are all in relative coordinates (except the first
+       required moveto command, which must be absolute because we have
+       nothing to relativize it with respect to.), do not have
+       repetitions, and use the minimal set of primitives. *)
     datatype normalizedcommand =
         PC_Move of real * real
       | PC_Line of real * real

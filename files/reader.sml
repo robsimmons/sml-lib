@@ -121,6 +121,8 @@ struct
     fun makew32 nil = 0w0
       | makew32 (h::t) = (Word32.fromInt (ord h)) + (0w256 * makew32 t)
 
+    fun r8 ({char,...} : reader) = ord (char ())
+
     fun rl16 ({vec,...} : reader) = makeint (explode (vec 2))
     fun rl32 ({vec,...} : reader) = makeint (explode (vec 4))
 

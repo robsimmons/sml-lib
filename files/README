@@ -1,33 +1,37 @@
 
 A collection of modules for reading and writing file formats.
 
-reader  -  An abstract interface to "readable" things (with the ability
-           to do arbitrary seeking); currently files on disk or in
-           memory. This is also useful for parsing packets in a binary
-           oriented network protocol.
+reader     -  An abstract interface to "readable" things (with the ability
+              to do arbitrary seeking); currently files on disk or in
+              memory. This is also useful for parsing packets in a binary
+              oriented network protocol.
+           
+              (Note that files are currently loaded into memory, so this
+              implementation is not efficient for large files yet!)
+           
+elf        -  Reads ELF "executable and linking format" files. This is
+              incomplete, but could be useful if you just need minimal
+              functionality.
+           
+csv        -  Fairly standards-compliant read support for
+              comma-separated-value files.
+           
+midi       -  Reads and writes standard MIDI files. This is pretty much
+              complete, except for some support for obscure features like
+              split SYSEX data.
+           
+mp3        -  Reads and writes MP3 ID3v1.1 tags. No support for any audio.
+           
+wave       -  Reads and writes AIFF 'WAVE' files.
+           
+netpbm     -  Reads a subset of the trivial netPBM graphic format.
+           
+xml        -  Andreas Naumann's FXP parser (only) for XML. BSD-like license.
+              This parser is highly featureful, but complex to use. I provide
+              simplified interface in xml/xml-sig.sml.
+           
+svg        -  Parser for path strings in SVG. Doesn't parse full SVG files.
+              Also includes dead-simple string-based SVG output.
 
-           (Note that files are currently loaded into memory, so this
-           implementation is not efficient for large files yet!)
-
-elf     -  Reads ELF "executable and linking format" files. This is
-           incomplete, but could be useful if you just need minimal
-           functionality.
-
-csv     -  Fairly standards-compliant read support for
-           comma-separated-value files.
-
-midi    -  Reads and writes standard MIDI files. This is pretty much
-           complete, except for some support for obscure features like
-           split SYSEX data.
-
-mp3     -  Reads and writes MP3 ID3v1.1 tags. No support for any audio.
-
-wave    -  Reads and writes AIFF 'WAVE' files.
-
-netpbm  -  Reads a subset of the trivial netPBM graphic format.
-
-xml     -  Andreas Naumann's FXP parser (only) for XML. BSD-like license.
-           This parser is highly featureful, but complex to use. I provide
-           simplified interface in xml/xml-sig.sml.
-
-svg     -  Parser for path strings in SVG. Doesn't parse full SVG files.
+embroidery -  Reads and writes embroidery file formats (currently just partial
+              support for PES).

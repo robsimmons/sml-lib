@@ -1,0 +1,23 @@
+
+group is
+
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+ (* util/port-nj.sml *)
+#else
+ (* assume we are using mlton then *)
+ (* util/port-mlton.sml *)
+#endif
+
+  ../../util/stringutil-sig.sml
+  ../../util/stringutil.sml
+  ../../util/growarray-sig.sml
+  ../../util/growarray.sml
+
+  ../reader-sig.sml
+  ../reader.sml
+
+  pes-sig.sml
+  pes.sml
+
+  pes-test.sml

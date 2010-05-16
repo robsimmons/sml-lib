@@ -73,7 +73,8 @@ sig
 
      Filter out events for which f returns false. Adjusts deltas to maintain
      the appropriate absolute positions of events that are kept. (But, it
-     may change the overall length of the song, for example when f is (K false)). *)
+     may change the overall length of the song, for example when f is 
+     (K false)). *)
   val filter : ('event -> bool) -> (int * 'event) list -> (int * 'event) list
 
   (* Give the total number of midi delta time consumed by this event list.

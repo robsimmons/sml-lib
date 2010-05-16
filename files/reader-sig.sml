@@ -49,11 +49,14 @@ sig
     val rl32 : reader -> int
     val rb16 : reader -> int
     val rb32 : reader -> int
-
+        
     val rlw16 : reader -> Word32.word
     val rlw32 : reader -> Word32.word
     val rbw16 : reader -> Word32.word
     val rbw32 : reader -> Word32.word
+
+    (* Read an 8-bit integer (endianness is not applicable) *)
+    val r8 : reader -> int
 
     val byte : reader -> Word8.word
 
