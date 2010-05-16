@@ -2,11 +2,25 @@
 structure TextSVG :> TEXTSVG =
 struct
 
+  datatype tree = datatype XML.tree
+  exception TextSVG of string
+
   type svggraphic = { (* XML re-rendered *)
                       body : string,
                       (* from <svg> tag *)
                       width : real,
                       height : real }
+
+  (* No exponential notation *)
+  fun ertos r = if (r > ~0.000001 andalso r < 0.000001) 
+                then "0.0" 
+                    (* XXX using 8 for kml, was 4 for svg *)
+                else (Real.fmt (StringCvt.FIX (SOME 8)) r)
+
+  (* Don't use SML's dumb ~ *)
+  fun rtos r = if r < 0.0 
+               then "-" ^ ertos (0.0 - r)
+               else ertos r
 
   fun loadgraphic file =
       let 
@@ -15,22 +29,22 @@ struct
               let
                   fun getpx s =
                     case ListUtil.Alist.find op= attrs s of
-                        NONE => raise PacTom ("expected to find a '" ^ s ^ 
+                        NONE => raise TextSVG ("expected to find a '" ^ s ^ 
                                               "' attr")
                       | SOME px =>
                          let val px = losewhites px
                          in
                              if StringUtil.matchtail "px" px
                              then (case Real.fromString px of
-                                       NONE => raise PacTom "non-numeric px dimension?"
+                                       NONE => raise TextSVG "non-numeric px dimension?"
                                      | SOME f => f)
-                             else raise PacTom "can only parse dimensions in px form"
+                             else raise TextSVG "can only parse dimensions in px form"
                          end
 
                   val (width, height) = (getpx "width", getpx "height")
                   val (x, y) = (getpx "x", getpx "y")
                   val _ = (Real.== (x, 0.0) andalso Real.== (y, 0.0)) orelse
-                      raise PacTom "For now, only x=0 and y=0 svgs are supported"
+                      raise TextSVG "For now, only x=0 and y=0 svgs are supported"
 
                   (* re-render as a string. *)
                   val body =
@@ -44,11 +58,11 @@ struct
                   { width = width, height = height, body = body }
               end
             | process _ = 
-              raise PacTom "expected SVG file to be a single <svg> tag."
+              raise TextSVG "expected SVG file to be a single <svg> tag."
 
           val x = XML.parsefile file
               handle XML.XML s => 
-                  raise PacTom ("Couldn't parse " ^ file ^ "'s xml: " ^ s)
+                  raise TextSVG ("Couldn't parse " ^ file ^ "'s xml: " ^ s)
 
       in
           process x
