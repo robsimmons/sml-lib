@@ -238,31 +238,31 @@ struct
 
   exception Impossible
   fun main1 u go =
-      case require 0 of
+      case require 1 of
         ExactArgs [a] => ignore (go a)
       | ExactArgs _ => raise Impossible
       | Bad s => nope u s
 
   fun main2 u go =
-      case require 0 of
+      case require 2 of
         ExactArgs [a, b] => ignore (go (a, b))
       | ExactArgs _ => raise Impossible
       | Bad s => nope u s
 
   fun main3 u go =
-      case require 0 of
+      case require 3 of
         ExactArgs [a, b, c] => ignore (go (a, b, c))
       | ExactArgs _ => raise Impossible
       | Bad s => nope u s
 
   fun main4 u go =
-      case require 0 of
+      case require 4 of
         ExactArgs [a, b, c, d] => ignore (go (a, b, c, d))
       | ExactArgs _ => raise Impossible
       | Bad s => nope u s
 
   fun main5 u go =
-      case require 0 of
+      case require 5 of
         ExactArgs [a, b, c, d, e] => ignore (go (a, b, c, d, e))
       | ExactArgs _ => raise Impossible
       | Bad s => nope u s
