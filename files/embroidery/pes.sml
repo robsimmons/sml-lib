@@ -19,18 +19,16 @@ struct
       { colorindex : int,
         stitches : (int * int) vector }
 
-  type pesfile =
-      { pesheader : Word64.word vector,
-        (* All of these ints are 16 bit
-           XXX should these just be charvector? *)
-        emboneheader : int vector,
-        sewsegheader : int vector,
-        embpunchheader : int vector,
-        sewfigsegheader : int vector,
-        blocks : stitchblock vector }
+  (* From the PEC section. Basically everything else is ignored. 
+
+     XXX This is not enough to write a valid PES file, so I'll need to
+     add the other headers in the file (assuming they are not optional).
+     Or forget about writing PES and just write PEC; it is simple. *)
+  type pesfile = 
+      { blocks : stitchblock vector }
 
   (* Port note: C# BinaryReader is all little-endian. *)
-  fun readpes (r : reader) =
+  fun readpes (r : reader) : pesfile =
     let
       val magic = #vec r 8 
           handle Bounds => raise PES "not a PES file (<8 bytes)"
@@ -55,7 +53,7 @@ struct
                   handle _ => raise PES ("more stitch blocks than " ^
                                          "colors in header!")
           in
-              GA.append blocks (stitches, colorindex) (* XXX *)
+              GA.append blocks { stitches = stitches, colorindex = colorindex }
           end
 
       val stitches = GA.empty ()
@@ -88,7 +86,6 @@ struct
                 (0w255, 0w0) => 
                 let
                 in
-                    print "end blocks\n";
                     addblock (GA.vector stitches, colornum);
                     GA.clear stitches
                     (* done. *)
@@ -97,9 +94,6 @@ struct
               | (0w254, 0w176) => (* color switch, start a new block *)
                 let
                 in
-                    print ("stitch block (" ^
-                           Int.toString (GA.length stitches) ^
-                           " stitches)\n");
                     addblock (GA.vector stitches, colornum);
                     GA.clear stitches;
                     (* "useless byte" *)
@@ -144,7 +138,7 @@ struct
                          Int.toString (GA.length stitches) ^
                          " stitches in the current one.")
     in
-      raise PES "unimplemented"
+        { blocks = GA.vector blocks }
     end
 
 end
