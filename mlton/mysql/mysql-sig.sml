@@ -25,8 +25,14 @@ sig
   (* connect user password *)
   val connect : string -> string option -> mysql
 
-  (* connectex host user password port unixsocketname *)
-  val connectex : string -> string -> string -> int -> string -> mysql
+  (* connectex host user password port unixsocketname 
+     use "localhost" as the host for local connections (treated specially)
+     use NONE for the password to not specify one.
+     use "" as the user to use the current user.
+     use 0 for port to not specify a port.
+     use NONE for the unix socket to not specify one (like if this is a TCP connection).
+     *)
+  val connectex : string -> string -> string option -> int -> string option -> mysql
 
   (* must call this to avoid leaking resources. 
      after calling it, should discard the argument and all aliases. *)

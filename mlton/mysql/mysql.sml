@@ -71,23 +71,53 @@ struct
     end
     | free _ = raise MySQL "already freed"
 
-  fun connectex host user passwd port unixsocket =
+  fun connectex host user (passwd : string option) port (unixsocket : string option) =
     let
       val mysql_init = _import "mysql_init" : ptr -> mptr ;
-      val mysql_real_connect = _import "mysql_real_connect"
+
+      (* No real good solution to the fact that this takes possibly-NULL string
+         arguments other than importing at all 4 possible types *)
+      val mysql_real_connectSS = _import "mysql_real_connect"
         (* conn       host   user    password    db(null)      port  unixsocketname  flags *)
          : mptr * string * string * string * ptr * int * string *        int ->
             SysWord.word ;
+      val mysql_real_connectNS = _import "mysql_real_connect"
+         : mptr * string * string * ptr * ptr * int * string * int -> SysWord.word ;
+      val mysql_real_connectSN = _import "mysql_real_connect"
+         : mptr * string * string * string * ptr * int * ptr * int -> SysWord.word ;
+      val mysql_real_connectNN = _import "mysql_real_connect"
+         : mptr * string * string * ptr * ptr * int * ptr * int -> SysWord.word ;
 
       (* allocates *)
       val m = mysql_init null
     in
-      case mysql_real_connect (m, String.toCString host, 
-                               String.toCString user, 
-                               String.toCString passwd, 
-                               null, port, 
-                               String.toCString unixsocket, 0) of
-        0w0 =>
+      case 
+        (case (passwd, unixsocket) of
+           (SOME p, SOME u) =>
+             mysql_real_connectSS (m, String.toCString host, 
+                                   String.toCString user, 
+                                   String.toCString p, 
+                                   null, port, 
+                                   String.toCString u, 0)
+         | (SOME p, NONE) => 
+             mysql_real_connectSN (m, String.toCString host, 
+                                   String.toCString user, 
+                                   String.toCString p, 
+                                   null, port, 
+                                   null, 0)
+         | (NONE, SOME u) => 
+             mysql_real_connectNS (m, String.toCString host, 
+                                   String.toCString user, 
+                                   null, 
+                                   null, port, 
+                                   String.toCString u, 0)
+         | (NONE, NONE) => 
+             mysql_real_connectNN (m, String.toCString host, 
+                                   String.toCString user, 
+                                   null,
+                                   null, port, 
+                                   null, 0)) of
+           0w0 =>
           let 
             val err = ("Error connecting: " ^ getError m)
           in
