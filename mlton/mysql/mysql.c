@@ -1,4 +1,5 @@
 
+#include <string.h>
 #include <mysql.h>
 
 #define mm_FIELD_TYPE_TINY         1
