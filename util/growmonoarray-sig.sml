@@ -32,6 +32,9 @@ sig
      Raises subscript if the array is not at least this long already. *)
   val truncate : growarray -> int -> unit
 
+  (* clear all elements, making it length 0 *)
+  val clear : growarray -> unit
+
   (* converts the growarray to a regular array
      and clears the growarray (constant time).
 

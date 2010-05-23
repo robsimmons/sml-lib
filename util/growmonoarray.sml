@@ -17,6 +17,7 @@ struct
   val eq = op =
 
   fun init n = ref (0, U.create n)
+  fun clear r = r := (0, U.create 16)
 
   (* start with 16 cells, why not? *)
   fun empty () = init 16
@@ -81,10 +82,12 @@ struct
 
   fun finalize (ga as (ref (n, a))) =
       let 
-          (* val ret = A.tabulate (n, (fn x => A.sub(a, x))) *)
+          (* PERF: If we had A.truncate, or if n = A.length a, then
+             we can avoid copying here. *)
+          val ret = A.tabulate (n, (fn x => A.sub(a, x)))
       in
           clear ga;
-          a
+          ret
       end
 
 end
