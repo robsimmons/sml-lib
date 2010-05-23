@@ -16,7 +16,7 @@ struct
       Text of string
     | Elem of tag * tree list
 
-  val d = Dtd.initDtdTables()
+  val dtd = Dtd.initDtdTables()
 
   fun vectortoutf8 v =
       let
@@ -64,7 +64,7 @@ struct
                      and between the attribute and value (I think),
                      which is useless except for unparsing *)
                   uo : (UniChar.Data * UniChar.Data) option) =
-      (datatoutf8 (Dtd.Index2AttNot d i), 
+      (datatoutf8 (Dtd.Index2AttNot dtd i), 
        case ap of
            (* XXX ??? *)
            HookData.AP_IMPLIED => "IMPLIED"
@@ -83,8 +83,8 @@ struct
       val appstart = (nil, nil)
           
       fun hookStartTag ((content, stack),
-                        (dtd, id, atts, _, empty)) =
-          let val t = datatoutf8 (Dtd.Index2Element d id)
+                        (_ (* dtd *), id, atts, _, empty)) =
+          let val t = datatoutf8 (Dtd.Index2Element dtd id)
           in
               if empty 
               then (Elem ((t, map spectoattr atts), nil) :: content, stack)
@@ -115,7 +115,7 @@ struct
      benefit. If validation is on, then basically all attributes will
      be rejected as errors, because they are undeclared. *)
   val () = Opt.O_VALIDATE := false 
-  structure Parser = Parse(structure Dtd = Dtd 
+  structure Parser = Parse(structure Dtd = Dtd
                            structure Hooks = Hooks
                            structure ParserOptions = Opt
                            structure Resolve = ResolveNull)
@@ -135,7 +135,11 @@ struct
     | normalize e = e
 
   fun parsefile file = 
-      normalize(Parser.parseDocument (SOME (Uri.String2Uri file)) (SOME d) Hooks.appstart)
+      normalize(Parser.parseDocument (SOME (Uri.String2Uri file)) (SOME dtd) Hooks.appstart)
+
+  fun parsestring string =
+      normalize (Parser.parseDocument (SOME (Uri.String2Uri ("raw-data:" ^ string))) 
+                 (SOME dtd) Hooks.appstart)
 
   fun getleaves tree =
       let 

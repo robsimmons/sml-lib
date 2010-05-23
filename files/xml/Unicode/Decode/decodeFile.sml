@@ -34,21 +34,21 @@ signature DecodeFile =
 structure DecodeFile : DecodeFile =
    struct
       open
-	 UniChar Uri UtilError 
-	 
+         UniChar Uri UtilError 
+         
       structure Bytes = Word8
       type Byte = Bytes.word
 
       fun Byte2Char b = Chars.fromLargeWord(Bytes.toLargeWord b)
       fun Byte2Hex b = 
-	 "0x"^UtilString.toUpperString(StringCvt.padLeft #"0" 2 (Bytes.toString b))
+         "0x"^UtilString.toUpperString(StringCvt.padLeft #"0" 2 (Bytes.toString b))
       fun Char2Byte c = Bytes.fromLargeWord(Chars.toLargeWord c)
 
       type instream = TextIO.instream 
       val closeIn   = TextIO.closeIn
       val input     = TextIO.input
       val input1    = TextIO.input1
-      val openIn    = TextIO.openIn
+      (* val openIn    = TextIO.openIn *)
       val stdIn     = TextIO.stdIn
 
       (*--------------------------------------------------------------------*)
@@ -58,6 +58,7 @@ structure DecodeFile : DecodeFile =
       (* a file is a file position, a buffer, its size and current index.   *)
       (*--------------------------------------------------------------------*)
       datatype FileType = STD | FNAME of (Uri * string * string * bool)
+
       type FilePos = FileType * instream * int
       type File = FilePos * Word8Vector.vector * int * int
 
@@ -68,72 +69,76 @@ structure DecodeFile : DecodeFile =
       (* return the uri of a file.                                          *)
       (*--------------------------------------------------------------------*)
       fun fileUri ((typ,_,_),_,_,_) =
-	 case typ 
-	   of STD => emptyUri
-	    | FNAME(uri,_,_,_) => uri
+         case typ 
+           of STD => emptyUri
+            | FNAME(uri,_,_,_) => uri
       (*--------------------------------------------------------------------*)
       (* return the uri string name of a file.                              *)
       (*--------------------------------------------------------------------*)
       fun fileName ((typ,_,_),_,_,_) =
-	 case typ 
-	   of STD => "<stdin>"
-	    | FNAME(_,str,_,_) => str
+         case typ 
+           of STD => "<stdin>"
+            | FNAME(_,str,_,_) => str
       (*--------------------------------------------------------------------*)
       (* return the uri string and the position in the the file.            *)
       (*--------------------------------------------------------------------*)
       fun filePos ((typ,_,p),_,s,i) =
-	 case typ 
-	   of STD => ("<stdin>",p+i-s)
-	    | FNAME(_,str,_,_) => (str,p+i-s)
+         case typ 
+           of STD => ("<stdin>",p+i-s)
+            | FNAME(_,str,_,_) => (str,p+i-s)
 
       (*--------------------------------------------------------------------*)
       (* open a file; report IO errors by raising NoSuchFile.               *)
       (*--------------------------------------------------------------------*)
       fun openFile uriOpt = 
-	 let val (typ,stream) = 
-	    case uriOpt 
-	      of NONE => (STD,stdIn)
-	       | SOME uri => let val (str,fname,tmp) = retrieveUri uri
-			     in (FNAME(uri,str,fname,tmp),openIn fname)
-			     end
-			  handle IO.Io {name,cause,...} 
-			  => raise NoSuchFile(name,exnMessage cause)
-	 in ((typ,stream,0),nullVec,0,0)
-	 end
+         let val (typ,stream) = 
+            case uriOpt 
+              of NONE => (STD,stdIn)
+               | SOME uri => let val { uri = str, 
+                                       filename = fname, 
+                                       tmp,
+                                       instream } = retrieveUriStream uri
+                             in (FNAME(uri,str,fname,tmp), instream)
+                             end
+                          handle IO.Io {name,cause,...} 
+                          => raise NoSuchFile(name,exnMessage cause)
+
+         in ((typ,stream,0),nullVec,0,0)
+         end
 
       (*--------------------------------------------------------------------*)
       (* close the file; ignore IO errors.                                  *)
       (*--------------------------------------------------------------------*)
       fun closeStream (typ,stream,_) =
-	 case typ
-	   of STD => ()
-	    | FNAME(_,uri,fname,tmp) 
-	      => let val _ = closeIn stream handle IO.Io _ => ()
-		     val _ = (if tmp andalso OS.FileSys.access(fname,nil) 
-				 then OS.FileSys.remove fname else ())
-			handle exn as OS.SysErr _ =>
-			   TextIO.output(TextIO.stdErr,String.concat
-					 ["Error removing temporary file ",fname,"for URI",uri,
-					  "(",exnMessage exn,")\n"])
-			     
-		 in ()
-		 end
+         case typ
+           of STD => ()
+            | FNAME(_,uri,fname,tmp) 
+              => let val _ = closeIn stream handle IO.Io _ => ()
+                     val _ = (if tmp andalso OS.FileSys.access(fname,nil) 
+                                 then OS.FileSys.remove fname else ())
+                        handle exn as OS.SysErr _ =>
+                           TextIO.output(TextIO.stdErr,String.concat
+                                         ["Error removing temporary file ",fname,"for URI",uri,
+                                          "(",exnMessage exn,")\n"])
+                             
+                 in ()
+                 end
       fun closeFile (tsp,_,_,_) = closeStream tsp
-					 
+                                         
       (*--------------------------------------------------------------------*)
       (* read a byte from the file; if at the end of buffer, reload it.     *)
       (* if a reload fails or returns an IO error, raise EndOfFile. --------*)
       (*--------------------------------------------------------------------*)
       fun getByte (tsp,vec,s,i) =
-	 if i<s then (Word8Vector.sub(vec,i),(tsp,vec,s,i+1))
-	 else let val (typ,stream,pos) = tsp
-		  val v = Byte.stringToBytes (input stream) handle IO.Io _ => nullVec
-		  val s = Word8Vector.length v
-	      in if s=0 then let val _ = closeStream tsp
-			     in raise EndOfFile(tsp,v,0,0)
-			     end
-		 else (Word8Vector.sub(v,0),((typ,stream,pos+s),v,s,1))
-	      end
+         if i<s then (Word8Vector.sub(vec,i),(tsp,vec,s,i+1))
+         else let val (typ,stream,pos) = tsp
+                  val v = Byte.stringToBytes (input stream) handle IO.Io _ => nullVec
+                  val s = Word8Vector.length v
+              in if s=0 then let val _ = closeStream tsp
+                             in raise EndOfFile(tsp,v,0,0)
+                             end
+                 else (Word8Vector.sub(v,0),((typ,stream,pos+s),v,s,1))
+              end
 
       (*--------------------------------------------------------------------*)
       (* un-get some bytes. this should only happen while checking for a    *)
@@ -141,11 +146,11 @@ structure DecodeFile : DecodeFile =
       (* that case, otherwise might be very space-consuming.                *)
       (*--------------------------------------------------------------------*)
       fun ungetBytes ((tsp,vec,s,i),bs) =
-	 let val len = length bs
-	 in if len<=i then (tsp,vec,s,i-len)
-	    else let val diff = len-i
-		     val vec0 = Word8Vector.fromList(List.take(bs,diff))
-		 in (tsp,Word8Vector.concat [vec0,vec],s+diff,0)
-		 end
-	 end
+         let val len = length bs
+         in if len<=i then (tsp,vec,s,i-len)
+            else let val diff = len-i
+                     val vec0 = Word8Vector.fromList(List.take(bs,diff))
+                 in (tsp,Word8Vector.concat [vec0,vec],s+diff,0)
+                 end
+         end
    end

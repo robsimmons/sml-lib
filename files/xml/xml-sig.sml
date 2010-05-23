@@ -22,6 +22,9 @@ sig
      the exception XML. *)
   val parsefile : string -> tree
 
+  (* Same, but from a string in memory. *)
+  val parsestring : string -> tree
+
   (* Removes empty text nodes. Concatenates sibling text nodes. *)
   val normalize : tree -> tree
 

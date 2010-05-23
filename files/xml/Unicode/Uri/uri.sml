@@ -30,6 +30,13 @@ signature Uri =
       val Uri2String : Uri -> string
 
       val retrieveUri : Uri -> string * string * bool
+      (* Like above, but supports in-memory URIs with raw-data:<bytes> url scheme. 
+         Can raise IO.Io. *)
+      val retrieveUriStream : Uri -> { uri : string,
+                                       filename : string,
+                                       instream : TextIO.instream,
+                                       tmp : bool }
+
    end
 
 structure Uri :> Uri =
@@ -196,4 +203,31 @@ structure Uri :> Uri =
          case uriLocal uri
            of SOME f => (Uri2String uri,Uri2String f,false) 
             | NONE => retrieveRemote uri 
+
+      fun uriData (uri : string) =
+         if String.isPrefix "raw-data:" uri 
+            then SOME(String.extract(uri,9,NONE)) 
+         else NONE
+
+      fun retrieveUriStream uri =
+          case uriData uri of
+              NONE =>
+                let val (str, fname, tmp) = retrieveUri uri
+                in { uri = str, filename = fname, tmp = tmp,
+                     instream = TextIO.openIn fname }
+                end
+            | SOME s =>
+                { uri = Uri2String uri, 
+                  filename = "<in-memory>",
+                  tmp = false,
+                  instream = 
+                  (* Create a TextIO.instream from a string in
+                     memory. Not sure why nullRd works (from
+                     the Basis documentation it doesn't seem
+                     like it should have any functions defined),
+                     but it does. - tom 7   23 May 2010 *)
+                  TextIO.mkInstream 
+                  (TextIO.StreamIO.mkInstream
+                   (TextPrimIO.nullRd (),
+                    s)) }
    end

@@ -1,0 +1,12 @@
+
+group is
+
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+#endif
+
+  fxlib.cm
+  xml-sig.sml
+  xml.sml
+
+  test.sml

@@ -122,7 +122,7 @@ functor Entities (structure Hooks : Hooks) : Entities =
       (* Make an EntId from the entity's index.                             *)
       (*--------------------------------------------------------------------*)
       fun makeEntId(idx,isParam) = 
-	 if isParam then PARAMETER idx else GENERAL idx
+         if isParam then PARAMETER idx else GENERAL idx
 
       (*--------------------------------------------------------------------*)
       (* A non-empty stack is:                                              *)
@@ -172,13 +172,13 @@ functor Entities (structure Hooks : Hooks) : Entities =
       (*--------------------------------------------------------------------*)
       datatype ExtType = SPECIAL of Special | NORMAL of EntId * State
       and State = 
-	  LOOKED  of Data * State
-	| ENDED of EntId * State
-	| CLOSED of DecFile * int * int * ExtType
-	| INT of Vector * int * int * (EntId * State)
-	| EXT1 of DecFile * int * int * bool * ExtType
-	| EXT2 of CharBuffer * int * int * int * int * bool
-	 * (DecFile * DecodeError option * ExtType)
+          LOOKED  of Data * State
+        | ENDED of EntId * State
+        | CLOSED of DecFile * int * int * ExtType
+        | INT of Vector * int * int * (EntId * State)
+        | EXT1 of DecFile * int * int * bool * ExtType
+        | EXT2 of CharBuffer * int * int * int * int * bool
+         * (DecFile * DecodeError option * ExtType)
 
       exception CantOpenFile of (string * string) * AppData
 
@@ -186,14 +186,14 @@ functor Entities (structure Hooks : Hooks) : Entities =
       (* Extract the unique number from a state.                            *)
       (*--------------------------------------------------------------------*)
       fun getExtEntId extType =
-	 case extType 
-	   of SPECIAL DOC_ENTITY => GENERAL 0
-	    | SPECIAL EXT_SUBSET => PARAMETER 0
-	    | NORMAL(id,_) => id
+         case extType 
+           of SPECIAL DOC_ENTITY => GENERAL 0
+            | SPECIAL EXT_SUBSET => PARAMETER 0
+            | NORMAL(id,_) => id
       fun getEntId q =
          case q 
-	   of LOOKED (_,q) => getEntId q
-	    | ENDED(id,_) => id
+           of LOOKED (_,q) => getEntId q
+            | ENDED(id,_) => id
             | CLOSED(_,_,_,extType) => getExtEntId extType
             | INT(_,_,_,(id,_)) => id
             | EXT1(_,_,_,_,extType) => getExtEntId extType
@@ -209,11 +209,11 @@ functor Entities (structure Hooks : Hooks) : Entities =
             | INT(_,_,_,(_,other)) => getPos other
             | CLOSED(dec,l,col,_) => (decName dec,l,col)
             | EXT1(dec,l,col,_,_) => (decName dec,l,col)
-	    | EXT2(_,_,_,l,col,_,(dec,_,_)) => (decName dec,l,col)
+            | EXT2(_,_,_,l,col,_,(dec,_,_)) => (decName dec,l,col)
             | LOOKED (cs,q) => let val (f,l,c) = getPos q
-	                           val k = length cs 
-			       in if c>=k then (f,l,c-k) else (f,l,0)
-			       end
+                                   val k = length cs 
+                               in if c>=k then (f,l,c-k) else (f,l,0)
+                               end
 
       (*--------------------------------------------------------------------*)
       (* get the path of the nearest enclosing external entity.             *)
@@ -221,7 +221,7 @@ functor Entities (structure Hooks : Hooks) : Entities =
       fun getUri q =
          case q 
            of LOOKED (_,q) => getUri q
-	    | ENDED(_,other) => getUri other
+            | ENDED(_,other) => getUri other
             | INT(_,_,_,(_,other)) => getUri other
             | CLOSED(dec,l,col,_) => decUri dec
             | EXT1(dec,l,col,_,_) => decUri dec
@@ -231,35 +231,35 @@ functor Entities (structure Hooks : Hooks) : Entities =
       (* close all files, return nothing.                                   *)
       (*--------------------------------------------------------------------*)
       fun closeAll q =
-	 case q
-	   of LOOKED(_,other) => closeAll other
-	    | ENDED(_,other) => closeAll other
-	    | CLOSED(_,_,_,SPECIAL _) => ()
-	    | CLOSED(_,_,_,NORMAL(_,other)) => closeAll other
-	    | INT(_,_,_,(_,other)) => closeAll other
-	    | EXT1(dec,_,_,_,SPECIAL _) => ignore(decClose dec)
-	    | EXT1(dec,_,_,_,NORMAL(_,other)) => (ignore (decClose dec); closeAll other)
-	    | EXT2(_,_,_,_,_,_,(dec,_,SPECIAL _)) => ignore(decClose dec)
-	    | EXT2(_,_,_,_,_,_,(dec,_,NORMAL(_,other))) => (ignore (decClose dec); closeAll other)
+         case q
+           of LOOKED(_,other) => closeAll other
+            | ENDED(_,other) => closeAll other
+            | CLOSED(_,_,_,SPECIAL _) => ()
+            | CLOSED(_,_,_,NORMAL(_,other)) => closeAll other
+            | INT(_,_,_,(_,other)) => closeAll other
+            | EXT1(dec,_,_,_,SPECIAL _) => ignore(decClose dec)
+            | EXT1(dec,_,_,_,NORMAL(_,other)) => (ignore (decClose dec); closeAll other)
+            | EXT2(_,_,_,_,_,_,(dec,_,SPECIAL _)) => ignore(decClose dec)
+            | EXT2(_,_,_,_,_,_,(dec,_,NORMAL(_,other))) => (ignore (decClose dec); closeAll other)
 
       (*--------------------------------------------------------------------*)
       (* is this entity already on the stack?                               *)
       (*--------------------------------------------------------------------*)
       fun isOpen (idx,isParam,q) =
-	 let val id = makeEntId(idx,isParam)
-	    fun doit q =
-	       case q 
-		 of LOOKED (_,other) => doit other
-		  | ENDED(id',other) => id=id' orelse doit other
-		  | CLOSED(_,_,_,SPECIAL _) => false
-		  | CLOSED(_,_,_,NORMAL(id',other)) => id=id' orelse doit other
-		  | INT(_,_,_,(id',other)) => id=id' orelse doit other
-		  | EXT1(_,_,_,_,SPECIAL _) => false
-		  | EXT1(_,_,_,_,NORMAL(id',other)) => id=id' orelse doit other
-		  | EXT2(_,_,_,_,_,_,(_,_,SPECIAL _)) => false
-		  | EXT2(_,_,_,_,_,_,(_,_,NORMAL(id',other))) => id=id' orelse doit other
-	 in doit q
-	 end
+         let val id = makeEntId(idx,isParam)
+            fun doit q =
+               case q 
+                 of LOOKED (_,other) => doit other
+                  | ENDED(id',other) => id=id' orelse doit other
+                  | CLOSED(_,_,_,SPECIAL _) => false
+                  | CLOSED(_,_,_,NORMAL(id',other)) => id=id' orelse doit other
+                  | INT(_,_,_,(id',other)) => id=id' orelse doit other
+                  | EXT1(_,_,_,_,SPECIAL _) => false
+                  | EXT1(_,_,_,_,NORMAL(id',other)) => id=id' orelse doit other
+                  | EXT2(_,_,_,_,_,_,(_,_,SPECIAL _)) => false
+                  | EXT2(_,_,_,_,_,_,(_,_,NORMAL(id',other))) => id=id' orelse doit other
+         in doit q
+         end
 
       (*--------------------------------------------------------------------*)
       (* are we in the internal subset, i.e., in the document entity?       *)
@@ -270,7 +270,7 @@ functor Entities (structure Hooks : Hooks) : Entities =
       fun inDocEntity q = 
          case q 
            of LOOKED (_,q) => inDocEntity q
-	    | ENDED(_,other) => inDocEntity other 
+            | ENDED(_,other) => inDocEntity other 
             | INT(_,_,_,(_,other)) => inDocEntity other 
             | CLOSED(_,_,_,NORMAL _) => false
             | CLOSED(_,_,_,SPECIAL what) => what=DOC_ENTITY
@@ -304,79 +304,79 @@ functor Entities (structure Hooks : Hooks) : Entities =
       (* Open an external/internal entity.                                  *)
       (*--------------------------------------------------------------------*)
       fun pushIntern(q,id,isParam,vec) = 
-	 INT(vec,Vector.length vec,0,(makeEntId(id,isParam),q))
+         INT(vec,Vector.length vec,0,(makeEntId(id,isParam),q))
       fun pushExtern(q,id,isParam,uri) = 
          let 
-	    val dec = decOpenXml (SOME uri)
-	    val auto = decEncoding dec
-	    val q1 = EXT1(dec,1,0,false,NORMAL(makeEntId(id,isParam),q))
-	 in (q1,auto)
-	 end
+            val dec = decOpenXml (SOME uri)
+            val auto = decEncoding dec
+            val q1 = EXT1(dec,1,0,false,NORMAL(makeEntId(id,isParam),q))
+         in (q1,auto)
+         end
       fun pushSpecial(what,uri) = 
          let 
-	    val dec = decOpenXml uri
-	    val auto = decEncoding dec
-	    val q = EXT1(dec,1,0,false,SPECIAL what)
-	 in (q,auto)
-	 end
+            val dec = decOpenXml uri
+            val auto = decEncoding dec
+            val q = EXT1(dec,1,0,false,SPECIAL what)
+         in (q,auto)
+         end
 
       (*--------------------------------------------------------------------*)
       (* confirm the autodetected encoding of an external entity.           *) 
       (*--------------------------------------------------------------------*)
       fun commitAuto(a,q) =
-	 case q 
-	   of EXT1(dec,l,col,brk,typ) => 
-	      let
-		 val a1 = a before decCommit dec
-		    handle DecError(_,_,err) 
-		    => hookError(a,(getPos q,ERR_DECODE_ERROR err))
-		 val (arr,n,dec1,err) = initArray dec
-	      in (a1,EXT2(arr,n,0,l,col,brk,(dec1,err,typ)))
-	      end
+         case q 
+           of EXT1(dec,l,col,brk,typ) => 
+              let
+                 val a1 = a before decCommit dec
+                    handle DecError(_,_,err) 
+                    => hookError(a,(getPos q,ERR_DECODE_ERROR err))
+                 val (arr,n,dec1,err) = initArray dec
+              in (a1,EXT2(arr,n,0,l,col,brk,(dec1,err,typ)))
+              end
 (*
-	      in (a1,EXT1(dec,l,col,brk,typ))
-	      end
+              in (a1,EXT1(dec,l,col,brk,typ))
+              end
 *)
-	    | LOOKED(cs,q1) => let val (a1,q2) = commitAuto (a,q1)
-			       in (a1,LOOKED(cs,q2))
-			       end
-	    | CLOSED _ => (a,q)
-	    | _ => raise InternalError(THIS_MODULE,"commitAuto",
-				       "entity is neither EXT1 nor CLOSED nor LOOKED")
+            | LOOKED(cs,q1) => let val (a1,q2) = commitAuto (a,q1)
+                               in (a1,LOOKED(cs,q2))
+                               end
+            | CLOSED _ => (a,q)
+            | _ => raise InternalError(THIS_MODULE,"commitAuto",
+                                       "entity is neither EXT1 nor CLOSED nor LOOKED")
 
       (*--------------------------------------------------------------------*)
       (* change from the autodetected encoding to the declared one.         *) 
       (*--------------------------------------------------------------------*) 
       fun changeAuto (a,q,decl) = 
-	 case q 
-	   of EXT1(dec,l,col,brk,typ) => 
-	      let
-		 val dec1 = decSwitch(dec,decl)
-		    handle DecError(dec,_,err) 
-		    => let val a1 = hookError(a,(getPos q,ERR_DECODE_ERROR err))
-			   val _ = decClose dec
-			   val uri = decName dec
-			   val msg = case err 
-				       of ERR_UNSUPPORTED_ENC _ => "Unsupported encoding"
-					| _ => "Declared encoding incompatible"
-					  ^"with auto-detected encoding"
-		       in raise CantOpenFile ((uri,msg),a1)
-		       end
-		 val newEnc = decEncoding dec1
-		 val (arr,n,dec2,err) = initArray dec1
-	      in (a,EXT2(arr,n,0,l,col,brk,(dec2,err,typ)),newEnc)
-	      end
+         case q 
+           of EXT1(dec,l,col,brk,typ) => 
+              let
+                 val dec1 = decSwitch(dec,decl)
+                    handle DecError(dec,_,err) 
+                    => let val a1 = hookError(a,(getPos q,ERR_DECODE_ERROR err))
+                           val _ = decClose dec
+                           val uri = decName dec
+                           val msg = case err 
+                                       of ERR_UNSUPPORTED_ENC _ => "Unsupported encoding"
+                                        | _ => "Declared encoding incompatible"
+                                          ^"with auto-detected encoding"
+                       in raise CantOpenFile ((uri,msg),a1)
+                       end
+                 val newEnc = decEncoding dec1
+                 val (arr,n,dec2,err) = initArray dec1
+              in (a,EXT2(arr,n,0,l,col,brk,(dec2,err,typ)),newEnc)
+              end
 (*
-	      in (a,EXT1(dec1,l,col,brk,typ),newEnc)
-	      end
+              in (a,EXT1(dec1,l,col,brk,typ),newEnc)
+              end
 *)
 
-	    | LOOKED(cs,q1) => let val (a2,q2,enc2) = changeAuto(a,q1,decl)
-			       in (a2,LOOKED(cs,q2),enc2)
-			       end
-	    | CLOSED(dec,_,_,_) => (a,q,decEncoding dec)
-	    | _ => raise InternalError(THIS_MODULE,"changeAuto",
-				       "entity is neither EXT1 nor CLOSED nor LOOKED")
+            | LOOKED(cs,q1) => let val (a2,q2,enc2) = changeAuto(a,q1,decl)
+                               in (a2,LOOKED(cs,q2),enc2)
+                               end
+            | CLOSED(dec,_,_,_) => (a,q,decEncoding dec)
+            | _ => raise InternalError(THIS_MODULE,"changeAuto",
+                                       "entity is neither EXT1 nor CLOSED nor LOOKED")
 
 
 
@@ -390,51 +390,51 @@ functor Entities (structure Hooks : Hooks) : Entities =
          case q 
            of ENDED(_,other) => getChar(a,other)
             | CLOSED(_,_,_,typ) => 
-	      (case typ 
-		 of SPECIAL _ => raise InternalError (THIS_MODULE,"getChar",
-						      "attempt to read beyond special entity end")
-		  | NORMAL(_,other) => getChar(a,other))
+              (case typ 
+                 of SPECIAL _ => raise InternalError (THIS_MODULE,"getChar",
+                                                      "attempt to read beyond special entity end")
+                  | NORMAL(_,other) => getChar(a,other))
             | INT(vec,s,i,io) => 
               if i>=s then (0wx0,a,ENDED io)
-	      else (Vector.sub(vec,i),a,INT(vec,s,i+1,io)) 
+              else (Vector.sub(vec,i),a,INT(vec,s,i+1,io)) 
             | EXT1(dec,l,col,br,typ) => 
               (let 
-		  val (c,dec1) = decGetChar dec
-	       in 
-		  if (* c>=0wx20 orelse c=0wx09 *)
-		     c>=0wx0020 
-		     andalso (c<=0wxD7FF 
-			      orelse c>=0wxE000 andalso (c<=0wxFFFD 
-							 orelse c>=0wx10000))
-		     orelse c=0wx9
-		     then (c,a,EXT1(dec1,l,col+1,false,typ)) 
-		  else 
-		    if c=0wxA 
-		      then if br then getChar(a,EXT1(dec1,l,col,false,typ))
-			   else (c,a,EXT1(dec1,l+1,0,false,typ))
-		    else (if c=0wxD then (0wxA,a,EXT1(dec1,l+1,0,true,typ))
-			  else let val a1 = hookError(a,(getPos q,ERR_NON_XML_CHAR c))
-			       in getChar(a1,EXT1(dec1,l,col+1,false,typ))
-			       end)
-	       end
-		  handle DecEof dec => (0wx0,a,CLOSED(dec,l,col,typ))
-		       | DecError(dec,eof,err) => 
-				       let val err = ERR_DECODE_ERROR err
-					   val a1 = hookError(a,(getPos q,err))
-				       in if eof then (0wx0,a,CLOSED(dec,l,col,typ))
-					  else getChar(a1,EXT1(dec,col,l,br,typ))
-				       end)
+                  val (c,dec1) = decGetChar dec
+               in 
+                  if (* c>=0wx20 orelse c=0wx09 *)
+                     c>=0wx0020 
+                     andalso (c<=0wxD7FF 
+                              orelse c>=0wxE000 andalso (c<=0wxFFFD 
+                                                         orelse c>=0wx10000))
+                     orelse c=0wx9
+                     then (c,a,EXT1(dec1,l,col+1,false,typ)) 
+                  else 
+                    if c=0wxA 
+                      then if br then getChar(a,EXT1(dec1,l,col,false,typ))
+                           else (c,a,EXT1(dec1,l+1,0,false,typ))
+                    else (if c=0wxD then (0wxA,a,EXT1(dec1,l+1,0,true,typ))
+                          else let val a1 = hookError(a,(getPos q,ERR_NON_XML_CHAR c))
+                               in getChar(a1,EXT1(dec1,l,col+1,false,typ))
+                               end)
+               end
+                  handle DecEof dec => (0wx0,a,CLOSED(dec,l,col,typ))
+                       | DecError(dec,eof,err) => 
+                                       let val err = ERR_DECODE_ERROR err
+                                           val a1 = hookError(a,(getPos q,err))
+                                       in if eof then (0wx0,a,CLOSED(dec,l,col,typ))
+                                          else getChar(a1,EXT1(dec,col,l,br,typ))
+                                       end)
             | EXT2(arr,s,i,l,col,br,det) => 
               if i<s 
                  then let val c = Array.sub(arr,i)
                       in if (* c>=0wx20 orelse c=0wx09 *)
-			 (* c>=0wx0020 andalso c<=0wxD7FF orelse c=0wx9 orelse *)
-			 (* c>=0wxE000 andalso c<=0wxFFFD orelse c>=0wx10000 *)
-			 c>=0wx0020 
-			 andalso (c<=0wxD7FF 
-				  orelse c>=0wxE000 andalso (c<=0wxFFFD 
-							     orelse c>=0wx10000))
-			 orelse c=0wx9
+                         (* c>=0wx0020 andalso c<=0wxD7FF orelse c=0wx9 orelse *)
+                         (* c>=0wxE000 andalso c<=0wxFFFD orelse c>=0wx10000 *)
+                         c>=0wx0020 
+                         andalso (c<=0wxD7FF 
+                                  orelse c>=0wxE000 andalso (c<=0wxFFFD 
+                                                             orelse c>=0wx10000))
+                         orelse c=0wx9
                             then (c,a,EXT2(arr,s,i+1,l,col+1,false,det)) 
                       else if c=0wxA 
                               then if br then getChar(a,EXT2(arr,s,i+1,l,col,false,det))
@@ -445,14 +445,14 @@ functor Entities (structure Hooks : Hooks) : Entities =
                                       end)
                       end
               else let val (dec,err,typ) = det
-		       val (a1,(n,dec1,err1)) = 
-			  case err 
-			    of NONE => if s=BUFSIZE then (a,decGetArray dec arr)
-				       else (a,(0,dec,NONE))
-			     | SOME err => (hookError(a,(getPos q,ERR_DECODE_ERROR err)),
-					    decGetArray dec arr)
+                       val (a1,(n,dec1,err1)) = 
+                          case err 
+                            of NONE => if s=BUFSIZE then (a,decGetArray dec arr)
+                                       else (a,(0,dec,NONE))
+                             | SOME err => (hookError(a,(getPos q,ERR_DECODE_ERROR err)),
+                                            decGetArray dec arr)
                    in if n=0 andalso not (isSome err1)
-			 then (0wx0,a1,CLOSED(dec1,l,col,typ))
+                         then (0wx0,a1,CLOSED(dec1,l,col,typ))
                       else getChar(a1,EXT2(arr,n,0,l,col,br,(dec1,err1,typ)))
                    end
             | LOOKED(nil,q) => getChar(a,q)
@@ -462,96 +462,96 @@ functor Entities (structure Hooks : Hooks) : Entities =
          case q 
            of ENDED(_,other) => getChar11(a,other)
             | CLOSED(_,_,_,typ) => 
-	      (case typ 
-		 of SPECIAL _ => raise InternalError (THIS_MODULE,"getChar11",
-						      "attempt to read beyond special entity end")
-		  | NORMAL(_,other) => getChar11(a,other))
+              (case typ 
+                 of SPECIAL _ => raise InternalError (THIS_MODULE,"getChar11",
+                                                      "attempt to read beyond special entity end")
+                  | NORMAL(_,other) => getChar11(a,other))
             | INT(vec,s,i,io) => 
               if i>=s then (0wx0,a,ENDED io)
-	      else (Vector.sub(vec,i),a,INT(vec,s,i+1,io)) 
+              else (Vector.sub(vec,i),a,INT(vec,s,i+1,io)) 
             | EXT1(dec,l,col,br,typ) => (* br = whether the previous char was 0wx0D *)
-		(let 
-		  val (c,dec1) = decGetChar dec
-		in 
-		  (* cf 2.2 and 2.11 (end-of-line handling) *)
-		  if c>=0wx1 
-		    andalso (c<=0wxD7FF orelse c>=0wxE000 andalso (c<=0wxFFFD orelse 
-								   c>=0wx10000 andalso c<=0wx10FFFF))
-		    then 
-		      if c=0wx2028 then (0wxA,a,EXT1(dec1,l+1,0,false,typ)) 
-		      else 
-			if (c=0wxA orelse c=0wx85) then 
-			  if br then getChar11(a,EXT1(dec1,l,col,false,typ)) 
-			  (* c and 0wxD was previously translated to 0wxA *)
-			  else (0wxA,a,EXT1(dec1,l+1,0,false,typ))
-			else if c=0wxD then (* whatever follows a 0wxA must be produced (cf. 2.11) *)
-			  (0wxA,a,EXT1(dec1,l+1,0,true,typ))
-			     else 
-			       if c<0wx7F orelse c>0wx9F then (c,a,EXT1(dec1,l,col+1,false,typ))
-			       else (* in XML 1.1 the control characters 0wx7F through 0wx9F must appear
-				     only as chracter references *)
-				 let 
-				   val a1 = hookError(a,(getPos q,ERR_MUST_CHARREF c))
-				 in 
-				   getChar11(a1,EXT1(dec1,l,col+1,false,typ))
-				 end
-		  else 
-		    let 
-		      val a1 = hookError(a,(getPos q,ERR_NON_XML_CHAR c))
-		    in 
-		      getChar11(a1,EXT1(dec1,l,col+1,false,typ))
-		    end
-	       end
-		  handle DecEof dec => (0wx0,a,CLOSED(dec,l,col,typ))
-		       | DecError(dec,eof,err) => 
-				       let val err = ERR_DECODE_ERROR err
-					   val a1 = hookError(a,(getPos q,err))
-				       in if eof then (0wx0,a,CLOSED(dec,l,col,typ))
-					  else getChar11(a1,EXT1(dec,col,l,br,typ))
-				       end)
+                (let 
+                  val (c,dec1) = decGetChar dec
+                in 
+                  (* cf 2.2 and 2.11 (end-of-line handling) *)
+                  if c>=0wx1 
+                    andalso (c<=0wxD7FF orelse c>=0wxE000 andalso (c<=0wxFFFD orelse 
+                                                                   c>=0wx10000 andalso c<=0wx10FFFF))
+                    then 
+                      if c=0wx2028 then (0wxA,a,EXT1(dec1,l+1,0,false,typ)) 
+                      else 
+                        if (c=0wxA orelse c=0wx85) then 
+                          if br then getChar11(a,EXT1(dec1,l,col,false,typ)) 
+                          (* c and 0wxD was previously translated to 0wxA *)
+                          else (0wxA,a,EXT1(dec1,l+1,0,false,typ))
+                        else if c=0wxD then (* whatever follows a 0wxA must be produced (cf. 2.11) *)
+                          (0wxA,a,EXT1(dec1,l+1,0,true,typ))
+                             else 
+                               if c<0wx7F orelse c>0wx9F then (c,a,EXT1(dec1,l,col+1,false,typ))
+                               else (* in XML 1.1 the control characters 0wx7F through 0wx9F must appear
+                                     only as chracter references *)
+                                 let 
+                                   val a1 = hookError(a,(getPos q,ERR_MUST_CHARREF c))
+                                 in 
+                                   getChar11(a1,EXT1(dec1,l,col+1,false,typ))
+                                 end
+                  else 
+                    let 
+                      val a1 = hookError(a,(getPos q,ERR_NON_XML_CHAR c))
+                    in 
+                      getChar11(a1,EXT1(dec1,l,col+1,false,typ))
+                    end
+               end
+                  handle DecEof dec => (0wx0,a,CLOSED(dec,l,col,typ))
+                       | DecError(dec,eof,err) => 
+                                       let val err = ERR_DECODE_ERROR err
+                                           val a1 = hookError(a,(getPos q,err))
+                                       in if eof then (0wx0,a,CLOSED(dec,l,col,typ))
+                                          else getChar11(a1,EXT1(dec,col,l,br,typ))
+                                       end)
             | EXT2(arr,s,i,l,col,br,det) => 
               if i<s then 
-		let 
-		  val c = Array.sub(arr,i)
-		in 
-		  (* cf 2.2 and 2.11 *)
-		  if c>=0wx1 
-		    andalso (c<=0wxD7FF orelse c>=0wxE000 andalso (c<=0wxFFFD orelse 
-								   c>=0wx10000 andalso c<=0wx10FFFF))
-		    then 
-		      if c=0wx2028 then (0wxA,a,EXT2(arr,s,i+1,l+1,0,false,det))
-		      else 
-			if (c=0wxA orelse c=0wx85) then 
-			  if br then getChar11(a,EXT2(arr,s,i+1,l,col,false,det)) 
-			  (* c and 0wxD was previously translated to 0wxA *)
-			  else (0wxA,a,EXT2(arr,s,i+1,l+1,0,false,det))
-			else if c=0wxD then (* whatever follows a 0wxA must be produced (cf. 2.11) *)
-			  (0wxA,a,EXT2(arr,s,i+1,l+1,0,true,det))
-			     else 
-			       if c<0wx7F orelse c>0wx9F then (c,a,EXT2(arr,s,i+1,l,col+1,false,det))
-			       else (* in XML 1.1 the control characters 0wx7F through 0wx9F must appear
-				     only as chracter references *)
-				 let 
-				   val a1 = hookError(a,(getPos q,ERR_MUST_CHARREF c))
-				 in 
-				   getChar11(a1,EXT2(arr,s,i+1,l,col+1,false,det))
-				 end
-		  else 
-		    let 
-		      val a1 = hookError(a,(getPos q,ERR_NON_XML_CHAR c))
-		    in 
-		      getChar(a1,EXT2(arr,s,i+1,l,col+1,false,det))
-		    end
-		end
+                let 
+                  val c = Array.sub(arr,i)
+                in 
+                  (* cf 2.2 and 2.11 *)
+                  if c>=0wx1 
+                    andalso (c<=0wxD7FF orelse c>=0wxE000 andalso (c<=0wxFFFD orelse 
+                                                                   c>=0wx10000 andalso c<=0wx10FFFF))
+                    then 
+                      if c=0wx2028 then (0wxA,a,EXT2(arr,s,i+1,l+1,0,false,det))
+                      else 
+                        if (c=0wxA orelse c=0wx85) then 
+                          if br then getChar11(a,EXT2(arr,s,i+1,l,col,false,det)) 
+                          (* c and 0wxD was previously translated to 0wxA *)
+                          else (0wxA,a,EXT2(arr,s,i+1,l+1,0,false,det))
+                        else if c=0wxD then (* whatever follows a 0wxA must be produced (cf. 2.11) *)
+                          (0wxA,a,EXT2(arr,s,i+1,l+1,0,true,det))
+                             else 
+                               if c<0wx7F orelse c>0wx9F then (c,a,EXT2(arr,s,i+1,l,col+1,false,det))
+                               else (* in XML 1.1 the control characters 0wx7F through 0wx9F must appear
+                                     only as chracter references *)
+                                 let 
+                                   val a1 = hookError(a,(getPos q,ERR_MUST_CHARREF c))
+                                 in 
+                                   getChar11(a1,EXT2(arr,s,i+1,l,col+1,false,det))
+                                 end
+                  else 
+                    let 
+                      val a1 = hookError(a,(getPos q,ERR_NON_XML_CHAR c))
+                    in 
+                      getChar(a1,EXT2(arr,s,i+1,l,col+1,false,det))
+                    end
+                end
               else let val (dec,err,typ) = det
-		       val (a1,(n,dec1,err1)) = 
-			  case err 
-			    of NONE => if s=BUFSIZE then (a,decGetArray dec arr)
-				       else (a,(0,dec,NONE))
-			     | SOME err => (hookError(a,(getPos q,ERR_DECODE_ERROR err)),
-					    decGetArray dec arr)
+                       val (a1,(n,dec1,err1)) = 
+                          case err 
+                            of NONE => if s=BUFSIZE then (a,decGetArray dec arr)
+                                       else (a,(0,dec,NONE))
+                             | SOME err => (hookError(a,(getPos q,ERR_DECODE_ERROR err)),
+                                            decGetArray dec arr)
                    in if n=0 andalso not (isSome err1)
-			 then (0wx0,a1,CLOSED(dec1,l,col,typ))
+                         then (0wx0,a1,CLOSED(dec1,l,col,typ))
                       else getChar11(a1,EXT2(arr,n,0,l,col,br,(dec1,err1,typ)))
                    end
             | LOOKED(nil,q) => getChar11(a,q)
