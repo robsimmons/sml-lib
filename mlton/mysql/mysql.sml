@@ -16,9 +16,36 @@ struct
   type mysql = mptr option ref
   type result = rptr option ref
 
-  val mysql_close = _import "mysql_close" : ptr -> unit ;
+  fun protect f (ref (SOME m)) = f m
+    | protect _ (ref NONE) = raise MySQL "protected function called on closed connection or freed result"
 
-  val a2v = _prim "Array_toVector": CharArray.array -> CharVector.vector ;
+  val mysql_close = _import "mysql_close" : ptr -> unit ;
+  val mysql_error = _import "mysql_error" : mptr -> ptr ;
+
+  (* Read a null-terminated C string into an ML string.
+     Linear time. Unsafe, obviously! *)
+  fun fromcstring (ptr : ptr) : string =
+    let
+      fun getsize n = if MLton.Pointer.getInt8 (ptr, n) = 0
+                      then n
+                      else getsize (n + 1)
+    in
+      CharVector.tabulate (getsize 0, fn x => chr (Word8.toInt (MLton.Pointer.getWord8 (ptr, x))))
+    end
+
+  fun error' (m : mptr) =
+    (case fromcstring (mysql_error m) of
+       "" => NONE
+     | s => SOME s)
+      
+  val error = protect error'
+
+  fun getError (m : mptr) =
+    case error' m of
+      NONE => "(no error?)"
+    | SOME s => s
+
+  fun a2v a = CharVector.tabulate (CharArray.length a, fn x => CharArray.sub(a, x))
 
   datatype entry =
     Int of int
@@ -61,10 +88,12 @@ struct
                                null, port, 
                                String.toCString unixsocket, 0) of
         0w0 =>
-          let in
+          let 
+            val err = ("Error connecting: " ^ getError m)
+          in
             (* ok to try to close? we need to deallocate it *)
             mysql_close m;
-            raise MySQL "Error connecting"
+            raise MySQL err
           end
       | _ => ref (SOME m)
     end
@@ -97,16 +126,15 @@ struct
                                              null, 0, 
                                              null, 0)) of
         0w0 =>
-          let in
+          let 
+            val err = "Error connecting: " ^ getError m
+          in
             (* ok to try to close? we need to deallocate it *)
             mysql_close m;
-            raise MySQL "Error connecting"
+            raise MySQL err
           end
       | _ => ref (SOME m)
     end
-
-  fun protect f (ref (SOME m)) = f m
-    | protect _ (ref NONE) = raise MySQL "protected function called on closed connection or freed result"
 
   fun query' m q =
     let
@@ -114,7 +142,7 @@ struct
     in
       case mysql_real_query (m, q, size q) of
         0 =>
-      (* ok, so see if we have a result set. *)
+          (* ok, so see if we have a result set. *)
           let
             val mysql_store_result = _import "mysql_store_result" : mptr -> rptr ;
             val r = mysql_store_result m
@@ -125,7 +153,7 @@ struct
           end
       (* unfortunately hard to check error codes here, as they are #defines in 
          mysql.h. *)
-      | _ => raise MySQL "error in query"
+      | _ => raise MySQL ("error in query: " ^ getError m)
     end
 
   (* Convert from a string to these various types *)

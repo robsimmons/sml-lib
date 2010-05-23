@@ -17,6 +17,11 @@ sig
   (* XXX others like double, time -- add 'em! *)
   | Unknown
 
+  (* Returns a non-empty string describing the current error, or NONE if
+     none. Most functions simply raise MySQL with this error message.
+     The error message is reset by most calls to the backend. *)
+  val error : mysql -> string option
+
   (* connect user password *)
   val connect : string -> string option -> mysql
 

@@ -1,9 +1,7 @@
 
 ann 
-   "allowImport true"
+   "allowFFI true"
    "allowPrim true"
-   "sequenceUnit true"
-   "warnMatch true"
    "warnUnused true"
 in
    $(MLTON_ROOT)/basis/basis.mlb
