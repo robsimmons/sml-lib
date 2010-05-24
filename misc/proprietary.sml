@@ -72,6 +72,10 @@ struct
 
   datatype format = SML | APH
 
+  (* Set of integers. *)
+  type interval = int list
+  val interval_0_255 = List.tabulate (256, fn x => x)
+
   fun generate () =
     let
         val format =
@@ -93,14 +97,23 @@ struct
                 SML => "0w" ^ itos (randword ())
               | APH => itos (randword ())
 
-        fun permutation_tuple l =
+        fun random_bit_log 0 = 1
+          | random_bit_log n =
+            if MT.random_bool mt
+            then random_bit_log (n - 1) * 2
+            else random_bit_log (n - 1)
+
+        fun shuffle_list l =
             let
                 val a = Array.fromList l
             in
                 MT.shuffle mt a;
-                "(" ^ StringUtil.delimit ", "
-                (Array.foldr op:: nil a) ^ ")"
+                (Array.foldr op:: nil a)
             end
+
+        fun permutation_tuple l =
+            "(" ^ StringUtil.delimit ", "
+            (shuffle_list l) ^ ")"
 
         fun tuple_abcd () = permutation_tuple ["a", "b", "c", "d"]
 
@@ -118,6 +131,14 @@ struct
             case format of
                 SML => "(Word32.andb((" ^ a ^ "), (" ^ b ^ ")))"
               | APH => "((" ^ a ^ ") andb (" ^ b ^ "))" (* XXX ?? *)
+
+        fun hasbit (a, bit : int) =
+            case format of
+                SML => "(Word32.andb(Word32.fromInt (" ^ a ^ ")," ^
+                       "Word32.<<(0w1, 0w" ^ Int.toString bit ^ ")) <> 0w0)"
+              | APH => "(((" ^ a ^ ") andb (0x" ^ 
+                       Word32.toString (Word32.<<(0w1, Word.fromInt bit)) ^
+                       ")) > 0)" (* XXX? *)
 
         fun notb a =
             case format of
@@ -143,6 +164,77 @@ struct
                | APH => 
                      "((w << " ^ itos n ^ ") orb (w >> " ^ itos (32 - n) ^ "))"
                      ) ^ " end"
+
+        fun indent z = CharVector.tabulate(z, fn _ => #" ")
+
+        fun nontrivial_predicate [a, b] exp =
+            ("((" ^ exp ^ ") = " ^ Int.toString a ^ ")", [a], [b])
+          | nontrivial_predicate [_] _ = 
+            raise Proprietary "no nontrivial predicates on a singleton"
+          | nontrivial_predicate nil _ =
+            raise Proprietary "no nontrivial predicates on nil!"
+          | nontrivial_predicate l exp =
+            case MT.random_nat mt 3 of
+                (* XXX more of these *)
+                0 =>
+                    let val i = ListUtil.median Int.compare l
+                        val (t, f) = ListUtil.sift (fn x => x <= i) l
+                    in
+                        ("((" ^ exp ^ ") <= " ^ Int.toString i ^ ")",
+                         t, f)
+                    end
+              | _ =>
+                    let 
+                        (* The elements in l are not all the same,
+                           so they must differ in at least one bit. *)
+                        val words = (map Word32.fromInt l)
+                        val w_and = foldl Word32.andb 0wxFFFFFFFF words
+                        val w_or = foldl Word32.orb 0w0 words
+                        (* Choose any bit that's off in w_and
+                           (at least one has a zero) and on in w_or
+                           (at least one has a one) *)
+                        val w_ok = Word32.andb(Word32.notb w_and, w_or)
+                        fun getok 0 l = l
+                          | getok n l =
+                            if Word32.andb(Word32.<< (0w1, Word.fromInt n),
+                                           w_ok) <> 0w0
+                            then getok (n - 1) (n :: l)
+                            else getok (n - 1) l
+                                
+                        val okay = getok 31 nil
+                        val okay = shuffle_list okay
+                        val bit = case okay of
+                            h :: _ => h
+                          | nil => raise Proprietary "impossible! okbit"
+
+                        fun bitset i = 
+                            Word32.andb(Word32.fromInt i,
+                                        Word32.<<(0w1,
+                                                  Word.fromInt bit)) <> 0w0
+                        val (t, f) = ListUtil.sift bitset l
+                    in
+                        (hasbit (exp, bit), t, f)
+                    end
+
+        (* subst_to indentation exp src dst
+           Generate an int-valued expression, which has
+           value somewhere in dst, assuming exp has value
+           somewhere in src. *)
+        fun subst_to z _ _ nil = raise Proprietary "bug: subst_to 0"
+          | subst_to z _ [s] [d] = Int.toString d
+          | subst_to z _ _ [_] = raise Proprietary "bug: subst_to 1"
+          | subst_to z exp src dst =
+            let
+                val (ps, srct, srcf) = nontrivial_predicate src exp
+                val dst = shuffle_list dst
+                val (dstt, dstf) = ListUtil.cleave (length srct) dst
+            in
+                "(if " ^ ps ^ "\n" ^ indent z ^
+                " then " ^ subst_to (z + 8) exp srct dstt ^ "\n" ^ indent z ^
+                " else " ^ subst_to (z + 8) exp srcf dstf ^ ")"
+            end
+
+        val subst_to = subst_to 2
 
         fun mix1 e =
             case MT.random_nat mt 8 of
@@ -199,6 +291,16 @@ struct
                 SML => "(Word32.fromInt (" ^ w ^ "))"
               | APH => w
 
+        fun char_ord c =
+            case format of
+                SML => "(ord (" ^ c ^ "))"
+              | APH => "(ord (" ^ c ^ "))" (* XXX ?? *)
+
+        fun char_chr c =
+            case format of
+                SML => "(chr (" ^ c ^ "))"
+              | APH => "(chr (" ^ c ^ "))" (* XXX ?? *)
+
         fun tointinrange (w, r) =
             case format of
                 SML => "(Word32.toInt (Word32.mod (" ^ w ^ 
@@ -206,8 +308,13 @@ struct
               (* XXX signedness? *)
               | APH => "((" ^ w ^ ") mod (" ^ r ^ "))"
 
+        fun list_map f l =
+            case format of
+                SML => "(map (" ^ f ^ ") (" ^ l ^"))"
+              | APH => "(map (" ^ l ^ ", " ^ f ^"))" (* XXX ? *)
+
         fun hard_round () =
-            case MT.random_nat mt 2 of
+            case MT.random_nat mt 4 of
                 0 =>
                     print ("val x = ref (" ^ randwords () ^ ")\n" ^
                            "fun go n = if n >= size s then !x " ^
@@ -215,6 +322,35 @@ struct
                                                    "!x") ^ "; " ^
                            "  go (n + 1))\n" ^
                            "val d = " ^ mix2 ("go 0", "d") ^ "\n")
+              | 1 =>
+                    print ("val ss = size s\n" ^
+                           "val s = explode s\n" ^
+                           "fun shuffle (l, r, nil, _) = l @ r\n" ^
+                           "  | shuffle (l, r, t, 0) =\n" ^
+                           "      shuffle (r, l, t, " ^
+                           Int.toString (1 + MT.random_nat mt 8) ^ ")\n" ^
+                           "  | shuffle (l, r, h :: t, n) =\n" ^
+                           "      if 0 = ((" ^ 
+                           Int.toString (MT.random_nat mt 12) ^ " + " ^
+                           char_ord "h" ^ ") mod " ^
+                           Int.toString (2 + MT.random_nat mt 3) ^ ")\n" ^
+                           "      then shuffle (l, h :: r, t, n - 1)\n" ^
+                           "      else shuffle (h :: l, r, t, n - 1)\n" ^
+                           "val s = implode (shuffle (nil, nil, s, " ^
+                           "ss div 3 + " ^ 
+                           Int.toString (MT.random_nat mt 5) ^ "))\n")
+
+              | 2 =>
+                    print ("val s = explode s\n" ^
+                           "fun subst c =\n  " ^
+                           "  let val n = " ^ char_ord "c" ^ "\n" ^
+                           "      val n = " ^
+                           subst_to "n" interval_0_255 interval_0_255 ^
+                           "  in " ^ char_chr "n" ^ "\n" ^
+                           "  end\n" ^
+                           "val s = " ^ list_map "subst" "s" ^ "\n" ^
+                           "val s = implode s\n")
+                                 
               | _ =>
                     print ("val y = ref (" ^ randwords () ^ ")\n" ^
                            "fun go n = if n >= size s then !y " ^
