@@ -151,6 +151,17 @@ struct
 
   fun is a b = a = b
 
+  fun protect f cleanup a =
+    let 
+      val ret = f a
+        handle e => (cleanup (); raise e)
+    in
+      cleanup ();
+      ret
+    end
+
+  fun always f cleanup = protect f cleanup ()
+
   structure Oneshot =
   struct
       fun I x = x

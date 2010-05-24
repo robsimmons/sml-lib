@@ -34,4 +34,7 @@ svg        -  Parser for path strings in SVG. Doesn't parse full SVG files.
               Also includes dead-simple string-based SVG output.
 
 embroidery -  Reads and writes embroidery file formats (currently just partial
-              support for PES).
+              rendering support for PES).
+
+rss        -  Utilities for reading RSS feeds. Use XML to parse feeds, then these
+              utilities to manipulate them conveniently.

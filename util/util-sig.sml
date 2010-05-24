@@ -127,6 +127,15 @@ sig
   val opandalso : bool * bool -> bool
   val oporelse  : bool * bool -> bool
 
+  (* Wrap a function so that a cleanup function is always called
+     afterwards, whether it returns normally or with an exception. *)
+  val protect : ('a -> 'b) -> (unit -> unit) -> 'a -> 'b
+
+  (* always f cleanup
+     Run the function f, and run cleanup after it, whether it returns
+     normally or with an exception. *)
+  val always : (unit -> 'a) -> (unit -> unit) -> 'a
+
   (* oneshot is a ref that can be set only once *)
   structure Oneshot :
   sig
