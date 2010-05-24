@@ -26,10 +26,10 @@ sig
 
     val rand32 : mt -> Word32.word
 
-    (* Some utilities. *)
+    (* Some utilities. These are nonstandard, and read an
+       unspecified number of times from the MT stream. *)
 
-    (* Nonstandard. Use input string as 32-bit words,
-       with zero padding. *)
+    (* Use input string as 32-bit words, with zero padding. *)
     val initstring : string -> mt
         
     (* random_nat mt max
@@ -38,6 +38,9 @@ sig
        can take unbounded time to return.
        (Expected worst case is two MT rand32 calls.) *)
     val random_nat : mt -> int -> int
+
+    (* Produce a random boolean with equal probability. *)
+    val random_bool : mt -> bool
 
     (* Shuffle an array. After calling, the array has
        the same elements but in random order. *)

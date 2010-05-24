@@ -94,6 +94,15 @@ struct
         insert (aa, bb) ls
       end
 
+     fun sift f nil = (nil, nil)
+       | sift f (h :: t) =
+         let val (ts, fs) = sift f t
+         in
+             if f h
+             then (h :: ts, fs)
+             else (ts, h :: fs)
+         end
+
     fun combinel f nil = raise ListUtil
       | combinel f (h::t) = foldl f h t
 
@@ -456,5 +465,11 @@ struct
              foldl (fn (lis, sets) =>
                     (elt :: lis) :: sets) sofar sofar
              ) [nil] l
+
+    fun median cmp l =
+        let val l = stablesort cmp l
+            val pos = length l div 2
+        in  List.nth (l, pos)
+        end
 
 end

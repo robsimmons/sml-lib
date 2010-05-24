@@ -212,6 +212,8 @@ struct
                wordat (w * 4 + 3))))
         end
 
+    fun random_bool mt = Word32.andb(rand32 mt, 0w8) = 0w8
+
     fun random_nat mt max =
         if max <= 0
         then raise MersenneTwister "in random_nat, max must be >0"
@@ -241,7 +243,7 @@ struct
                 loop ()
             end
 
-  fun util_for lo hi f =
+    fun util_for lo hi f =
       if lo > hi then ()
       else (ignore (f lo); util_for (lo + 1) hi f)
 

@@ -55,6 +55,10 @@ sig
        arbitrary order. *)
     val stratify : ('a * 'a -> order) -> ('a * 'b) list -> ('a * 'b list) list
 
+    (* Put elements that satisfy the predicate in the first list,
+       those that don't in the second. *)
+    val sift : ('a -> bool) -> 'a list -> 'a list * 'a list
+
     val combiner : ('a * 'a -> 'a) -> 'a list -> 'a
     val combinel : ('a * 'a -> 'a) -> 'a list -> 'a
 
@@ -192,5 +196,10 @@ sig
     val permutations : 'a list -> 'a list list
     (* list of all sublists of the input, in arbitrary order *)
     val power : 'a list -> 'a list list
+
+    (* Raises subscript if the list is empty. Otherwise, returns
+       the middle element (rounding towards smaller, stably) of the
+       sorted list. *)
+    val median : ('a * 'a -> order) -> 'a list -> 'a
 
 end
