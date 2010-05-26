@@ -216,6 +216,20 @@ struct
                         (hasbit (exp, bit), t, f)
                     end
 
+        fun split_math z exp src dst =
+            (* Additive works better if they're sorted. *)
+            case (ListUtil.sort Int.compare src, ListUtil.sort Int.compare dst) of
+                (s :: src, d :: dst) =>
+                    let
+                        (* try to find a * x + b mod c that explains src -> dst. *)
+                        val maxs = foldr Int.max s src
+                        val maxd = foldr Int.max d dst
+                            (* XXX do it *)
+                    in
+                        NONE (* XXX *)
+                    end
+              | _ => NONE
+
         (* subst_to indentation exp src dst
            Generate an int-valued expression, which has
            value somewhere in dst, assuming exp has value
@@ -224,15 +238,20 @@ struct
           | subst_to z _ [s] [d] = Int.toString d
           | subst_to z _ _ [_] = raise Proprietary "bug: subst_to 1"
           | subst_to z exp src dst =
-            let
-                val (ps, srct, srcf) = nontrivial_predicate src exp
-                val dst = shuffle_list dst
-                val (dstt, dstf) = ListUtil.cleave (length srct) dst
-            in
-                "(if " ^ ps ^ "\n" ^ indent z ^
-                " then " ^ subst_to (z + 8) exp srct dstt ^ "\n" ^ indent z ^
-                " else " ^ subst_to (z + 8) exp srcf dstf ^ ")"
-            end
+            (* math doesn't always work, but we can always use a predicate
+               to split. *)
+            case split_math z exp src dst of
+                SOME e => e
+              | NONE => 
+                    let
+                        val (ps, srct, srcf) = nontrivial_predicate src exp
+                        val dst = shuffle_list dst
+                        val (dstt, dstf) = ListUtil.cleave (length srct) dst
+                    in
+                        "(if " ^ ps ^ "\n" ^ indent z ^
+                        " then " ^ subst_to (z + 8) exp srct dstt ^ "\n" ^ indent z ^
+                        " else " ^ subst_to (z + 8) exp srcf dstf ^ ")"
+                    end
 
         val subst_to = subst_to 2
 
