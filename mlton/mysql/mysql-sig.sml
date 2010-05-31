@@ -51,7 +51,21 @@ sig
   (* readall m r
      read the entire matrix of results *)
   val readall : mysql -> result -> entry option list list
-    
+ 
+  (* Print an entry (option) or entire row, for diagnostics.
+     Truncates long data. *)
+  val entrytos : entry option -> string
+  val rowtos : entry option list -> string
+
+  (* Escape (but don't quote) a string. *)
+  val escapestring : mysql -> string -> string
+  (* Ready a value for being sent to the server, which can be anything
+     but Unknown. Ints are rendered as ints, strings are escaped and quoted. *)
+  val escapevalue : mysql -> entry -> string 
+  (* Escapes a whole row of values for inserting with 'insert into'.
+     Surrounds the tuple with parentheses and separates by commas. *)
+  val escapevalues : mysql -> entry list -> string
+
   (* TO-DO: a combinator language for expressing the types of
      columns, so that read can return a list of records directly *)
 end

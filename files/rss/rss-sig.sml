@@ -19,4 +19,9 @@ sig
        It's the strftime format "%a, %d %b %Y %H:%M:%S %z". *)
     val parsedate : string -> Date.date option
 
+    (* Find the first tree of the form <elt>text</elt>,
+       where elt matches the first argument, returning SOME text.
+       If no such tree, return NONE. *)
+    val getfirst : string -> XML.tree list -> string option
+
 end

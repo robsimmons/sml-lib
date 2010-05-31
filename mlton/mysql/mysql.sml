@@ -55,6 +55,48 @@ struct
   (* XXX others like double, time -- add 'em! *)
   | Unknown
 
+  fun escapestring' (mysql : mptr) s =
+      let
+          val a = CharArray.array (size s * 2 + 1, chr 0)
+          val mysql_esc = _import "mysql_real_escape_string" : 
+              mptr * CharArray.array * string * int -> int ;
+
+          val len = mysql_esc (mysql, a, s, size s)
+      in
+          CharVector.tabulate (len, fn x => CharArray.sub(a, x))
+      end
+
+  val escapestring = protect escapestring'
+
+  fun escapevalue' _ Unknown = raise MySQL "can't escape Unknown"
+    | escapevalue' _ (Int i) = Int.toString i
+    | escapevalue' _ (BigInt i) = IntInf.toString i
+    | escapevalue' (mysql : mptr) (String s) = "'" ^ escapestring' mysql s ^ "'"
+      
+  val escapevalue = protect escapevalue'
+
+  fun escapevalues' (mysql : mptr) l =
+      "(" ^ StringUtil.delimit ", " (map (escapevalue' mysql) l) ^ ")"
+
+  val escapevalues = protect escapevalues'
+
+  fun entrytos NONE = "NULL"
+    | entrytos (SOME Unknown) = "Unknown"
+    | entrytos (SOME (String s)) = 
+      let
+          val h = StringUtil.harden (StringUtil.charspec "-A-Za-z0-9 .!@#$%^&*()_+=[]|{}:;'<>,./?") #"\\" 24 s
+      in
+          (* XXX The elipses aren't really accurate. We'd need to get into the implementation of
+             StringUtil.harden for that. *)
+          "\"" ^ h ^
+          (if size h < 24 then "\""
+           else "...\"") (* " *)
+      end
+    | entrytos (SOME (BigInt i)) = "Big " ^ IntInf.toString i
+    | entrytos (SOME (Int i)) = Int.toString i
+
+  fun rowtos r = StringUtil.delimit " " (map entrytos r)
+
   fun close (r as ref (SOME m)) =
     let in
       mysql_close m;

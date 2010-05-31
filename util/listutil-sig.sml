@@ -130,6 +130,7 @@ sig
     val existfirst  : ('a -> bool) -> ('a * 'b) list -> bool
 
     val mapto : ('a -> 'b) -> 'a list -> ('a * 'b) list
+    val maptopartial : ('a -> 'b option) -> 'a list -> ('a * 'b) list
 
     (* get the list index as well. 0 based *)
     val foldli : (int * 'a * 'b -> 'b) -> 'b -> 'a list -> 'b
