@@ -76,6 +76,9 @@ struct
   type interval = int list
   val interval_0_255 = List.tabulate (256, fn x => x)
 
+  structure IntSet = SplaySetFn(type ord_key = int
+                                val compare = Int.compare)
+
   fun generate () =
     let
         val format =
@@ -216,6 +219,31 @@ struct
                         (hasbit (exp, bit), t, f)
                     end
 
+        fun printe s = TextIO.output (TextIO.stdErr, s)
+
+        fun bijective f dom codset = 
+            let
+                fun bij nil s = if IntSet.isEmpty s
+                                then true
+                                else (printe "wasn't empty. started with:\n";
+                                      IntSet.app (fn x =>
+                                                  printe (Int.toString x ^ " ")) codset;
+                                      printe "and have left:\n";
+                                      IntSet.app (fn x =>
+                                                  printe (Int.toString x ^ " ")) s;
+                                      false)
+                  | bij (x :: rest) s =
+                    (* raises NotFound if it's not there. *)
+                    bij rest (IntSet.delete (s, f x))
+            in
+                (*
+                if length dom <> length (IntSet.foldr op:: nil codset)
+                then raise Proprietary "bijective: not same size!"
+                else ();
+                *)
+                bij dom codset
+            end handle LibBase.NotFound => false
+
         fun split_math z exp src dst =
             (* Additive works better if they're sorted. *)
             case (ListUtil.sort Int.compare src, ListUtil.sort Int.compare dst) of
@@ -224,9 +252,45 @@ struct
                         (* try to find a * x + b mod c that explains src -> dst. *)
                         val maxs = foldr Int.max s src
                         val maxd = foldr Int.max d dst
-                            (* XXX do it *)
+                        val max = Int.max (maxs, maxd)
+
+                        val works = ref nil
+                        val src = s :: src
+                        (* Must be sorted for call to bijective below. *)
+                        val dstset = foldl IntSet.add' IntSet.empty (d :: dst)
+                            
+                        val start = Time.now()
                     in
-                        NONE (* XXX *)
+                        (* PERF this is too slow. Should loop a, c, then b,
+                           and make b actually computed for each of the
+                           destination values and the first src value? *)
+                        Util.for 1 max
+                        (fn a =>
+                         (
+                          (* TextIO.output(TextIO.stdErr, Int.toString a ^ " of " ^
+                                        Int.toString max ^ "  [" ^
+                                        Time.toString (Time.-(Time.now (), start)) ^
+                                        " s] -- " ^ Int.toString (length (!works)) ^
+                                        " work\n"); *)
+                          Util.for 0 max
+                          (fn b =>
+                           Util.for maxd (2 * maxd)
+                           (fn c =>
+                            if bijective (fn x => (a * x + b) mod c) src dstset
+                            then works := (a, b, c) :: !works
+                            else ()))));
+
+                        TextIO.output(TextIO.stdErr,
+                                      "in " ^
+                                      Time.toString (Time.-(Time.now (), start)) ^
+                                      "s, " ^ Int.toString (length (!works)) ^
+                                      " worked\n");
+
+                        case shuffle_list (!works) of
+                            nil => NONE
+                          | (a, b, c) :: _ =>
+                                SOME ("((" ^ Int.toString a ^ " * (" ^
+                                      exp ^") + b) mod " ^ Int.toString c ^ ")")
                     end
               | _ => NONE
 
@@ -238,11 +302,20 @@ struct
           | subst_to z _ [s] [d] = Int.toString d
           | subst_to z _ _ [_] = raise Proprietary "bug: subst_to 1"
           | subst_to z exp src dst =
-            (* math doesn't always work, but we can always use a predicate
-               to split. *)
-            case split_math z exp src dst of
-                SOME e => e
-              | NONE => 
+            let val len = length src
+            in
+                (*
+                if length dst <> len
+                then raise Proprietary "bug: src/dst not same length!"
+                else ();
+                *)
+              (* math doesn't always work, but we can always use a predicate
+                 to split. *)
+              case if len <= 5
+                   then split_math z exp src dst 
+                   else NONE of
+                  SOME e => e
+                | NONE => 
                     let
                         val (ps, srct, srcf) = nontrivial_predicate src exp
                         val dst = shuffle_list dst
@@ -252,6 +325,7 @@ struct
                         " then " ^ subst_to (z + 8) exp srct dstt ^ "\n" ^ indent z ^
                         " else " ^ subst_to (z + 8) exp srcf dstf ^ ")"
                     end
+            end
 
         val subst_to = subst_to 2
 

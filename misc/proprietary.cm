@@ -9,6 +9,14 @@ group is
 ../util/stringutil-sig.sml
 ../util/stringutil.sml
 
+../njlib/lib-base-sig.sml
+../njlib/lib-base.sml
+../njlib/ord-key-sig.sml
+../njlib/ord-set-sig.sml
+../njlib/splaytree-sig.sml
+../njlib/splaytree.sml
+../njlib/splay-set-fn.sml
+
 params-sig.sml
 params.sml
 
