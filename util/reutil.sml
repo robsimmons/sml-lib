@@ -61,6 +61,8 @@ struct
         fall o Substring.full
     end
 
+  (* PERF: Use FSM matcher for hasmatch and ismatch; they don't collect
+     submatch information and so they are much faster. *)
   fun hasmatch re = Option.isSome o find re
 
   (* TODO: ismatch *)
