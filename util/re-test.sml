@@ -1,8 +1,8 @@
 
-structure REUtilTest =
+structure RETest =
 struct
 
-    open REUtil
+    open RE
     exception Nope
 
     val () =
@@ -13,7 +13,7 @@ struct
 
         (* Check that find is staged, by seeing that it rejects an
            ill-formed regular expression eagerly. *)
-        val () = (find "("; raise Nope) handle REUtil _ => ()
+        val () = (find "("; raise Nope) handle RE _ => ()
 
         val _ = case find " ([0-9]+) " "now there are 60 wugs" of
             SOME f => (f 1 = "60" orelse raise Nope;
@@ -32,6 +32,6 @@ struct
         ()
     end handle e => (print (exnName e ^ ": " ^ exnMessage e ^ "\n"); raise e)
 
-    val () = print "REUtil passed!\n"
+    val () = print "RE tests passed!\n"
 
 end

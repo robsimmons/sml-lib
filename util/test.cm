@@ -2,4 +2,5 @@ group is
 
   re.cm
 
-  reutil-test.sml
+  re-test.sml
+  

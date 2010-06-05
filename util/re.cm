@@ -26,5 +26,5 @@ is
   ../njlib/regexp/glue/regexp-sig.sml
   ../njlib/regexp/glue/regexp-fn.sml
 
-  reutil-sig.sml
-  reutil.sml
+  re-sig.sml
+  re.sml

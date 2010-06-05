@@ -1,9 +1,9 @@
 (* Simplified interface to regular expressions.
    Also contains a default instantiation of regular
    expressions (AWK syntax). *)
-signature REUTIL =
+signature RE =
 sig
-  exception REUtil of string
+  exception RE of string
 
   structure R : REGEXP
 
