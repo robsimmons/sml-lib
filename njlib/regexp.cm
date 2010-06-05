@@ -3,7 +3,7 @@
  * COPYRIGHT (c) 1998 Bell Labs, Lucent Technologies.
  *)
 
-Library
+group (* Library *)
 
 (*
 signature REGEXP_SYNTAX
@@ -22,6 +22,14 @@ functor RegExpFn
  *)
 
 is
+  
+  lib-base-sig.sml
+  lib-base.sml
+  ord-key-sig.sml
+  ord-set-sig.sml
+  ord-map-sig.sml
+  list-set-fn.sml
+  list-map-fn.sml
 
   regexp/frontend/syntax-sig.sml
   regexp/frontend/syntax.sml

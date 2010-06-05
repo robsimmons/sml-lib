@@ -1,6 +1,7 @@
 (* fsm.sml
  *
- * COPYRIGHT (c) 1998 Bell Labs, Lucent Technologies.
+ * COPYRIGHT (c) 2008 The Fellowship of SML/NJ (http://www.smlnj.org)
+ * All rights reserved.
  * 
  * Non-deterministic and deterministic finite-state machines.
  *)

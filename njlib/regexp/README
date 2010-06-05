@@ -61,6 +61,7 @@ for more details.
 FrontEnd/     Implementation of various surface syntaxes
 BackEnd/      Implementation of various matching engines
 Glue/         Glue code
+Tests/        Testing code
 
 
                               FRONT ENDS
@@ -72,7 +73,7 @@ FrontEnd/awk-syntax.sml for a description of the actual syntax.
 
                               BACK ENDS
 
-Two matching engines are implemented:
+Three matching engines are implemented:
 1) A backtracking engine (BackEnd/bt-engine.sml), that provides full
    submatching information. Slow, low memory footprint, low startup
    cost. 
@@ -80,4 +81,8 @@ Two matching engines are implemented:
    only top-level matching information (the string matched). Fast,
    but memory-intensive and high startup cost (the cost of
    constructing the automaton in the first place)
+3) An implementation of Ken Thompson's RE matching algorithm.  This
+   essentially simulates the NFA using sets of states.  It provides
+   very fast RE construction time and reasonable scanning time.
+   It currently does not implement groups or begin/end markers.
 

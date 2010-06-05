@@ -1,10 +1,12 @@
 (* awk-syntax.sml
  *
- * COPYRIGHT (c) 1995 AT&T Bell Laboratories.
+ * COPYRIGHT (c) 2008 The Fellowship of SML/NJ (http://www.smlnj.org)
+ * All rights reserved.
  *
  * This module implements the AWK syntax for regular expressions.  The
  * syntax is defined on pp. 28-30 of "The AWK Programming Language,"
- * by Aho, Kernighan and Weinberger.
+ * by Aho, Kernighan and Weinberger.  We have extended it with interval
+ * syntax, whcih was added as part of the POSIX standard.
  *
  * The meta characters are:
  *	"\" "^" "$" "." "[" "]" "|" "(" ")" "*" "+" "?"
@@ -25,14 +27,20 @@
  *      "\x"dd  matches the character with hex code dd.
  *
  *    Character classes:
+ *	[...]	matches any character in "..."
+ *	[^...]	a complemented character list, which matches any character not
+ *		in the list "..."
  *
- *    Compound regular expressions:
- *	A"|"B	matches A or B
+ *    Compound regular expressions, where A and B are REs:
+ *	A|B	matches A or B
  *	AB	matches A followed by B
- *	A"?"	matches zero or one As
- *	A"*"	matches zero or more As
- *	A"+"	matches one or more As
- *	"("A")"	matches A
+ *	A?	matches zero or one As
+ *	A*	matches zero or more As
+ *	A+	matches one or more As
+ *	A{n}	matches n copies of A
+ *	A{n,}	matches n copies of A
+ *	A{n,m}	matches n copies of A
+ *	(A)	matches A
  *)
 
 structure AwkSyntax : REGEXP_PARSER =
@@ -52,24 +60,42 @@ structure AwkSyntax : REGEXP_PARSER =
 
     fun scan getc cs = let
 	  fun getc' cs = (case (getc cs)
-			      of NONE => raise Error
-			    | (SOME arg) => arg)
-	  (* end case *)
+		 of NONE => raise Error
+		  | (SOME arg) => arg)
+		(* end case *)
 	  fun isOctDigit c = (#"0" <= c) andalso (c <= #"7")
-	  fun returnVal (v,cl,cs) = 
-	      let val (n,_) = valOf (Int.scan v List.getItem cl)
-	      in
+	  fun returnVal (v, cl, cs) = let
+		val (n, _) = valOf (Int.scan v List.getItem cl)
+		in
 		  (C.chr n, cs) handle _ => raise Error
 	      (* SC.scanString (Int.scan SC.OCT) (implode [c1,c2,c3]) *)
-	      end
+		end
+	  fun getDecimal cs = let
+		fun lp (cs, digits) = (case getc cs
+		       of NONE => (cs, List.rev digits)
+			| SOME(c, cs') =>
+			    if (C.isDigit c) then lp(cs', c::digits)
+			    else (cs, List.rev digits)
+		      (* end case *))
+		in
+		  case lp (cs, [])
+		   of (_, []) => raise Error (* no digits *)
+		    | (cs, digits) => let
+			val SOME(n, _) = (Int.scan SC.DEC List.getItem digits)
+			in
+			  (n, cs)
+			end
+		  (* end case *)
+		end
 	  fun getHexChar (c,cs) = (case (getc cs)
                  of NONE => returnVal (SC.HEX,[c],cs)
-	       | SOME (c',cs') => 
-		   if not (C.isHexDigit c') then returnVal (SC.HEX,[c],cs)
-		   else returnVal (SC.HEX,[c,c'],cs'))
+		  | SOME (c',cs') => 
+		     if not (C.isHexDigit c') then returnVal (SC.HEX,[c],cs)
+		     else returnVal (SC.HEX,[c,c'],cs')
+		(* end case *))
 	  fun getOctalChar (c,cs) = (case (getc cs)
 		 of NONE => returnVal (SC.OCT,[c],cs)
-	          | SOME (c',cs') => 
+	          | SOME(c',cs') => 
 		      if not (isOctDigit c') then returnVal (SC.OCT,[c],cs)
 		      else (case (getc cs')
 			of NONE => returnVal (SC.OCT,[c,c'],cs')
@@ -105,6 +131,11 @@ structure AwkSyntax : REGEXP_PARSER =
 		   of ([], NONE) => raise Error
 		    | ([re], NONE) => (re, cs)
 		    | (_, NONE) => done()
+		    | (re::r, SOME(#"{", cs')) => let
+			val (n, m, cs'') = scanInterval cs'
+			in
+			  scanSeq (R.Interval(re, n, m)::r, cs'')
+			end
 		    | (re::r, SOME(#"?", cs')) => scanSeq (R.Option re :: r, cs')
 		    | (re::r, SOME(#"*", cs')) => scanSeq (R.Star re :: r, cs')
 		    | (re::r, SOME(#"+", cs')) => scanSeq (R.Plus re :: r, cs')
@@ -113,12 +144,34 @@ structure AwkSyntax : REGEXP_PARSER =
 		    | (_, SOME(#"(", cs')) => continue(scanGrp cs')
 		    | (_, SOME(#".", cs')) => continue(dotMatch, cs')
 		    | (_, SOME(#"^", cs')) => continue(R.Begin, cs')
-		    | (_,SOME(#"$",cs')) => continue(R.End, cs')
+		    | (_, SOME(#"$",cs')) => continue(R.End, cs')
 		    | (_, SOME(#"[", cs')) => continue(scanClass cs')
 		    | (_, SOME(#"\\", cs')) => continue(scanEscape cs')
 		    | (_, SOME(c, cs')) => if (isMeta c)
 			then raise Error
 			else scanSeq((R.Char c)::stk, cs')
+		  (* end case *)
+		end
+	(* scan the tail of "{n}", "{n,}", or "{n,m"}", where the leading "{" has already
+	 * been scanned.
+	 *)
+	  and scanInterval cs = let
+		val (n, cs) = getDecimal cs
+		in
+		  case getc cs
+		   of SOME(#",", cs) => (case getc cs
+			 of SOME(#"}", cs) => (n, NONE, cs)
+			  | _ => let
+			      val (m, cs) = getDecimal cs
+			      in
+				case getc cs
+				 of SOME(#"}", cs) => (n, SOME m, cs)
+				  | _ => raise Error
+				(* end case *)
+			      end
+			(* end case *))
+		    | SOME(#"}", cs) => (n, SOME n, cs)
+		    | _ => raise Error
 		  (* end case *)
 		end
 	  and scanGrp cs = let
