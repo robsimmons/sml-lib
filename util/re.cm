@@ -1,0 +1,30 @@
+Library
+is
+
+  ../njlib/lib-base-sig.sml
+  ../njlib/lib-base.sml
+  ../njlib/ord-key-sig.sml
+  ../njlib/ord-set-sig.sml
+  ../njlib/ord-map-sig.sml
+  ../njlib/list-map-fn.sml
+  ../njlib/list-set-fn.sml
+
+  ../njlib/regexp/frontend/syntax-sig.sml
+  ../njlib/regexp/frontend/syntax.sml
+
+  ../njlib/regexp/glue/match-tree.sml
+  ../njlib/regexp/backend/fsm.sml
+
+  ../njlib/regexp/frontend/parser-sig.sml
+  ../njlib/regexp/backend/engine-sig.sml
+
+  ../njlib/regexp/frontend/awk-syntax.sml
+
+  ../njlib/regexp/backend/bt-engine.sml
+(*  ../njlib/regexp/backend/dfa-engine.sml *)
+
+  ../njlib/regexp/glue/regexp-sig.sml
+  ../njlib/regexp/glue/regexp-fn.sml
+
+  reutil-sig.sml
+  reutil.sml
