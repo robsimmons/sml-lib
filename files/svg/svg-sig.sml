@@ -89,4 +89,13 @@ sig
 
     (* Raises SVG for illegal paths. *)
     val normalizepath : pathcommand list -> normalizedpath
+
+    (* For parsing the "points" parameter of e.g. <polyline>. It's
+       just a series of pairs of numbers, where the pairs and series
+       are delimited by a single comma plus optional whitespace, or
+       just whitespace. *)
+    val parsepoints : ((real * real) list, char) Parsing.parser
+    val parsepointsstring : string -> (real * real) list option
+
+
 end

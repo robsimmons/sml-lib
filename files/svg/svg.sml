@@ -144,7 +144,8 @@ struct
                                                     | (_,    i) => real i)
 
     (* nb. also permuted *)
-    val nonnegative_number = floating_point_constant || integer_constant wth real
+    val nonnegative_number = floating_point_constant || 
+        integer_constant wth real
     val coordinate = number
     val coordinate_pair = (coordinate << comma_wspq) && coordinate
 
@@ -253,9 +254,17 @@ struct
     val svg_path = 
         svg_path_prefix << done() wth List.concat
 
+    (* From 9.8, points specifications in "polyline" and "polygon"
+       elements *)
+    val coordinate_pairsq = separate0 coordinate_pair comma_wsp
+        
+    val list_of_points = 
+        repeati wsp >> coordinate_pairsq << repeati wsp
+
   end
 
   val parsepath = Path.svg_path
+  val parsepoints = Path.list_of_points
 
   fun stringstream s =
     let
@@ -271,6 +280,9 @@ struct
 
   fun parsepathstring s = 
       Parsing.parse parsepath (Pos.markstream (stringstream s))
+
+  fun parsepointsstring s = 
+      Parsing.parse parsepoints (Pos.markstream (stringstream s))
 
   datatype normalizedcommand =
       PC_Move of real * real
@@ -422,4 +434,5 @@ struct
         raise SVG "Paths must be empty or start with a non-empty moveto command"
 
   end
+
 end
