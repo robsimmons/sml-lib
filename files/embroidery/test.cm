@@ -17,7 +17,11 @@ group is
   ../reader-sig.sml
   ../reader.sml
 
+  pec-sig.sml
+  pec.sml
+
   pes-sig.sml
   pes.sml
 
+  pec-test.sml
   pes-test.sml
