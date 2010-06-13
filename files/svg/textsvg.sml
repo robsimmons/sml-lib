@@ -11,11 +11,17 @@ struct
                       width : real,
                       height : real }
 
+  (* Trailing zeroes don't change the nature of decimal numbers *)
+  fun striptail s =
+      if CharVector.exists (StringUtil.ischar #".") s
+      then StringUtil.losespecr (StringUtil.ischar #"0") s
+      else s
+
   (* No exponential notation *)
   fun ertos r = if (r > ~0.000001 andalso r < 0.000001) 
                 then "0.0" 
                     (* XXX using 8 for kml, was 4 for svg *)
-                else (Real.fmt (StringCvt.FIX (SOME 8)) r)
+                else (striptail (Real.fmt (StringCvt.FIX (SOME 8)) r))
 
   (* Don't use SML's dumb ~ *)
   fun rtos r = if r < 0.0 

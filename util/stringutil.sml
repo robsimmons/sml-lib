@@ -23,7 +23,7 @@ struct
   (* PERF probably more efficient to use String.concat.
      I use this a LOT, so good to check... *)
   fun delimit s nil = ""
-    | delimit s (h::t) =
+    | delimit s (h :: t) =
         foldl (fn (a, b) => b ^ s ^ a) h t
 
   (* if s is longer than n chars, split it as best as possible
@@ -34,22 +34,23 @@ struct
      *)
   fun wrapto (n : int) (s : string) : string list = 
       let
-          fun wrapline ss =
-              if size ss <= n then [ss]
-              else
-                  let
-                      fun grab nil nil _ = nil
-                        | grab nil l _ = [delimit " " (rev l)]
-                        | grab (h::t) l sof = 
-                          if size h + sof <= n 
-                          then grab t (h::l) (sof + (size h + 1))
-                          else if null l andalso size h > n 
-                               then String.substring (h, 0, n) :: 
-                                      grab (String.substring (h, n, size h - n)::t) nil 0
-                               else (delimit " " (rev l)) :: grab (h::t) nil 0
-                  in
-                      grab (String.fields (ischar #" ") ss) nil 0
-                  end
+        fun wrapline ss =
+          if size ss <= n then [ss]
+          else
+            let
+                fun grab nil nil _ = nil
+                  | grab nil l _ = [delimit " " (rev l)]
+                  | grab (h :: t) l sof = 
+                    if size h + sof <= n 
+                    then grab t (h :: l) (sof + (size h + 1))
+                    else if null l andalso size h > n 
+                         then String.substring (h, 0, n) :: 
+                              grab (String.substring (h, n, size h - n) :: t) 
+                                   nil 0
+                         else (delimit " " (rev l)) :: grab (h :: t) nil 0
+            in
+                grab (String.fields (ischar #" ") ss) nil 0
+            end
       in
           List.concat (map wrapline (String.fields (ischar #"\n") s))
       end
@@ -74,26 +75,27 @@ struct
   fun hardtable il sll =
     let 
       fun f nil = ""
-        | f (sl::rest) =
+        | f (sl :: rest) =
         let 
           (* split up each string at its corresponding length *)
           val psl : string list list =
                 let fun g (nil, nil) = nil
-                      | g (s::r, n::t) = (wrapto (abs n) s) :: g(r, t)
+                      | g (s :: r, n :: t) = (wrapto (abs n) s) :: g(r, t)
                       | g _ = raise StringUtil "inconsistent hardtables(1)"
                 in
                   g (sl, il)
                 end
  
           fun maybetl nil = nil
-            | maybetl (_::t) = t
+            | maybetl (_ :: t) = t
         
           fun j (sll : string list list) =
                 if (List.all List.null sll) then ""
                 else let
                        fun k (nil : string list list, nil : int list) = "\n"
-                         | k (nil::r, n::t) = (pad n "") ^ " " ^ k (r,t)
-                         | k ((s::_)::r, n::t) = (pad n s) ^ " " ^ k (r,t)
+                         | k (nil :: r, n :: t) = (pad n "") ^ " " ^ k (r, t)
+                         | k ((s :: _) :: r, n :: t) = 
+                           (pad n s) ^ " " ^ k (r, t)
                          | k _ = raise StringUtil "inconsistent hardtables(2)"
                      in
                          k (sll, il) ^ j (map maybetl sll)
@@ -142,74 +144,76 @@ struct
 
   fun table n sll =
     let
-        val (sll, cols) = make_square sll
-            
-        (* get info.
-           result is a list of columns, each marked with its
-           required minimum width (mn) and desired max width
-           (mx). *)
-        val initial =
-            foldl (ListPair.map (fn (a, (mn, mx)) => 
-                                 (max (minwidth a, mn),
-                                  max (maxwidth a, mx))))
-                      (List.tabulate (cols, K (0, 0))) sll
+      val (sll, cols) = make_square sll
 
-        (* for this loop, mn is now the "current" width of
-           that column *)
+      (* get info.
+         result is a list of columns, each marked with its
+         required minimum width (mn) and desired max width
+         (mx). *)
+      val initial =
+          foldl (ListPair.map (fn (a, (mn, mx)) => 
+                               (max (minwidth a, mn),
+                                max (maxwidth a, mx))))
+                    (List.tabulate (cols, K (0, 0))) sll
 
-        fun expand cl =
-            let
-                (* actual current width. hardtable puts
-                   a space between each column at a minimum *)
-                val w = (cols - 1) + 
-                    foldl (fn ((c,_), acc) => c + acc) 0 cl
+      (* for this loop, mn is now the "current" width of
+         that column *)
 
-                val surplus = n - w
-            in
-                (* if there's surplus, give it to the most
-                   needy columns *)
-                if surplus > 0
-                then 
-                    let
-                        (* find each column's need *)
-                        val nc = map (fn (c, d) => 
-                                      (c, d, max(d - c, 0))) cl
-                            
-                        val need = 
-                            foldl (fn ((_, _, n), acc) => 
-                                   n + acc) 0 nc
+      fun expand cl =
+          let
+              (* actual current width. hardtable puts
+                 a space between each column at a minimum *)
+              val w = (cols - 1) + 
+                  foldl (fn ((c, _), acc) => c + acc) 0 cl
 
-                        (* allocate surplus proportionally *)
-                        fun alloc remain [(c, d, n)] = [(Int.min(c + n, c + remain), d)]
-                          | alloc _ nil = nil (* ??? *)
-                          | alloc remain ((c,d,0)::rest) =
-                            (c,d) :: alloc remain rest
-                          | alloc remain ((c,d,n)::rest) =
-                            let
-                                val frac = (real n / real need)
-                                val amt = min(Real.trunc (frac * 
-                                                          real surplus),
-                                              remain)
-                            in
-                                (c + amt, d) :: alloc (remain - amt) rest
-                            end
-                    in
-                        alloc surplus nc
-                    end
-                else cl
+              val surplus = n - w
+          in
+              (* if there's surplus, give it to the most
+                 needy columns *)
+              if surplus > 0
+              then 
+                  let
+                      (* find each column's need *)
+                      val nc = map (fn (c, d) => 
+                                    (c, d, max(d - c, 0))) cl
 
-            end
+                      val need = 
+                          foldl (fn ((_, _, n), acc) => 
+                                 n + acc) 0 nc
 
-        (* now expand to fit the space given *)
-        val final = expand initial
+                      (* allocate surplus proportionally *)
+                      fun alloc remain [(c, d, n)] = 
+                          [(Int.min(c + n, c + remain), d)]
+                        | alloc _ nil = nil (* ??? *)
+                        | alloc remain ((c, d, 0) :: rest) =
+                          (c, d) :: alloc remain rest
+                        | alloc remain ((c, d, n) :: rest) =
+                          let
+                              val frac = (real n / real need)
+                              val amt = min(Real.trunc (frac * 
+                                                        real surplus),
+                                            remain)
+                          in
+                              (c + amt, d) :: alloc (remain - amt) rest
+                          end
+                  in
+                      alloc surplus nc
+                  end
+              else cl
 
+          end
+
+      (* now expand to fit the space given *)
+      val final = expand initial
     in
-        hardtable (map #1 final) sll
+      hardtable (map #1 final) sll
     end
 
+  (* XXX PERF this and the next one could be much faster with
+     CharVector.tabulate or map *)
   fun ucase s =
       let fun uc nil = nil
-            | uc (h::t) =
+            | uc (h :: t) =
           (if h >= #"a" andalso h <= #"z" then chr(ord h - 32)
            else h) :: uc t
       in
@@ -218,7 +222,7 @@ struct
 
   fun lcase s =
       let fun lc nil = nil
-            | lc (h::t) =
+            | lc (h :: t) =
           (if h >= #"A" andalso h <= #"Z" then chr(ord h + 32)
            else h) :: lc t
       in
@@ -262,7 +266,8 @@ struct
       val l = TextIO.openIn f
       val s = TextIO.inputAll l
     in
-      TextIO.closeIn l; s
+      TextIO.closeIn l; 
+      s
     end
 
   fun writefile f s =
@@ -418,7 +423,9 @@ struct
                   let val ch = (String.sub (s, n))
                   in
                       if sp ch
-                      then range st (n - 1) :: ss_all (implode[c,ch]) :: f (n + 1) (n + 1)
+                      then range st (n - 1) :: 
+                           ss_all (implode[c, ch]) :: 
+                           f (n + 1) (n + 1)
                       else f st (n + 1)
                   end
       in
@@ -427,9 +434,9 @@ struct
 
   (* last element in a non-empty list *)
   fun llast nil = raise List.Empty
-    | llast (h::t) =
+    | llast (h :: t) =
       let fun f a nil = a
-            | f _ (h::t) = f h t
+            | f _ (h :: t) = f h t
       in f h t
       end
 
@@ -480,20 +487,21 @@ struct
               in order without overlap, beginning
               at character n *)
           fun allinorder n nil s = true
-            | allinorder n (h::t) s =
+            | allinorder n (h :: t) s =
               case findat n h s of
                   NONE => false
-                | SOME nn => allinorder (nn+size h) t s
+                | SOME nn => allinorder (nn + size h) t s
       in
           case String.tokens (ischar #"*") w of
               nil => true (* *, **, etc. matches anything. *)
             | parts => 
-                  let val first = hd parts
-                      val last = llast parts
+                  let 
+                    val first = hd parts
+                    val last = llast parts
                   in
-                  (sfront orelse matchhead first s) andalso
-                  (sback orelse matchtail last s) andalso
-                  allinorder 0 parts s
+                    (sfront orelse matchhead first s) andalso
+                    (sback orelse matchtail last s) andalso
+                    allinorder 0 parts s
                   end
       end
 
@@ -512,35 +520,36 @@ struct
 
   (* trick: (ch | 4400) % 55 *)
   fun hexvalue ch =  
-    SysWord.toInt (SysWord.orb(SysWord.fromInt(ord ch), SysWord.fromInt 4400)) mod 55
+      SysWord.toInt (SysWord.orb(SysWord.fromInt(ord ch), 
+                                 SysWord.fromInt 4400)) mod 55
 
   fun hexdump s =
       let
           (* one chunk of <= 16 bytes *)
           fun line startat s =
-                  if startat > size s then "" else
-                  (fordr startat (startat + 15) ""
-                   (fn (j, rest) =>
-                    (* the byte *)
-                    (if j >= size s then "  "
-                     else (bytetohex (ord (CharVector.sub(s,j))))) ^
-                    (if j mod 2 = 1 then " "
-                     else "") ^
-                    (if j mod 8 = 7 then " "
-                     else "") ^
-                    rest
-                    ) ^
-                   fordr startat (startat + 15) ""
-                   (fn (j, rest) =>
-                    (if j >= size s then " "
-                     else (if printable (CharVector.sub(s,j)) then
-                              implode[CharVector.sub(s,j)] else ".")) ^
-                     (if j mod 8 = 7 then " "
-                     else "") ^
-                     rest
-                    ) ^
-                   "\n" ^
-                   line (startat + 16) s)
+             if startat > size s then "" else
+             (fordr startat (startat + 15) ""
+              (fn (j, rest) =>
+               (* the byte *)
+               (if j >= size s then "  "
+                else (bytetohex (ord (CharVector.sub(s, j))))) ^
+               (if j mod 2 = 1 then " "
+                else "") ^
+               (if j mod 8 = 7 then " "
+                else "") ^
+               rest
+               ) ^
+              fordr startat (startat + 15) ""
+              (fn (j, rest) =>
+               (if j >= size s then " "
+                else (if printable (CharVector.sub(s, j)) then
+                         implode[CharVector.sub(s, j)] else ".")) ^
+                (if j mod 8 = 7 then " "
+                else "") ^
+                rest
+               ) ^
+              "\n" ^
+              line (startat + 16) s)
       in
           line 0 s
       end
@@ -633,10 +642,10 @@ struct
      so this thinks that's a space. *)
   fun urldecode s =
     let
-      fun dec (#"%"::c1::c2::rest) = (chr (hexvalue c1 * 16 +
-                                           hexvalue c2)) :: dec rest
-        | dec (#"+"::rest) = #" " :: dec rest
-        | dec (c::rest) = c :: dec rest
+      fun dec (#"%" :: c1 :: c2 :: rest) = 
+          (chr (hexvalue c1 * 16 + hexvalue c2)) :: dec rest
+        | dec (#"+" :: rest) = #" " :: dec rest
+        | dec (c :: rest) = c :: dec rest
         | dec nil = nil
     in
       SOME (implode (dec (explode s)))
@@ -644,13 +653,12 @@ struct
 
   fun jsunescape s =
     let
-      fun dec (#"%"::c1::c2::rest) = (chr (hexvalue c1 * 16 +
-                                           hexvalue c2)) :: dec rest
-        | dec (c::rest) = c :: dec rest
+      fun dec (#"%" :: c1 :: c2 :: rest) = 
+          (chr (hexvalue c1 * 16 + hexvalue c2)) :: dec rest
+        | dec (c :: rest) = c :: dec rest
         | dec nil = nil
     in
       SOME (implode (dec (explode s)))
     end handle _ => NONE
-
 
 end
