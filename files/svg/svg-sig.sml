@@ -37,8 +37,12 @@ sig
       | PC_V of real list
       | PC_v of real list
       (* Cubic Bezier. *)
-      | PC_C of { x1 : real, y1 : real, x2 : real, y2 : real, x : real, y : real } list
-      | PC_c of { x1 : real, y1 : real, x2 : real, y2 : real, x : real, y : real } list
+      | PC_C of { x1 : real, y1 : real, 
+                  x2 : real, y2 : real, 
+                  x : real, y : real } list
+      | PC_c of { x1 : real, y1 : real, 
+                  x2 : real, y2 : real, 
+                  x : real, y : real } list
       (* Smooth cubic Bezier shortcut *)
       | PC_S of { x2 : real, y2 : real, x : real, y : real } list
       | PC_s of { x2 : real, y2 : real, x : real, y : real } list
@@ -65,9 +69,12 @@ sig
         PC_Move of real * real
       | PC_Line of real * real
       | PC_Close
-      | PC_Cubic of { x1 : real, y1 : real, x2 : real, y2 : real, x : real, y : real }
+      | PC_Cubic of { x1 : real, y1 : real, 
+                      x2 : real, y2 : real, 
+                      x : real, y : real }
       | PC_Quad of { x1 : real, y1 : real, x : real, y : real }
-      | PC_Arc of { rx : real, ry : real, rot : real, large : bool, sweep : bool, 
+      | PC_Arc of { rx : real, ry : real,
+                    rot : real, large : bool, sweep : bool, 
                     x : real, y : real }
 
     datatype normalizedpath =

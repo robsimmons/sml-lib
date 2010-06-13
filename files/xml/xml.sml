@@ -135,10 +135,12 @@ struct
     | normalize e = e
 
   fun parsefile file = 
-      normalize(Parser.parseDocument (SOME (Uri.String2Uri file)) (SOME dtd) Hooks.appstart)
+      normalize(Parser.parseDocument
+                (SOME (Uri.String2Uri file)) (SOME dtd) Hooks.appstart)
 
   fun parsestring string =
-      normalize (Parser.parseDocument (SOME (Uri.String2Uri ("raw-data:" ^ string))) 
+      normalize (Parser.parseDocument
+                 (SOME (Uri.String2Uri ("raw-data:" ^ string))) 
                  (SOME dtd) Hooks.appstart)
 
   fun getleaves tree =
@@ -154,7 +156,8 @@ struct
                   alist := r (!alist)
               end
 
-          fun process (Elem((tag, attrs_ignored), [Text text])) = alist_insert (tag, text)
+          fun process (Elem((tag, attrs_ignored), [Text text])) = 
+              alist_insert (tag, text)
             | process (Elem((tag, attrs_ignored), nil)) = alist_insert (tag, "")
             | process (e as Text _) = ()
             | process (Elem(t, tl)) = app process tl
@@ -164,6 +167,11 @@ struct
           (* We accumulated it backwards, so undo that *)
           rev (map (fn (k, vs) => (k, rev vs)) (!alist))
       end
+
+  fun getattr nil _ = NONE
+    | getattr ((s, v) :: rest) ss = if s = ss 
+                                    then SOME v 
+                                    else getattr rest ss
 
   (* Written imperatively to avoid n^2 performance for big documents. *)
   fun tostring tree =

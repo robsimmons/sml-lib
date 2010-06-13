@@ -26,8 +26,12 @@ struct
     | PC_V of real list
     | PC_v of real list
     (* Cubic Bezier. *)
-    | PC_C of { x1 : real, y1 : real, x2 : real, y2 : real, x : real, y : real } list
-    | PC_c of { x1 : real, y1 : real, x2 : real, y2 : real, x : real, y : real } list
+    | PC_C of { x1 : real, y1 : real, 
+                x2 : real, y2 : real, 
+                x : real, y : real } list
+    | PC_c of { x1 : real, y1 : real, 
+                x2 : real, y2 : real, 
+                x : real, y : real } list
     (* Smooth cubic Bezier shortcut *)
     | PC_S of { x2 : real, y2 : real, x : real, y : real } list
     | PC_s of { x2 : real, y2 : real, x : real, y : real } list
@@ -48,8 +52,9 @@ struct
 
     fun ch c = satisfy (fn x => x = c)
 
-    (* This parser is written to follow the BNF in the spec as closely as I can bear,
-       which often means using some really long names. I hope it is beneficial.
+    (* This parser is written to follow the BNF in the spec as closely as
+       I can bear, which often means using some really long names. I
+       hope it is beneficial.
 
        http://www.w3.org/TR/SVG11/paths.html
        *)
@@ -67,31 +72,37 @@ struct
     val comma_wspq = opt comma_wsp
 
     (* PERF:
-       The SVG spec has an annoying problem here. The string ".5" is a valid
-       fractional constant, even if preceded by "0". That means that "0.5" has
-       two parses: as [integer 0, fractional .5] and [fractional 0.5]. The spec
-       remarks that the BNF productions must "consume as much ... as possible",
-       but this does not do much to fix the ambiguity. The BNF for number
-       says (int | float); if we try int first we consume the 0 and that is as
-       much as possible. If we try float first then we consume the whole thing
-       and that is as much as possible. So you say the rule is, we should parse
-       as much of the input as possible, prefering float? Then let's think about
-       a series of numbers (which is a simplification of something that
-       really occurs, which is a series of number pairs). Now if we follow the
-       int-then-float path we consume the entire input, and if we follow the
-       float path we consume the entire input. How do we know which one to follow?
-       Well, in the ambiguous grammar we have to give some preference to one of
-       the paths. An obvious way to do this would be to try them in order and only
-       backtrack if we get stuck later. (This is precisely what would happen
-       by transcribing the BNF into parser combinators directly.) Unfortunately,
-       the spec actually gives number as (int | float), suggesting that we should
-       prefer to parse a leading int over a leading float. However, in the text
-       it gives the example "M 0.6.5" and indicates that this must parse as
-       the coordinates "0.6","0.5" (not "0", "0.6" as the prefix; not "0.0"
-       (in the grammar there do not need to be any digits after the decimal
-       point either) float "0.6" as the prefix; nor "0.0", "6.5", etc.). I take
-       this to mean that we should prefer to parse a floating point constant
-       over an integer. Fine. There's no clear message on whether
+
+       The SVG spec has an annoying problem here. The string ".5" is a
+       valid fractional constant, even if preceded by "0". That means
+       that "0.5" has two parses: as [integer 0, fractional .5] and
+       [fractional 0.5]. The spec remarks that the BNF productions
+       must "consume as much ... as possible", but this does not do
+       much to fix the ambiguity. The BNF for number says (int |
+       float); if we try int first we consume the 0 and that is as
+       much as possible. If we try float first then we consume the
+       whole thing and that is as much as possible. So you say the
+       rule is, we should parse as much of the input as possible,
+       prefering float? Then let's think about a series of numbers
+       (which is a simplification of something that really occurs,
+       which is a series of number pairs). Now if we follow the
+       int-then-float path we consume the entire input, and if we
+       follow the float path we consume the entire input. How do we
+       know which one to follow? Well, in the ambiguous grammar we
+       have to give some preference to one of the paths. An obvious
+       way to do this would be to try them in order and only backtrack
+       if we get stuck later. (This is precisely what would happen by
+       transcribing the BNF into parser combinators directly.)
+       Unfortunately, the spec actually gives number as (int | float),
+       suggesting that we should prefer to parse a leading int over a
+       leading float. However, in the text it gives the example "M
+       0.6.5" and indicates that this must parse as the coordinates
+       "0.6","0.5" (not "0", "0.6" as the prefix; not "0.0" (in the
+       grammar there do not need to be any digits after the decimal
+       point either) float "0.6" as the prefix; nor "0.0", "6.5",
+       etc.). I take this to mean that we should prefer to parse a
+       floating point constant over an integer. Fine. There's no clear
+       message on whether
             M 0.6.5 1 z
        should parse (it has at least one legal parse as M 0.0 6 0.5 1
        z). This code will parse it after backtracking, which seems to
@@ -147,13 +158,17 @@ struct
         wth (fn (rx, (ry, (rot, (large, (sweep, (x, y)))))) =>
              { rx = rx, ry = ry, rot = rot, large = large, sweep = sweep,
                x = x, y = y })
-    val elliptical_arc_argument_sequence = separate elliptical_arc_argument comma_wspq
+    val elliptical_arc_argument_sequence = 
+        separate elliptical_arc_argument comma_wspq
     val elliptical_arc = 
-        alt [ch #"A" >> repeati wsp >> elliptical_arc_argument_sequence wth PC_A,
-             ch #"a" >> repeati wsp >> elliptical_arc_argument_sequence wth PC_a]
+        alt [ch #"A" >> repeati wsp >> elliptical_arc_argument_sequence 
+             wth PC_A,
+             ch #"a" >> repeati wsp >> elliptical_arc_argument_sequence 
+             wth PC_a]
 
     val smooth_quadratic_bezier_curveto_argument_sequence = 
-        separate (coordinate_pair wth (fn (x, y) => { x = x, y = y })) comma_wspq
+        separate (coordinate_pair wth (fn (x, y) => 
+                                       { x = x, y = y })) comma_wspq
     val smooth_quadratic_bezier_curveto =
         alt [ch #"T" >> repeati wsp >> 
              smooth_quadratic_bezier_curveto_argument_sequence wth PC_T,
@@ -167,23 +182,30 @@ struct
     val quadratic_bezier_curveto_argument_sequence = 
         separate quadratic_bezier_curveto_argument comma_wspq
     val quadratic_bezier_curveto =
-        alt [ch #"Q" >> repeati wsp >> quadratic_bezier_curveto_argument_sequence wth PC_Q,
-             ch #"Q" >> repeati wsp >> quadratic_bezier_curveto_argument_sequence wth PC_q]
+        alt [ch #"Q" >> repeati wsp >> 
+             quadratic_bezier_curveto_argument_sequence wth PC_Q,
+             ch #"Q" >> repeati wsp >> 
+             quadratic_bezier_curveto_argument_sequence wth PC_q]
 
     val smooth_curveto_argument =
         (coordinate_pair << comma_wspq) && coordinate_pair
         wth (fn ((a, b), (c, d)) =>
              { x2 = a, y2 = b, x = c, y = d })
-    val smooth_curveto_argument_sequence = separate smooth_curveto_argument comma_wspq
+    val smooth_curveto_argument_sequence = 
+        separate smooth_curveto_argument comma_wspq
     val smooth_curveto =
-        alt [ch #"S" >> repeati wsp >> smooth_curveto_argument_sequence wth PC_S,
-             ch #"s" >> repeati wsp >> smooth_curveto_argument_sequence wth PC_s]
+        alt [ch #"S" >> repeati wsp >> 
+             smooth_curveto_argument_sequence wth PC_S,
+             ch #"s" >> repeati wsp >> 
+             smooth_curveto_argument_sequence wth PC_s]
 
     val curveto_argument =
         (coordinate_pair << comma_wspq) &&
         (coordinate_pair << comma_wspq) &&
         coordinate_pair wth (fn ((x1, y1), ((x2, y2), (x, y))) =>
-                             { x1 = x1, y1 = y1, x2 = x2, y2 = y2, x = x, y = y })
+                             { x1 = x1, y1 = y1, 
+                               x2 = x2, y2 = y2, 
+                               x = x, y = y })
     val curveto_argument_sequence = separate curveto_argument comma_wspq
     val curveto =
         alt [ch #"C" >> repeati wsp >> curveto_argument_sequence wth PC_C,
@@ -191,13 +213,17 @@ struct
 
     val vertical_lineto_argument_sequence = separate coordinate comma_wspq
     val vertical_lineto = 
-        alt [ch #"V" >> repeati wsp >> vertical_lineto_argument_sequence wth PC_V,
-             ch #"v" >> repeati wsp >> vertical_lineto_argument_sequence wth PC_v]
+        alt [ch #"V" >> repeati wsp >> 
+             vertical_lineto_argument_sequence wth PC_V,
+             ch #"v" >> repeati wsp >> 
+             vertical_lineto_argument_sequence wth PC_v]
 
     val horizontal_lineto_argument_sequence = separate coordinate comma_wspq
     val horizontal_lineto = 
-        alt [ch #"H" >> repeati wsp >> horizontal_lineto_argument_sequence wth PC_H,
-             ch #"h" >> repeati wsp >> horizontal_lineto_argument_sequence wth PC_h]
+        alt [ch #"H" >> repeati wsp >> 
+             horizontal_lineto_argument_sequence wth PC_H,
+             ch #"h" >> repeati wsp >> 
+             horizontal_lineto_argument_sequence wth PC_h]
 
     val lineto_argument_sequence = separate coordinate_pair comma_wspq
     val lineto =
@@ -217,10 +243,13 @@ struct
              smooth_quadratic_bezier_curveto, elliptical_arc]
 
     val drawto_commandsq = separate0 drawto_command (repeati wsp)
-    val moveto_drawto_command_group = (moveto << repeati wsp) && drawto_commandsq wth op::
+    val moveto_drawto_command_group = (moveto << repeati wsp) && 
+        drawto_commandsq wth op::
 
     val svg_path_prefix = 
-        repeati wsp >> (separate0 moveto_drawto_command_group (repeati wsp)) << repeati wsp
+        repeati wsp >> 
+        (separate0 moveto_drawto_command_group (repeati wsp)) << 
+        repeati wsp
     val svg_path = 
         svg_path_prefix << done() wth List.concat
 
@@ -240,13 +269,16 @@ struct
       Stream.old_delay (next 0)
     end
 
-  fun parsepathstring s = Parsing.parse parsepath (Pos.markstream (stringstream s))
+  fun parsepathstring s = 
+      Parsing.parse parsepath (Pos.markstream (stringstream s))
 
   datatype normalizedcommand =
       PC_Move of real * real
     | PC_Line of real * real
     | PC_Close
-    | PC_Cubic of { x1 : real, y1 : real, x2 : real, y2 : real, x : real, y : real }
+    | PC_Cubic of { x1 : real, y1 : real, 
+                    x2 : real, y2 : real, 
+                    x : real, y : real }
     | PC_Quad of { x1 : real, y1 : real, x : real, y : real }
     | PC_Arc of { rx : real, ry : real, rot : real, large : bool, sweep : bool, 
                   x : real, y : real }
@@ -309,9 +341,11 @@ struct
       | npath _ _ (PC_m nil :: _) = raise SVG "empty Moveto command"
 
       (* normalized commands that are already relative are easy. *)
-      | npath _ _ (PC_l (c :: r) :: rest) = PC_Line c :: npath c NO (PC_l r :: rest)
+      | npath _ _ (PC_l (c :: r) :: rest) = PC_Line c :: 
+        npath c NO (PC_l r :: rest)
       (* Not a typo: Subsequent coordinates in a moveto mean lineto. *)
-      | npath _ _ (PC_m (c :: r) :: rest) = PC_Move c :: npath c NO (PC_l r :: rest)
+      | npath _ _ (PC_m (c :: r) :: rest) = PC_Move c :: 
+        npath c NO (PC_l r :: rest)
 
       (* The end coordinate x,y is where the cursor is left. (spec @8.3.6) *)
       | npath _ _ (PC_c ((c as { x, y, x2, y2, ... }) :: r) :: rest) =
@@ -356,21 +390,26 @@ struct
                                      x : real, y : real } :: r) :: rest) =
         (* rx,ry are lengths, not points. rot is an angle, and the flags
            obviously are not "relative". *)
-        npath (x0, y0) prev (PC_a [{ rx = rx, ry = ry, rot = rot, large = large,
-                                     sweep = sweep, x = x - x0, y = y - y0 }] ::
+        npath (x0, y0) prev (PC_a [{ rx = rx, ry = ry, rot = rot, 
+                                     large = large, sweep = sweep, 
+                                     x = x - x0, y = y - y0 }] ::
                              PC_A r :: rest)
       | npath (x0, y0) prev (PC_S ({ x2, y2, x, y } :: r) :: rest)=
-        npath (x0, y0) prev (PC_s [{ x2 = x2 - x0, y2 = y2 - y0, x = x - x0, y = y - y0 }]
+        npath (x0, y0) prev (PC_s [{ x2 = x2 - x0, y2 = y2 - y0, 
+                                     x = x - x0, y = y - y0 }]
                              :: PC_S r :: rest)
       | npath (x0, y0) prev (PC_T ({ x, y } :: r) :: rest) =
-        npath (x0, y0) prev (PC_t [{ x = x - x0, y = y - y0 }] :: PC_T r :: rest)
+        npath (x0, y0) prev (PC_t [{ x = x - x0, y = y - y0 }] :: 
+                             PC_T r :: rest)
       | npath (x0, y0) prev (PC_C ({ x1, y1, x2, y2, x, y } :: r) :: rest) =
         npath (x0, y0) prev (PC_c [{ x1 = x1 - x0, y1 = y1 - y0,
                                      x2 = x2 - x0, y2 = y2 - y0,
-                                     x  = x  - x0, y  = y  - y0 }] :: PC_C r :: rest)
+                                     x  = x  - x0, y  = y  - y0 }] :: 
+                             PC_C r :: rest)
       | npath (x0, y0) prev (PC_Q ({ x1, y1, x, y } :: r) :: rest) =
-        npath (x0, y0) prev (PC_q [{ x1 = x1 - x0, y1 = y1 - y0, x = x - x0, y = y - y0 }]
-                             :: PC_Q r :: rest)
+        npath (x0, y0) prev (PC_q [{ x1 = x1 - x0, y1 = y1 - y0, 
+                                     x = x - x0, y = y - y0 }] ::
+                             PC_Q r :: rest)
 
   in
 

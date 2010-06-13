@@ -42,6 +42,10 @@ sig
      *)
   val getleaves : tree -> (string * string list) list
 
+  (* Get the first attribute matching the given name, or NONE
+     if none match. *)
+  val getattr : attribute list -> string -> string option
+
   (* Render as a string, favoring compactness but with newlines for
      readability. Does not include XML doctype. *)
   val tostring : tree -> string
