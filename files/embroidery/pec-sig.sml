@@ -4,8 +4,15 @@ sig
 
   exception PEC of string
 
+  type color = Word8.word * Word8.word * Word8.word
+  (* Standard PEC/PES colors. If the index is out of
+     bounds, you should assume white. *)
+  val colors : color Vector.vector
+
   type stitchblock =
-      { colorindex : int,
+      { (* index into the standard colors *)
+        colorindex : int,
+        (* stitches, in absolute coordinates, measured in mm *)
         stitches : (int * int) vector }
 
   type pecfile = 
@@ -25,5 +32,10 @@ sig
      (for PEC, right after the magic; for PES, at the position indicated
      by the pecstart field) to read that data. *)
   val readpecbody : Reader.reader -> pecfile
+
+  (* Write the PEC file to the named file. Since not all fields
+     (e.g. the design name) are present in the pecfile type, dummy
+     values are cooked up for these. Raises PEC on any error. *)
+  val writefile : string -> pecfile -> unit
 
 end

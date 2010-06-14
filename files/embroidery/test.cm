@@ -13,9 +13,14 @@ group is
   ../../util/stringutil.sml
   ../../util/growarray-sig.sml
   ../../util/growarray.sml
+  ../../util/growmonoarray-sig.sml
+  ../../util/growmonoarray.sml
 
   ../reader-sig.sml
   ../reader.sml
+
+  ../writer-sig.sml
+  ../writer.sml
 
   pec-sig.sml
   pec.sml

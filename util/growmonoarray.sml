@@ -111,5 +111,8 @@ end
 structure GCharArray = GrowMonoArrayFn(structure A = CharArray
                                        structure U = Unsafe.CharArray)
 
+structure GWord8Array = GrowMonoArrayFn(structure A = Word8Array
+                                        structure U = Unsafe.Word8Array)
+
 (* XXX etc. *)
 

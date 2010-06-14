@@ -1,4 +1,3 @@
-
 structure Wave :> WAVE =
 struct
 
@@ -61,6 +60,8 @@ struct
         if lo > hi then ()
         else (ignore (f lo); for (lo + 1) hi f)
 
+    (* XXX: I copied a lot of this stuff to Writer, so this could
+       be written in terms of that and get rid of the generic stuff. *)
     fun toany (wb : w8 -> unit) (w : wave) =
         let
             fun wid s =
@@ -169,7 +170,9 @@ struct
 
     fun tofile w f =
         let
-            val f = BinIO.openOut f handle e => raise Wave ("could not open " ^ f ^ " for output: " ^ exnMessage e)
+            val f = BinIO.openOut f handle e => 
+                raise Wave ("could not open " ^ f ^ 
+                            " for output: " ^ exnMessage e)
         in
             toany (fn b => BinIO.output1 (f, b)) w;
             BinIO.closeOut f
