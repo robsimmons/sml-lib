@@ -254,9 +254,12 @@ struct
             then
                 (let val twoc = 
                      if n < 0
-                     then n + 2048
+                     then n + 4096
                      else n
                  in
+                     TextIO.output(TextIO.stdErr, 
+                                   Int.toString n ^ " becomes " ^
+                                   Int.toString twoc ^ "\n");
                      #byte f (Word8.orb 
                               (0w128, Word8.fromInt (twoc div 256)));
                      #byte f (Word8.fromInt (twoc mod 256))
