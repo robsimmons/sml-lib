@@ -168,6 +168,15 @@ struct
                      "((w << " ^ itos n ^ ") orb (w >> " ^ itos (32 - n) ^ "))"
                      ) ^ " end"
 
+        fun subscript_vector (vec, idx) =
+            case format of
+                SML => 
+                    let val vec = CharVector.fromList (map chr vec)
+                    in "(ord (String.sub(\"" ^ String.toString vec ^ "\", " ^
+                        idx ^ ")))"
+                    end
+              | APH => raise Proprietary "unimplemented"
+
         fun indent z = CharVector.tabulate(z, fn _ => #" ")
 
         fun nontrivial_predicate [a, b] exp =
@@ -244,7 +253,7 @@ struct
                 bij dom codset
             end handle LibBase.NotFound => false
 
-        fun split_math z exp src dst =
+        fun split_math _ exp src dst =
             (* Additive works better if they're sorted. *)
             case (ListUtil.sort Int.compare src, ListUtil.sort Int.compare dst) of
                 (s :: src, d :: dst) =>
@@ -261,38 +270,72 @@ struct
                             
                         val start = Time.now()
                     in
-                        (* PERF this is too slow. Should loop a, c, then b,
-                           and make b actually computed for each of the
-                           destination values and the first src value? *)
+                        (* Loop over possible values for a and c.
+                           Since the first src must map to some destination
+                           value in our set, compute the values for b that
+                           map the first src to a destination, and see if
+                           they work for the other values. *)
                         Util.for 1 max
                         (fn a =>
-                         (
+                         Util.for maxd (2 * maxd - 1)
+                         (fn c =>
                           (* TextIO.output(TextIO.stdErr, Int.toString a ^ " of " ^
                                         Int.toString max ^ "  [" ^
                                         Time.toString (Time.-(Time.now (), start)) ^
                                         " s] -- " ^ Int.toString (length (!works)) ^
                                         " work\n"); *)
-                          Util.for 0 max
-                          (fn b =>
-                           Util.for maxd (2 * maxd)
-                           (fn c =>
-                            if bijective (fn x => (a * x + b) mod c) src dstset
-                            then works := (a, b, c) :: !works
-                            else ()))));
+                          List.app
+                          (fn dest =>
+                           let val b = (dest - (a * s) mod c) mod c
+                           in
+                               if bijective (fn x => (a * x + b) mod c) src dstset
+                               then works := (a, b, c) :: !works
+                               else ()
+                           end) (d :: dst)));
 
+(*
                         TextIO.output(TextIO.stdErr,
                                       "in " ^
                                       Time.toString (Time.-(Time.now (), start)) ^
                                       "s, " ^ Int.toString (length (!works)) ^
-                                      " worked\n");
+                                      " worked for " ^
+                                       Int.toString (length (s :: src)) ^ "\n");
+*)
 
                         case shuffle_list (!works) of
                             nil => NONE
                           | (a, b, c) :: _ =>
                                 SOME ("((" ^ Int.toString a ^ " * (" ^
-                                      exp ^") + b) mod " ^ Int.toString c ^ ")")
+                                      exp ^") + " ^ Int.toString b ^ ") mod " ^ 
+                                      Int.toString c ^ ")")
                     end
               | _ => NONE
+
+        fun split_vec z exp src dst =
+            let val indices = List.tabulate (length dst, fn x => x)
+            in case split_math z exp src indices of
+                NONE => NONE
+              | SOME e => SOME (subscript_vector (dst, e))
+            end
+
+        fun intcase z exp nil default =
+            (* No cases, but make sure to run the expression for
+               side effects, if any *)
+            "(ignore (" ^ exp ^ "); " ^ Int.toString default ^ ")"
+          | intcase z exp rules default =
+            (* Same syntax in SML, Aphasia *)
+            "(case " ^ exp ^ " of\n" ^
+            indent (z + 4) ^ 
+            (StringUtil.delimit ("\n" ^ indent (z + 2) ^ "| ") 
+             (map (fn (p, e) => Int.toString p ^ " => " ^ Int.toString e) rules)) ^
+            "\n" ^ indent (z + 2) ^ "| _ => " ^ Int.toString default ^ ")"
+
+        fun split_case z exp nil _ = raise Proprietary "bug: split_case nil _"
+          | split_case z exp _ nil = raise Proprietary "bug: split_case _ nil"
+          | split_case z exp (_ :: src) (d :: dst) =
+            (* First source is ignored because it's used as the default. *)
+            intcase z exp (ListPair.zip (src, dst)) d
+            
 
         (* subst_to indentation exp src dst
            Generate an int-valued expression, which has
@@ -311,20 +354,28 @@ struct
                 *)
               (* math doesn't always work, but we can always use a predicate
                  to split. *)
-              case if len <= 5
+              case if len <= 10
                    then split_math z exp src dst 
                    else NONE of
                   SOME e => e
                 | NONE => 
-                    let
-                        val (ps, srct, srcf) = nontrivial_predicate src exp
-                        val dst = shuffle_list dst
-                        val (dstt, dstf) = ListUtil.cleave (length srct) dst
-                    in
-                        "(if " ^ ps ^ "\n" ^ indent z ^
-                        " then " ^ subst_to (z + 8) exp srct dstt ^ "\n" ^ indent z ^
-                        " else " ^ subst_to (z + 8) exp srcf dstf ^ ")"
-                    end
+                    case if len <= 20
+                         then split_vec z exp src (shuffle_list dst)
+                         else NONE of
+                        SOME e => e
+                      | NONE =>
+                    case (len <= 12, MT.random_nat mt 4) of
+                        (true, 0) => split_case z exp (shuffle_list src) (shuffle_list dst)
+                      | _ => 
+                            let
+                                val (ps, srct, srcf) = nontrivial_predicate src exp
+                                val dst = shuffle_list dst
+                                val (dstt, dstf) = ListUtil.cleave (length srct) dst
+                            in
+                                "(if " ^ ps ^ "\n" ^ indent z ^
+                                " then " ^ subst_to (z + 8) exp srct dstt ^ "\n" ^ indent z ^
+                                " else " ^ subst_to (z + 8) exp srcf dstf ^ ")"
+                            end
             end
 
         val subst_to = subst_to 2
