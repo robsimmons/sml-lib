@@ -1,0 +1,13 @@
+
+group is
+
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+ ../port/nj.sml
+#else
+ ../port/mlton.sml
+#endif
+
+  bdd.cm
+
+  bdd-test.sml
