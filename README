@@ -33,3 +33,5 @@ The subdirectories are as follows:
  text - Utilities for processing text
  util - Utilities that go with existing structures (lists, strings, 
         file system, etc.)
+ bdd - Incomplete port of Box2D library (called BoxDiaDia). Does not
+       have anything to do with binary decision diagrams, sorry.
