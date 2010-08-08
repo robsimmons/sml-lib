@@ -46,9 +46,8 @@ sig
                       BDDTypes.ray_cast_output option
 
 (*
-
-/// Compute the collision manifold between two circles.
-void b2CollideCircles(b2Manifold* manifold,
+  (* Compute the collision manifold between two circles. *)
+  val collide_circles (b2Manifold* manifold,
                                           const b2CircleShape* circle1, const b2Transform& xf1,
                                           const b2CircleShape* circle2, const b2Transform& xf2);
 
