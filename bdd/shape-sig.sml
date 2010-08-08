@@ -1,13 +1,17 @@
 (* Copyright 2010 Tom Murphy VII and Erin Catto. See COPYING for details. *)
 
-(* Abstract type of shapes.
+(* Disjoint union over the implemented shapes. The Box2D code does not
+   use the shape class for abstraction, just dispatch. So this is basically
+   what's going on there, anyway.
    Corresponding to collision/shapes/b2shape.h *)
 signature BDDSHAPE =
 sig
 
+  (* XXX only circles are implemented, for now *)
+
   datatype shape =
       Unknown
-    | Circle
+    | Circle of BDDCircle.circle
     | Polygon (* of XXX *)
 
   val clone : shape -> shape
