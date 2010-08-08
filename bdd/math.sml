@@ -2,7 +2,7 @@
 
 (* Math types and utilities used throughout BDD.
    Corresponding to common/b2math.h. *)
-structure BDDMath : BDDMATH =
+structure BDDMath :> BDDMATH =
 struct
 
   exception Unimplemented of string

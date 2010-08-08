@@ -12,4 +12,10 @@ group is
 
   math-sig.sml
   math.sml
+  ops.sml
 
+  types.sml
+  shape-sig.sml
+
+  collision-sig.sml
+  collision.sml

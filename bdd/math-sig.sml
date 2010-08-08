@@ -13,7 +13,8 @@ sig
   val atan2 : real * real -> real
   val abs : real -> real
 
-  (* 2D column vector. *)
+  (* 2D column vector. Mutable, for porting purposes. 
+     XXX make totally immutable, if possible. *)
   type vec2
   val vec2 : real * real -> vec2
   val vec2copy : vec2 -> vec2
@@ -23,7 +24,9 @@ sig
   val vec2set : vec2 * real * real -> unit
   val vec2setfrom : vec2 * vec2 -> unit
   val vec2neg : vec2 -> vec2
+  (* 0 is x, 1 is y *)
   val vec2idx : vec2 -> int -> real
+  (* v += v' *)
   val vec2pluseq : vec2 * vec2 -> unit
   val vec2minuseq : vec2 * vec2 -> unit
   val vec2timeseq : vec2 * real -> unit
@@ -48,7 +51,7 @@ sig
   val vec3minuseq : vec3 * vec3 -> unit
   val vec3timeseq : vec3 * real -> unit
 
-  (* 2x2 matrix; column-major order. *)
+  (* 2x2 matrix; column-major order. Mutable. *)
   type mat22
   val mat22cols : vec2 * vec2 -> mat22
   val mat22copy : mat22 -> mat22
@@ -68,16 +71,10 @@ sig
      than computing the inverse in one-shot cases. *)
   val mat22solve : mat22 * vec2 -> vec2
 
+  (* 3x3 matrix; column-major order. Mutable. *)
   type mat33
   val mat33 : vec3 * vec3 * vec3 -> mat33
   val mat33setzero : mat33 -> unit
-  val dot2 : vec2 * vec2 -> real
-  val dot3 : vec3 * vec3 -> real
-  val cross2vv : vec2 * vec2 -> real
-  val cross2vs : vec2 * real -> vec2
-  val cross2sv : real * vec2 -> vec2
-  val cross3vv : vec3 * vec3 -> vec3
-
   (* Solve A * x = b, where b is a column vector. This is more efficient
      than computing the inverse in one-shot cases. *)
   val mat33solve33 : mat33 * vec3 -> vec3
@@ -96,12 +93,23 @@ sig
   val transform_set : transform * vec2 * real -> unit
   val transform_getangle : transform -> real
 
-  (* Don't modify these. *)
+  (* Constants. Unfortunately they are mutable. Don't modify them. *)
   val vec2_zero : vec2
   val mat22_identity : mat22
   val transform_identity : transform
 
   (* Functional math on vectors, matrices, etc. *)
+
+  (* Dot product. *)
+  val dot2 : vec2 * vec2 -> real
+  val dot3 : vec3 * vec3 -> real
+  (* Cross products. *)
+  val cross2vv : vec2 * vec2 -> real
+  val cross2vs : vec2 * real -> vec2
+  val cross2sv : real * vec2 -> vec2
+  val cross3vv : vec3 * vec3 -> vec3
+
+  (* Addition, subtraction, multiplication. *)
   val vec2sub : vec2 * vec2 -> vec2
   val vec3sub : vec3 * vec3 -> vec3
   val vec2add : vec2 * vec2 -> vec2
@@ -113,6 +121,13 @@ sig
   val mul22m : mat22 * mat22 -> mat22
   val mul33v : mat33 * vec3 -> vec3
   val multransformv : transform * vec2 -> vec2
+
+  (* These multiply the transpose of the (first) matrix. *)
+  val mul_t22mv : mat22 * vec2 -> vec2
+  val mul_t22mm : mat22 * mat22 -> mat22
+  val mul_ttransformv : transform * vec2 -> vec2
+
+  (* Utilities. *)
   val vec2eq : vec2 * vec2 -> bool
   val vec2abs : vec2 -> vec2
   val mat22abs : mat22 -> mat22
@@ -122,11 +137,6 @@ sig
   val vec2max : vec2 * vec2 -> vec2
   val clampr : real * real * real -> real
   val vec2clamp : vec2 * vec2 * vec2 -> vec2
-
-  (* These multiply the transpose of the (first) matrix. *)
-  val mul_t22mv : mat22 * vec2 -> vec2
-  val mul_t22mm : mat22 * mat22 -> mat22
-  val mul_ttransformv : transform * vec2 -> vec2
 
   (* In Box2D, this file defined templated min and max, but clients
      should just use {Int, Real}.{min, max}. *)
