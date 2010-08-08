@@ -40,6 +40,8 @@ sig
      Does the container contain the test aabb? *)
   val aabb_contains : BDDTypes.aabb * BDDTypes.aabb -> bool
 
+  val aabb_overlap : BDDTypes.aabb * BDDTypes.aabb -> bool
+
   val aabb_ray_cast : BDDTypes.aabb * BDDTypes.ray_cast_input -> 
                       BDDTypes.ray_cast_output option
 

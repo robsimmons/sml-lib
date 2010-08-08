@@ -198,23 +198,12 @@ struct
           else NONE
       end
 
-
-
-(*
-inline bool b2TestOverlap(const b2AABB& a, const b2AABB& b)
-{
-        b2Vec2 d1, d2;
-        d1 = b.lowerBound - a.upperBound;
-        d2 = a.lowerBound - b.upperBound;
-
-        if (d1.x > 0.0f || d1.y > 0.0f)
-                return false;
-
-        if (d2.x > 0.0f || d2.y > 0.0f)
-                return false;
-
-        return true;
-}
-*)
-
+  fun aabb_overlap ({ lowerbound = al, upperbound = au },
+                    { lowerbound = bl, upperbound = bu }) : bool =
+      let val d1 = bl :-: au
+          val d2 = al :-: bu
+      in
+          not (vec2x d1 > 0.0 orelse vec2y d1 > 0.0 orelse
+               vec2x d2 > 0.0 orelse vec2y d2 > 0.0)
+      end
 end
