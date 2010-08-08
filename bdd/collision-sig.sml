@@ -24,27 +24,24 @@ sig
   val get_point_states : BDDTypes.manifold * BDDTypes.manifold -> 
                          BDDTypes.point_state array * BDDTypes.point_state array
 
-(*
-/// An axis aligned bounding box.
-struct b2AABB
-{
-        /// Verify that the bounds are sorted.
-        bool IsValid() const;
 
-        /// Get the center of the AABB.
-        b2Vec2 GetCenter() const
+  (* True if the bounds are sorted. *)
+  val aabb_valid : BDDTypes.aabb -> bool
+  (* Get the center of the AABB. *)
+  val aabb_center : BDDTypes.aabb -> BDDMath.vec2
+  (* Get the extents of the AABB (half-widths). *)
+  val aabb_extents : BDDTypes.aabb -> BDDMath.vec2
 
-        /// Get the extents of the AABB (half-widths).
-        b2Vec2 GetExtents() const
+  (* combine dest a b
+     Combine the two aabbs into the destination, overwriting it. *)
+  val aabb_combine : BDDTypes.aabb * BDDTypes.aabb * BDDTypes.aabb -> unit
 
-        /// Combine two AABBs into this one.
-        void Combine(const b2AABB& aabb1, const b2AABB& aabb2)
-        /// Does this aabb contain the provided AABB.
-        bool Contains(const b2AABB& aabb) const
-        bool RayCast(b2RayCastOutput* output, const b2RayCastInput& input) const;
+  (* contains container test
+     Does the container contain the test aabb? *)
+  val aabb_contains : BDDTypes.aabb * BDDTypes.aabb -> bool
 
-};
-*)
+  val aabb_ray_cast : BDDTypes.aabb * BDDTypes.ray_cast_input -> 
+                      BDDTypes.ray_cast_output option
 
 (*
 

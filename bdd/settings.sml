@@ -8,7 +8,7 @@
 structure BDDSettings =
 struct
 
-  val flt_max = Real.maxFinite
+  val max_float = Real.maxFinite
   val epsilon = 0.000000001 (* Real.nextAfter (0.0, 1.0) *) (* Real.minNormalPos *)
   val () = if Real.== (1.0 + epsilon, 1.0)
            then raise Fail "FLT_EPSILON is supposed to have this property"

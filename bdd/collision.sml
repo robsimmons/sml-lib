@@ -116,59 +116,91 @@ struct
           (state1, state2)
       end
 
+  fun aabb_valid { lowerbound, upperbound } =
+      let val d : vec2 = upperbound :-: lowerbound
+      in vec2x d > 0.0 andalso vec2y d > 0.0
+          andalso vec2is_valid lowerbound
+          andalso vec2is_valid upperbound
+      end
+
+  fun aabb_center { lowerbound, upperbound } =
+      0.5 *: (lowerbound :+: upperbound)
+
+  fun aabb_extents { lowerbound, upperbound } =
+      0.5 *: (upperbound :-: lowerbound)
+
+  fun aabb_combine ({ lowerbound, upperbound },
+                    { lowerbound = l1, upperbound = u1 },
+                    { lowerbound = l2, upperbound = u2 }) =
+      let in
+          vec2setfrom (lowerbound, vec2min(l1, l2));
+          vec2setfrom (upperbound, vec2max(u1, u2))
+      end
+
+  fun aabb_contains ({ lowerbound, upperbound }, { lowerbound = l,
+                                                   upperbound = u }) =
+      vec2x lowerbound <= vec2x l andalso
+      vec2y lowerbound <= vec2y l andalso
+      vec2x u <= vec2x upperbound andalso
+      vec2y u <= vec2y upperbound
+
+  fun aabb_ray_cast ({ lowerbound, upperbound },
+                     { p1 : BDDMath.vec2, p2 : BDDMath.vec2,
+                       max_fraction : real }) : BDDTypes.ray_cast_output option =
+      let
+          exception No
+          val tmin = ref (~max_float)
+          val tmax = ref max_float
+
+          val p = p1
+          val d = p2 :-: p1
+          val absd : vec2 = vec2abs d
+              
+          (* In original, uninitialized *)
+          val normal = vec2 (0.0, 0.0)
+          fun setnormalx x = vec2set (normal, x, 0.0)
+          fun setnormaly y = vec2set (normal, 0.0, y)
+
+          (* In original, a loop for i = 0 and 1 *)
+          fun loop proj setnormal =
+              if proj absd < epsilon
+              then (* parallel *)
+                  not (proj p < proj lowerbound orelse
+                       proj lowerbound < proj p)
+              else
+                  let val inv_d = 1.0 / proj d
+                      val t1 = (proj lowerbound - proj p) * inv_d
+                      val t2 = (proj upperbound - proj p) * inv_d
+                      (* sign of the normal vector *)
+                      val (t1, t2, s) =
+                          if t1 > t2
+                          then (t2, t1, 1.0)
+                          else (t1, t2, ~1.0)
+                  in
+                      (* push the min up. *)
+                      if (t1 > !tmin)
+                      then (setnormal s; tmin := t1)
+                      else ();
+
+                      (* pull the max down. *)
+                      tmax := Real.min(!tmax, t2);
+
+                      not (!tmin > !tmax)
+                  end
+
+      in
+          if loop vec2x setnormalx andalso
+             loop vec2y setnormaly andalso
+             (* Does the ray start inside the box?
+                Does the ray intersect beyond the max fraction? *)
+             not (!tmin < 0.0 orelse max_fraction < !tmin)
+          then SOME { fraction = !tmin, normal = normal }
+          else NONE
+      end
+
+
+
 (*
-/// An axis aligned bounding box.
-struct b2AABB
-{
-        /// Verify that the bounds are sorted.
-        bool IsValid() const;
-
-        /// Get the center of the AABB.
-        b2Vec2 GetCenter() const
-        {
-                return 0.5f * (lowerBound + upperBound);
-        }
-
-        /// Get the extents of the AABB (half-widths).
-        b2Vec2 GetExtents() const
-        {
-                return 0.5f * (upperBound - lowerBound);
-        }
-
-        /// Combine two AABBs into this one.
-        void Combine(const b2AABB& aabb1, const b2AABB& aabb2)
-        {
-                lowerBound = b2Min(aabb1.lowerBound, aabb2.lowerBound);
-                upperBound = b2Max(aabb1.upperBound, aabb2.upperBound);
-        }
-
-        /// Does this aabb contain the provided AABB.
-        bool Contains(const b2AABB& aabb) const
-        {
-                bool result = true;
-                result = result && lowerBound.x <= aabb.lowerBound.x;
-                result = result && lowerBound.y <= aabb.lowerBound.y;
-                result = result && aabb.upperBound.x <= upperBound.x;
-                result = result && aabb.upperBound.y <= upperBound.y;
-                return result;
-        }
-
-        bool RayCast(b2RayCastOutput* output, const b2RayCastInput& input) const;
-
-        b2Vec2 lowerBound;      ///< the lower vertex
-        b2Vec2 upperBound;      ///< the upper vertex
-};
-*)
-
-(*
-inline bool b2AABB::IsValid() const
-{
-        b2Vec2 d = upperBound - lowerBound;
-        bool valid = d.x >= 0.0f && d.y >= 0.0f;
-        valid = valid && lowerBound.IsValid() && upperBound.IsValid();
-        return valid;
-}
-
 inline bool b2TestOverlap(const b2AABB& a, const b2AABB& b)
 {
         b2Vec2 d1, d2;
