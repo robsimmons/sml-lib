@@ -378,5 +378,162 @@ inline const b2Vec2& b2DistanceProxy::GetSupportVertex(const b2Vec2& d) const
                        set_a (v3, d123_3 * inv_d123))
             end
       end
+
+  val MAX_ITERS = 20
+
+  fun vertex_eq ({indexa, indexb, ...} : simplex_vertex, 
+                 {indexa = ia, indexb = ib, ...} : simplex_vertex) =
+      indexa = ia andalso indexb = ib
+
+  fun simplex_has_point (simplex, new) =
+      case simplex of
+          Zero => false
+        | One v1 => vertex_eq (v1, new)
+        | Two (v1, v2) => vertex_eq (v1, new) orelse vertex_eq (v2, new)
+        | Three (v1, v2, v3) => 
+              vertex_eq (v1, new) orelse
+              vertex_eq (v2, new) orelse
+              vertex_eq (v3, new)
+
+  (* Add the vertex to the end of the simplex. *)
+  fun push_vertex (simplex : simplex, new : simplex_vertex) =
+      case simplex of
+          Zero => One new
+        | One v => Two (v, new)
+        | Two (v1, v2) => Three (v1, v2, new)
+        | Three _ => raise BDDDistance
+
+  fun distance ({ proxya : distance_proxy,
+                  proxyb : distance_proxy,
+                  transforma : BDDMath.transform,
+                  transformb : BDDMath.transform,
+                  use_radii : bool },
+                cache : simplex_cache) : distance_output =
+      let
+          (* Initialize the simplex. *)
+          val start_simplex = 
+              read_cache(cache, proxya, transforma, proxyb, transformb)
+
+      (* b2SimplexVertex* vertices = &simplex.m_v1; *)
+
+          (* Port note: In the Box2D source code there are loop
+             variables distance_sqr1 and 2. But they are dead,
+             because the test labeled "ensure progress" is
+             commented out. I'm trying to mimic the behavior
+             of Box2D so I just removed them from this code
+             for efficiency. *)
+          fun loop (old_simplex : simplex, iter) =
+            if iter >= MAX_ITERS
+            then (old_simplex, iter)
+            else
+              let
+                  val solved =
+                      case old_simplex of
+                          One _ => old_simplex
+                        | Two (v1, v2) => simplex_solve2 (v1, v2)
+                        | Three (v1, v2, v3) => simplex_solve3 (v1, v2, v3)
+                        | _ => raise BDDDistance
+              in
+                  case solved of
+                    (* If we have 3 points, then the origin is in 
+                       the corresponding triangle. *)
+                    Three _ => (solved, iter)
+                  | _ =>
+                  let (* Get search direction. *)
+                      val d : vec2 = simplex_search_direction solved
+                  in
+                      (* Ensure the search direction is numerically fit. *)
+                      if vec2length_squared d < epsilon * epsilon
+                      then
+                          (* The origin is probably contained by a line segment
+                             or triangle. Thus the shapes are overlapped.
+
+                             We can't return zero here even though
+                             there may be overlap. In case the simplex
+                             is a point, segment, or triangle it is
+                             difficult to determine if the origin is
+                             contained in the CSO or very close to it. *)
+                          (solved, iter)
+                      else
+                      let
+                          (* Compute a tentative new simplex vertex using 
+                             support points. *)
+                          val indexa =
+                              #support proxya (mul_t22mv
+                                               (transformr transforma,
+                                                vec2neg d))
+                          val wa = transforma @*: #vertex proxya indexa
+                          val indexb =
+                              #support proxyb (mul_t22mv
+                                               (transformr transformb, d))
+                          val wb = transformb @*: #vertex proxyb indexb
+                          val new : simplex_vertex =
+                              { indexa = indexa, wa = wa,
+                                indexb = indexb, wb = wb,
+                                w = wb :-: wa,
+                                (* PERF uninitialized in Box2D *)
+                                a = 0.0 }
+
+                          (* iter counts the number of support point calls. *)
+                          val iter = iter + 1
+                      in
+                          (* Check for duplicate support points. 
+                             This is the main termination criteria. 
+
+                             Port note: In the original this was stored in
+                             a copy of the simplex. Since simplex is
+                             functional in this version, I just compare
+                             to old_simplex. *)
+                          if simplex_has_point (old_simplex, new)
+                          then (* If we found a duplicate support point we
+                                  must exit to avoid cycling. *)
+                              (solved, iter)
+                          else loop(push_vertex (solved, new), iter)
+                      end
+                  end
+              end
+          
+          val (simplex, iter) = loop(start_simplex, 0)
+
+          val (pointa, pointb) = simplex_witness_points simplex
+          val () = write_cache(simplex, cache)
+          val distance = BDDMath.distance(pointa, pointb)
+      in
+          if use_radii
+          then 
+              let val ra = #radius proxya
+                  val rb = #radius proxyb
+              in
+                  if distance > ra + rb andalso
+                     distance > epsilon
+                  then
+                      (* Shapes are still not overlapped.
+                         Move the witness points to the outer surface. *)
+                      let val normal : vec2 = pointb :-: pointa
+                      in 
+                          ignore (vec2normalize normal : real);
+                          { distance = distance - (ra + rb),
+                            pointa = pointa :+: (ra *: normal),
+                            pointb = pointb :-: (rb *: normal),
+                            iterations = iter }
+                      end
+                  else
+                      (* Shapes are overlapped when radii are considered.
+                         Move the witness points to the middle. *)
+                      let
+                          val p : vec2 = 0.5 *: (pointa :+: pointb)
+                      in
+                          { pointa = p,
+                            pointb = p,
+                            distance = 0.0,
+                            iterations = iter }
+                      end
+              end
+          else { iterations = iter,
+                 pointa = pointa,
+                 pointb = pointb,
+                 distance = distance }
+      end
+
 end
 
