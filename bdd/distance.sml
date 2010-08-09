@@ -97,11 +97,15 @@ inline const b2Vec2& b2DistanceProxy::GetSupportVertex(const b2Vec2& d) const
        (* wb - wa *)
        w : vec2,
        (* barycentric coordinate for closest point *)
-       a : real ref,
+       a : real,
        (* wa, wb index *)
        indexa : int,
        indexb : int
       }
+
+  fun set_a ({ wa, wb, w, a, indexa, indexb }, aa) =
+      { wa = wa, wb = wb, w = w, a = aa, 
+        indexa = indexa, indexb = indexb }
 
   fun zero_vertex () = { wa = vec2(0.0, 0.0),
                          wb = vec2(0.0, 0.0),
@@ -109,18 +113,17 @@ inline const b2Vec2& b2DistanceProxy::GetSupportVertex(const b2Vec2& d) const
                          a = ref 0.0,
                          indexa = 0,
                          indexb = 0 }
+  datatype simplex = 
+      Zero
+    | One of simplex_vertex
+    | Two of simplex_vertex * simplex_vertex
+    | Three of simplex_vertex * simplex_vertex * simplex_vertex
 
-  type simplex = { v1 : simplex_vertex,
-                   v2 : simplex_vertex,
-                   v3 : simplex_vertex,
-                   count : int ref }
-
-  fun simplex_metric { v1, v2, v3, count } =
-      case !count of
-          1 => 0.0
-        | 2 => BDDMath.distance(#w v1, #w v2)
-        | 3 => cross2vv(#w v2 :-: #w v1, #w v3 :-: #w v1)
-        | _ => raise BDDDistance
+  fun simplex_metric (One _) = 0.0
+    | simplex_metric (Two (v1, v2)) = BDDMath.distance(#w v1, #w v2)
+    | simplex_metric (Three (v1, v2, v3)) = 
+      cross2vv(#w v2 :-: #w v1, #w v3 :-: #w v1)
+    | simplex_metric _ = raise BDDDistance
 
   fun read_cache (cache : simplex_cache,
                   proxya : distance_proxy, transforma,
@@ -129,17 +132,13 @@ inline const b2Vec2& b2DistanceProxy::GetSupportVertex(const b2Vec2& d) const
           let val wa = transforma @*: #vertex proxya 0
               val wb = transformb @*: #vertex proxyb 0
           in
-          { count = ref 1,
-            v1 = { indexa = 0,
-                   indexb = 0,
-                   wa = wa,
-                   wb = wb,
-                   w = wb :-: wa,
-                   (* PERF uninitialized in Box2D *)
-                   a = ref 0.0 },
-            (* PERF uninitialized in Box2D *)
-            v2 = zero_vertex (),
-            v3 = zero_vertex () }
+              One { indexa = 0,
+                    indexb = 0,
+                    wa = wa,
+                    wb = wb,
+                    w = wb :-: wa,
+                    (* PERF uninitialized in Box2D *)
+                    a = 0.0 }
           end
       in
         if !(#count cache) = 0
@@ -157,14 +156,16 @@ inline const b2Vec2& b2DistanceProxy::GetSupportVertex(const b2Vec2& d) const
                           indexb = indexb,
                           wa = wa,
                           wb = wb,
-                          a = ref 0.0,
+                          a = 0.0,
                           w = wb :-: wa }
                     end
 
-                val simplex = { v1 = init 0,
-                                v2 = init 1,
-                                v3 = init 3,
-                                count = ref (!(#count cache)) }
+                val simplex = 
+                    case !(#count cache) of
+                        1 => One (init 0)
+                      | 2 => Two (init 0, init 1)
+                      | 3 => Three (init 0, init 1, init 2)
+                      | _ => raise BDDDistance
 
                 val metric1 = !(#metric cache)
                 val metric2 = simplex_metric simplex
@@ -179,28 +180,31 @@ inline const b2Vec2& b2DistanceProxy::GetSupportVertex(const b2Vec2& d) const
             end
       end
 
-  fun write_cache (simplex as 
-                   { v1 : simplex_vertex,
-                     v2 : simplex_vertex,
-                     v3 : simplex_vertex,
-                     count : int ref }, cache : simplex_cache) : unit =
-      let in
+  fun simplex_count Zero = 0
+    | simplex_count (One _) = 1
+    | simplex_count (Two _) = 2
+    | simplex_count (Three _) = 3
+
+  fun write_cache (simplex, cache : simplex_cache) : unit =
+      let 
+          fun write i v =
+              (Array.update(#indexa cache, i, #indexa v);
+               Array.update(#indexb cache, i, #indexb v))
+      in
           #metric cache := simplex_metric simplex;
-          #count cache := !count;
-          Array.update(#indexa cache, 0, #indexa v1);
-          Array.update(#indexb cache, 0, #indexb v1);
+          #count cache := simplex_count simplex;
 
-          Array.update(#indexa cache, 1, #indexa v2);
-          Array.update(#indexb cache, 1, #indexb v2);
-
-          Array.update(#indexa cache, 2, #indexa v3);
-          Array.update(#indexb cache, 2, #indexb v3)
+          case simplex of
+              Zero => ()
+            | One v1 => write 0 v1
+            | Two (v1, v2) => (write 0 v1; write 1 v2)
+            | Three (v1, v2, v3) => (write 0 v1; write 1 v2; write 2 v3)
       end
 
-  fun simplex_search_direction ({ v1, v2, v3, count } : simplex) : vec2 =
-      case !count of 
-          1 => vec2neg (#w v1)
-        | 2 =>
+  fun simplex_search_direction simplex : vec2 =
+      case simplex of
+          One v => vec2neg (#w v)
+        | Two (v1, v2) =>
               let val e12 : vec2 = #w v2 :-: #w v1
                   val sgn : real = cross2vv(e12, vec2neg (#w v1))
               in
@@ -212,23 +216,23 @@ inline const b2Vec2& b2DistanceProxy::GetSupportVertex(const b2Vec2& d) const
               end
         | _ => raise BDDDistance
 
-  fun simplex_closest_point ({ v1, v2, v3, count } : simplex) : vec2 =
-      case !count of
-          1 => #w v1
-        | 2 => #a v1 *: #w v1 :+: #a v2 *: #w v2
-        | 3 => vec2_zero
+  fun simplex_closest_point (simplex : simplex) : vec2 =
+      case simplex of
+          One v1 => #w v1
+        | Two (v1, v2) => #a v1 *: #w v1 :+: #a v2 *: #w v2
+        | Three _ => vec2_zero
         | _ => raise BDDDistance
 
-  fun simplex_witness_points ({ v1, v2, v3, count } : simplex) : vec2 * vec2 =
-      case !count of
-          1 => (#wa v1, #wb v1)
-        | 2 => (#a v1 *: #wa v1 :+: #a v2 *: #wa v2,
-                #a v1 *: #wb v1 :+: #a v2 *: #wb v2)
-        | 3 => let val p = #a v1 *: #wa v1 :+: #a v2 *: #wa v2 :+: #a v3 *: #wa v3
-               in (p, vec2copy p)
-               end
+  fun simplex_witness_points (simplex : simplex) : vec2 * vec2 =
+      case simplex of
+          One v1 => (#wa v1, #wb v1)
+        | Two (v1, v2) => (#a v1 *: #wa v1 :+: #a v2 *: #wa v2,
+                           #a v1 *: #wb v1 :+: #a v2 *: #wb v2)
+        | Three (v1, v2, v3) => 
+              let val p = #a v1 *: #wa v1 :+: #a v2 *: #wa v2 :+: #a v3 *: #wa v3
+              in (p, vec2copy p)
+              end
         | _ => raise BDDDistance
-
 
   (* Solve a line segment using barycentric coordinates.
      
@@ -253,40 +257,126 @@ inline const b2Vec2& b2DistanceProxy::GetSupportVertex(const b2Vec2& d) const
      Solution
      a1 = d12_1 / d12
      a2 = d12_2 / d12 *)
-  fun simplex_solve2 ({ v1, v2, v3, count } : simplex) : unit =
+  fun simplex_solve2 (v1 : simplex_vertex, v2 : simplex_vertex) : simplex =
       let val w1 = #w v1
           val w2 = #w v2
           val e12 = w2 :-: w1
 
-          val d12_2 : real = -dot2(w1, e12)
+          val d12_2 : real = ~(dot2(w1, e12))
       in
           if d12_2 <= 0.0
           then (* w1 region *)
-              // a2 <= 0, so we clamp it to 0
-                m_v1.a = 1.0f;
-                m_count = 1;
-                return;
+              (* a2 <= 0, so we clamp it to 0 *)
+              One (set_a (v1, 1.0))
           else
-              let val d12_1 = dot(w2, e12)
+              let val d12_1 = dot2(w2, e12)
               in if d12_1 <= 0.0
                  then (* a1 <= 0, so we clamp it to 0 *)
-                     let in 
-                         #a v2 := 1.0;
-                         count := 1;
-                         vec2setfrom (v1, m_v2;
-                         return;
-                     end
+                     One (set_a (v2, 1.0))
                  else (* Must be in e12 region. *)
                      let val inv_d12 = 1.0 / (d12_1 + d12_2)
-                     in
-                         #a v1 := d12_1 * inv_d12;
-                         #a v2 := d12_2 * inv_d12;
-                         count := 2
+                     in Two (set_a (v1, d12_1 * inv_d12),
+                             set_a (v2, d12_2 * inv_d12))
                      end
               end
       end
 
-  (* fun simplex_solve2 ({ v1, v2, v3, count } : simplex) = raise BDDDistance *)
+  (* Possible regions:
+     - points[2]
+     - edge points[0]-points[2]
+     - edge points[1]-points[2]
+     - inside the triangle *)
+  fun simplex_solve3 (v1 : simplex_vertex,
+                      v2 : simplex_vertex,
+                      v3 : simplex_vertex) : simplex =
+      let
+        val w1 = #w v1
+        val w2 = #w v2
+        val w3 = #w v3
+        
+        (* Edge12
+           [1      1     ][a1] = [1]
+           [w1.e12 w2.e12][a2] = [0]
+           a3 = 0 *)
+        val e12 = w2 :-: w1
+        val w1e12 = dot2(w1, e12)
+        val w2e12 = dot2(w2, e12)
+        val d12_1 = w2e12
+        val d12_2 = ~w1e12
 
+        (* Edge13
+           [1      1     ][a1] = [1]
+           [w1.e13 w3.e13][a3] = [0]
+           a2 = 0 *)
+        val e13 = w3 :-: w1
+        val w1e13 = dot2(w1, e13)
+        val w3e13 = dot2(w3, e13)
+        val d13_1 = w3e13
+        val d13_2 = ~w1e13
+
+        (* Edge23
+           [1      1     ][a2] = [1]
+           [w2.e23 w3.e23][a3] = [0]
+           a1 = 0 *)
+        val e23 = w3 :-: w2
+        val w2e23 = dot2(w2, e23)
+        val w3e23 = dot2(w3, e23)
+        val d23_1 = w3e23
+        val d23_2 = ~w2e23
+        
+        (* Triangle123 *)
+        val n123 = cross2vv(e12, e13)
+
+        val d123_1 : real = n123 * cross2vv(w2, w3)
+        val d123_2 : real = n123 * cross2vv(w3, w1)
+        val d123_3 : real = n123 * cross2vv(w1, w2)
+      in
+        if (d12_2 <= 0.0 andalso d13_2 <= 0.0)
+        then (* w1 region *)
+            One (set_a (v1, 1.0))
+        else 
+        if (d12_1 > 0.0 andalso d12_2 > 0.0 andalso d123_3 <= 0.0)
+        then (* e12 *)
+            let
+                val inv_d12 : real = 1.0 / (d12_1 + d12_2)
+            in
+                Two (set_a (v1, d12_1 * inv_d12),
+                     set_a (v2, d12_2 * inv_d12))
+            end
+        else
+        if (d13_1 > 0.0 andalso d13_2 > 0.0 andalso d123_2 <= 0.0)
+        then (* e13 *)
+            let 
+                val inv_d13 : real = 1.0 / (d13_1 + d13_2)
+            in
+                Two (set_a (v1, d13_1 * inv_d13),
+                     set_a (v3, d13_2 * inv_d13))
+            end
+        else
+        if (d12_1 <= 0.0 andalso d23_2 <= 0.0)
+        then (* w2 region *)
+            One (set_a (v2, 1.0)) 
+        else
+        if (d13_1 <= 0.0 andalso d23_1 <= 0.0)
+        then (* w3 region *)
+            One (set_a (v3, 1.0))
+        else
+        if (d23_1 > 0.0 andalso d23_2 > 0.0 andalso d123_1 <= 0.0)
+        then (* e23 region *)
+            let
+                val inv_d23 = 1.0 / (d23_1 + d23_2)
+            in
+                Two (set_a (v3, d23_2 * inv_d23),
+                     set_a (v2, d23_1 * inv_d23))
+            end
+        else (* Must be in triangle123 *)
+            let
+                val inv_d123 : real = 1.0 / (d123_1 + d123_2 + d123_3)
+            in
+                Three (set_a (v1, d123_1 * inv_d123),
+                       set_a (v2, d123_2 * inv_d123),
+                       set_a (v3, d123_3 * inv_d123))
+            end
+      end
 end
 
