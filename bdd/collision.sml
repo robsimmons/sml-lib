@@ -2,7 +2,8 @@
 
 (* Collision detection.
    Corresponds to the implementation components of 
-   collision/b2collision.{h,cpp}. *)
+   collision/b2collision.{h,cpp} as well as b2collidecircle.cpp and
+   b2collidepolygon.cpp *)
 
 structure BDDCollision :> BDDCOLLISION =
 struct
@@ -206,4 +207,97 @@ struct
           not (vec2x d1 > 0.0 orelse vec2y d1 > 0.0 orelse
                vec2x d2 > 0.0 orelse vec2y d2 > 0.0)
       end
+
+
+  fun collide_circles (circlea : BDDCircle.circle,
+                       xfa : transform,
+                       circleb : BDDCircle.circle,
+                       xfb : transform) : manifold =
+      let
+          val pa : vec2 = xfa @*: #p circlea
+          val pb : vec2 = xfb @*: #p circleb
+          val d  : vec2 = pb :-: pa
+
+          val dist_sqr = dot2(d, d)
+          val ra = #radius circlea
+          val rb = #radius circleb
+          val radius = ra + rb
+      in
+          (* PERF would it work to return NONE? The client
+             code can't be accessing these fields; they're
+             not even initialized in the original code. *)
+          if dist_sqr > radius * radius
+          then { point_count = 0,
+                 typ = E_Circles,
+                 points = Array.fromList nil,
+                 local_normal = vec2(0.0, 0.0),
+                 local_point = vec2(0.0, 0.0) }
+          else
+              { typ = E_Circles,
+                points = Array.fromList [{ local_point = #p circleb,
+                                           id = 0w0,
+                                           (* uninitialized in original *)
+                                           normal_impulse = 0.0,
+                                           tangent_impulse = 0.0 }],
+                local_point = #p circlea,
+                local_normal = vec2(0.0, 0.0),
+                point_count = 1 }
+      end
+
+  (* Sutherland-Hodgman clipping. 
+
+     Port note: This code is a little tricky in the original.
+     I made them more exlicit here and also clearer that this
+     can only return 0 or 2 points. 
+     *)
+  fun clip_segment_to_line (v0, v1, normal : vec2, offset : real) 
+      : (clip_vertex * clip_vertex) option =
+      let
+          (* Calculate distance of end points to the line. *)
+          val distance0 = dot2 (normal, #v v0) - offset
+          val distance1 = dot2 (normal, #v v1) - offset
+      in
+          (* If the two points are on different sides of the
+             plane, then we have to clip one of them. *)
+          if distance0 * distance1 < 0.0
+          then
+              (* Find intersection point of edge and plane. *)
+              let
+                  val interp : real = distance0 / (distance0 - distance1)
+                  val clippedv = #v v0 :+: interp *: (#v v1 :-: #v v0)
+              in
+                  if distance0 > 0.0
+                  then SOME(v1, { v = clippedv, id = #id v0 })
+                  else SOME(v0, { v = clippedv, id = #id v1 })
+              end
+          else
+            (* Otherwise, we either take both or none. *)
+            if distance0 <= 0.0 andalso distance1 <= 0.0
+            then SOME(v0, v1)
+            else NONE
+      end
+
+(*
+
+bool b2TestOverlap(const b2Shape* shapeA, const b2Shape* shapeB,
+                                   const b2Transform& xfA, const b2Transform& xfB)
+{
+        b2DistanceInput input;
+        input.proxyA.Set(shapeA);
+        input.proxyB.Set(shapeB);
+        input.transformA = xfA;
+        input.transformB = xfB;
+        input.useRadii = true;
+
+        b2SimplexCache cache;
+        cache.count = 0;
+
+        b2DistanceOutput output;
+
+        b2Distance(&output, &cache, &input);
+
+        return output.distance < 10.0f * b2_epsilon;
+}
+*)
+
 end

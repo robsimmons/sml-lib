@@ -20,7 +20,7 @@ struct
 
   fun test_point (Circle c, t, v) = BDDCircle.test_point (c, t, v)
 
-  fun ray_cast (Circle c, input, t) = BDDCircle.ray_cast (c, input, t)
+  fun ray_cast (Circle c, t, input) = BDDCircle.ray_cast (c, t, input)
 
   fun compute_aabb (Circle c, t) = BDDCircle.compute_aabb (c, t)
 

@@ -24,8 +24,8 @@ sig
 
   (* ray_cast (shape, input, transform)
      Cast a ray against this shape, under the transform. *)
-  val ray_cast : shape * BDDTypes.ray_cast_input * BDDMath.transform -> 
-                 BDDTypes.ray_cast_output
+  val ray_cast : shape * BDDMath.transform * BDDTypes.ray_cast_input -> 
+                 BDDTypes.ray_cast_output option
 
   (* compute_aabb (shape, transform)
      Compute the associated axis aligned bounding box for this shape,

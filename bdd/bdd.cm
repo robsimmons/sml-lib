@@ -20,6 +20,10 @@ group is
   circle.sml
 
   shape-sig.sml
+  shape.sml
+
+  distance-sig.sml
+  distance.sml
 
   collision-sig.sml
   collision.sml

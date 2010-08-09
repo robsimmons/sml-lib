@@ -124,4 +124,46 @@ struct
   type aabb = { lowerbound : BDDMath.vec2,
 		upperbound : BDDMath.vec2 }
 
+  (* Abstract proxy for GJK distance algorithm. *)
+  type distance_proxy = 
+      {
+       (* Get the supporting vertex index in the given direction. *)
+       support : BDDMath.vec2 -> int,
+       (* Get the supporting vertex in the given direction. *)
+       support_vertex : BDDMath.vec2 -> BDDMath.vec2,
+       (* Number of total vertices. *)
+       vertex_count : int,
+       (* Get a vertex by index. *)
+       vertex : int -> BDDMath.vec2,
+       radius : real
+      }
+
+  (* Used to "warm start" the distance function. This is
+     used by the GJK algorithm as it refines its approximation. 
+     BDDDistance contains the cold start initial value. *)
+  type simplex_cache = { (* Length or area *)
+			 metric : real ref,
+			 (* PERF these were smaller int types
+			    in the original Box2D. Can't tell
+			    yet whether the size/speed tradeoff
+			    is wise. *)
+			 count : int ref,
+			 (* Exactly three elements *)
+			 indexa : int array,
+			 indexb : int array }
+
+  type distance_input = { proxya : distance_proxy,
+			  proxyb : distance_proxy,
+			  transforma : BDDMath.transform,
+			  transformb : BDDMath.transform,
+			  use_radii : bool }
+
+  type distance_output = { (* Closest point on shape A *)
+			   pointa : BDDMath.vec2,
+			   (* Closest point on shape B *)
+			   pointb : BDDMath.vec2,
+			   distance : real,
+			   (* Number of GJK iterations used *)
+			   iterations : int }
+
 end

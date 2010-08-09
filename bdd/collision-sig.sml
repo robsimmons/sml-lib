@@ -45,11 +45,18 @@ sig
   val aabb_ray_cast : BDDTypes.aabb * BDDTypes.ray_cast_input -> 
                       BDDTypes.ray_cast_output option
 
-(*
   (* Compute the collision manifold between two circles. *)
-  val collide_circles (b2Manifold* manifold,
-                                          const b2CircleShape* circle1, const b2Transform& xf1,
-                                          const b2CircleShape* circle2, const b2Transform& xf2);
+  val collide_circles : BDDCircle.circle * BDDMath.transform *
+                        BDDCircle.circle * BDDMath.transform -> BDDTypes.manifold
+
+  (* clip_segment_to_line (v1, v2, normal, offset)
+     Clipping for contact manifolds. Returns either no points (entire segment
+     is clipped out) or two points (possibly modified). *)
+  val clip_segment_to_line : BDDTypes.clip_vertex * BDDTypes.clip_vertex *
+                             BDDMath.vec2 * real -> 
+                             (BDDTypes.clip_vertex * BDDTypes.clip_vertex) option
+
+(*
 
 /// Compute the collision manifold between a polygon and a circle.
 void b2CollidePolygonAndCircle(b2Manifold* manifold,
@@ -60,10 +67,6 @@ void b2CollidePolygonAndCircle(b2Manifold* manifold,
 void b2CollidePolygons(b2Manifold* manifold,
                                            const b2PolygonShape* polygon1, const b2Transform& xf1,
                                            const b2PolygonShape* polygon2, const b2Transform& xf2);
-
-/// Clipping for contact manifolds.
-int32 b2ClipSegmentToLine(b2ClipVertex vOut[2], const b2ClipVertex vIn[2],
-                                                        const b2Vec2& normal, float32 offset);
 
 /// Determine if two generic shapes overlap.
 bool b2TestOverlap(const b2Shape* shapeA, const b2Shape* shapeB,
