@@ -27,3 +27,5 @@ group is
 
   collision-sig.sml
   collision.sml
+
+  dynamic-tree-sig.sml
