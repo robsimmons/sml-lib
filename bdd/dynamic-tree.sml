@@ -97,6 +97,7 @@ struct
   fun insert_leaf (tree as ref { root, ... } : 'a dynamic_tree,
                    node as ref (Node { aabb, data, parent, left, right })) =
       raise Unimplemented "insert_leaf"
+    | insert_leaf _ = raise BDDDynamicTree "can't insert empty"
 
   fun rebalance iters =
       raise Unimplemented "rebalance"
@@ -127,61 +128,62 @@ struct
   (* Derive the AABB for an interior node, based on its children
      (which must have accurate AABBs. Set it and return it. *)
   fun set_derived_aabb (r as ref (Node { aabb = _, data, parent, 
-                                         left, right }))
-      let val new_aabb = 
+                                         left, right })) =
+      let val new_aabb =
           BDDCollision.aabb_combine (#aabb (!!left), #aabb (!!right))
       in r := Node { aabb = new_aabb, data = data, parent = parent, 
-                     left = left, right = right }
+                     left = left, right = right };
+          new_aabb
       end
     | set_derived_aabb _ = raise BDDDynamicTree "expected node; got empty"
 
   (* Assumes the proxy is a leaf. *)
   fun remove_leaf (tree (* : 'a dynamic_tree *), 
                    proxy (* : 'a aabb_proxy *)) =
-      let val { parent, ... } = !!proxy
-      in
-          (* If it's the root, we just make the tree empty. 
-             Port note: Throughout this code, Box2D uses equality
-             on proxy IDs (integers); I ref equality. *)
-          case !parent of
-              Empty => set_root (tree, ref Empty)
-            | Node { left, right, parent = grandparent, ... } =>
-                let
-                    (* Get the other child of our parent. *)
-                    val sibling = if left = proxy 
-                                  then right
-                                  else left
-                in
-                    case !grandparent of
-                        (* Note: discards parent. *)
-                        Empty => (set_parent (sibling, ref Empty);
-                                  set_root (tree, sibling))
-                      | Node { left = g_left, ... } => 
-                            let 
-                                fun adjust ancestor =
-                                  case !ancestor of
-                                      Empty => ()
-                                    | Node { parent, aabb = old_aabb, ... } => 
-                                      let 
-                                        val new_aabb = 
-                                            set_derived_aabb grandparent
-                                      in
-                                        if BDDCollision.aabb_contains (old_aabb, new_aabb)
-                                        then ()
-                                        else adjust parent
-                                      end
-                            in
-                                (* Destroy parent and connect grandparent
-                                   to sibling. *)
-                                if g_left = sibling
-                                then set_left (grandparent, sibling)
-                                else set_right (grandparent, sibling);
-                                set_parent (sibling, grandparent);
-                                (* Adjust ancestor bounds. *)
-                                adjust grandparent
-                            end
-                end
-      end
+    let val { parent, ... } = !!proxy
+    in
+      (* If it's the root, we just make the tree empty. 
+         Port note: Throughout this code, Box2D uses equality
+         on proxy IDs (integers); I ref equality. *)
+      case !parent of
+          Empty => set_root (tree, ref Empty)
+        | Node { left, right, parent = grandparent, ... } =>
+            let
+                (* Get the other child of our parent. *)
+                val sibling = if left = proxy 
+                              then right
+                              else left
+            in
+              case !grandparent of
+                  (* Note: discards parent. *)
+                  Empty => (set_parent (sibling, ref Empty);
+                            set_root (tree, sibling))
+                | Node { left = g_left, ... } => 
+                      let 
+                          fun adjust ancestor =
+                            case !ancestor of
+                                Empty => ()
+                              | Node { parent, aabb = old_aabb, ... } => 
+                                let 
+                                  val new_aabb = 
+                                      set_derived_aabb grandparent
+                                in
+                                  if BDDCollision.aabb_contains (old_aabb, new_aabb)
+                                  then ()
+                                  else adjust parent
+                                end
+                      in
+                          (* Destroy parent and connect grandparent
+                             to sibling. *)
+                          if g_left = sibling
+                          then set_left (grandparent, sibling)
+                          else set_right (grandparent, sibling);
+                          set_parent (sibling, grandparent);
+                          (* Adjust ancestor bounds. *)
+                          adjust grandparent
+                      end
+            end
+    end
 
   fun remove_proxy (tree : 'a dynamic_tree, proxy : 'a aabb_proxy) =
       if is_leaf proxy
