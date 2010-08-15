@@ -130,13 +130,10 @@ struct
   fun aabb_extents { lowerbound, upperbound } =
       0.5 *: (upperbound :-: lowerbound)
 
-  fun aabb_combine ({ lowerbound, upperbound },
-                    { lowerbound = l1, upperbound = u1 },
+  fun aabb_combine ({ lowerbound = l1, upperbound = u1 },
                     { lowerbound = l2, upperbound = u2 }) =
-      let in
-          vec2setfrom (lowerbound, vec2min(l1, l2));
-          vec2setfrom (upperbound, vec2max(u1, u2))
-      end
+      { lowerbound = vec2min(l1, l2),
+        upperbound = vec2max(u1, u2) }
 
   fun aabb_contains ({ lowerbound, upperbound }, { lowerbound = l,
                                                    upperbound = u }) =
@@ -147,7 +144,8 @@ struct
 
   fun aabb_ray_cast ({ lowerbound, upperbound },
                      { p1 : BDDMath.vec2, p2 : BDDMath.vec2,
-                       max_fraction : real }) : BDDTypes.ray_cast_output option =
+                       max_fraction : real }) 
+      : BDDTypes.ray_cast_output option =
       let
           exception No
           val tmin = ref (~max_float)

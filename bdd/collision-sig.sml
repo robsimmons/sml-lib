@@ -32,9 +32,11 @@ sig
   (* Get the extents of the AABB (half-widths). *)
   val aabb_extents : BDDTypes.aabb -> BDDMath.vec2
 
-  (* combine dest a b
-     Combine the two aabbs into the destination, overwriting it. *)
-  val aabb_combine : BDDTypes.aabb * BDDTypes.aabb * BDDTypes.aabb -> unit
+  (* combine a b
+     Combine the two AABBs.
+     Port note: In the original, this was an imperative operation;
+     we treat AABBs functionally. *)
+  val aabb_combine : BDDTypes.aabb * BDDTypes.aabb -> BDDTypes.aabb
 
   (* contains container test
      Does the container contain the test aabb? *)
@@ -47,7 +49,8 @@ sig
 
   (* Compute the collision manifold between two circles. *)
   val collide_circles : BDDCircle.circle * BDDMath.transform *
-                        BDDCircle.circle * BDDMath.transform -> BDDTypes.manifold
+                        BDDCircle.circle * BDDMath.transform -> 
+                        BDDTypes.manifold
 
   (* clip_segment_to_line (v1, v2, normal, offset)
      Clipping for contact manifolds. Returns either no points (entire segment

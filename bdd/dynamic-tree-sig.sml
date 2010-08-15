@@ -18,7 +18,7 @@ sig
   (* Create a proxy. Provide a tight fitting AABB and user data. *)
   val aabb_proxy : 'a dynamic_tree * BDDTypes.aabb * 'a -> 'a aabb_proxy
 
-  (* Remove the proxy from the tree. It must be present in this tree. *)  
+  (* Remove the proxy from the tree. It must be a leaf in this tree. *)  
   val remove_proxy : 'a dynamic_tree * 'a aabb_proxy -> unit
   
   (* move_proxy tree proxy aabb displacement

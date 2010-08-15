@@ -83,15 +83,15 @@ struct
   datatype manifold_type = E_Circles | E_FaceA | E_FaceB
   type manifold =
       {
-	typ : manifold_type,
+        typ : manifold_type,
         (* the points of contact.
-	   up to BDDSettings.max_manifold_points *)
+           up to BDDSettings.max_manifold_points *)
         points : manifold_point array,
-	(* not used for Type::e_points (? is this an out of date comment? -tom7) *)
+        (* not used for Type::e_points (? is this an out of date comment? -tom7) *)
         local_normal : BDDMath.vec2,
-	(* usage depends on manifold type *)
+        (* usage depends on manifold type *)
         local_point : BDDMath.vec2,
-	(* the number of manifold points *)
+        (* the number of manifold points *)
         point_count : int
       }
 
@@ -118,11 +118,12 @@ struct
 
   (* Used for computing contact manifolds. *)
   type clip_vertex = { v : BDDMath.vec2,
-		       id : contact_id }
+                       id : contact_id }
 
-  (* Axis-aligned bounding box; mutable *)
+  (* Axis-aligned bounding box. Treated as immutable -- don't
+     change the vectors! *)
   type aabb = { lowerbound : BDDMath.vec2,
-		upperbound : BDDMath.vec2 }
+                upperbound : BDDMath.vec2 }
 
   (* Abstract proxy for GJK distance algorithm. *)
   type distance_proxy = 
@@ -142,28 +143,28 @@ struct
      used by the GJK algorithm as it refines its approximation. 
      BDDDistance contains the cold start initial value. *)
   type simplex_cache = { (* Length or area *)
-			 metric : real ref,
-			 (* PERF these were smaller int types
-			    in the original Box2D. Can't tell
-			    yet whether the size/speed tradeoff
-			    is wise. *)
-			 count : int ref,
-			 (* Exactly three elements *)
-			 indexa : int array,
-			 indexb : int array }
+                         metric : real ref,
+                         (* PERF these were smaller int types
+                            in the original Box2D. Can't tell
+                            yet whether the size/speed tradeoff
+                            is wise. *)
+                         count : int ref,
+                         (* Exactly three elements *)
+                         indexa : int array,
+                         indexb : int array }
 
   type distance_input = { proxya : distance_proxy,
-			  proxyb : distance_proxy,
-			  transforma : BDDMath.transform,
-			  transformb : BDDMath.transform,
-			  use_radii : bool }
+                          proxyb : distance_proxy,
+                          transforma : BDDMath.transform,
+                          transformb : BDDMath.transform,
+                          use_radii : bool }
 
   type distance_output = { (* Closest point on shape A *)
-			   pointa : BDDMath.vec2,
-			   (* Closest point on shape B *)
-			   pointb : BDDMath.vec2,
-			   distance : real,
-			   (* Number of GJK iterations used *)
-			   iterations : int }
+                           pointa : BDDMath.vec2,
+                           (* Closest point on shape B *)
+                           pointb : BDDMath.vec2,
+                           distance : real,
+                           (* Number of GJK iterations used *)
+                           iterations : int }
 
 end

@@ -11,11 +11,13 @@ struct
   infix 6 :+: :-: %-% %+% +++
   infix 7 *: *% +*: +*+ #*% @*:
 
+  exception BDDDynamicTree of string
+
   (* Port note: Corresponds to DynamicTreeNode in b2dynamictree.h.
      I decided to use idiomatic SML instead of the hand-written
      allocator in Box2D, since it's not clear it'd be faster than
      a good generational gc. *)
-  datatype 'a aabb_proxy =
+  datatype 'a tree_node =
       Node of { (* Fattened aabb *)
                 aabb : aabb,
                 data : 'a,
@@ -23,72 +25,187 @@ struct
                    a 'next' pointer here, but it's just
                    so that the structure can be stored 
                    in freelists for its custom allocator. *)
-                parent : 'a aabb_proxy option ref,
-                left : 'a aabb_proxy option ref,
-                right : 'a aabb_proxy option ref }
+                parent : 'a tree_node ref,
+                left : 'a tree_node ref,
+                right : 'a tree_node ref }
+    | Empty
+  type 'a aabb_proxy = 'a tree_node ref
 
+  (* Port note: The representation appears to be that leaf nodes are the
+     "real" data (and have user data) whereas internal nodes just
+     union up leaves to arrange them hierarchically, and are expendable.
+     If this is true, it may be worth having both Interior and Leaf
+     arms rather than Node and Empty. *)
   type 'a dynamic_tree =
-      { node_count : int ref,
-        root : 'a aabb_proxy option ref }
+      { node_count : int,
+        root : 'a aabb_proxy } ref
 
-  fun user_data (Node { data, ... }) = data
-  fun fat_aabb (Node { aabb, ... }) = aabb
+  (* Port note: We need to update fields of each object to mimic the
+     imperative style of Box2D. We treat the object itself as a ref,
+     rather than the updatable fields (the latter would be more
+     idiomatic in SML). This allows us to quickly compare the objects
+     for equality, but means that we need setter functions for the
+     fields that we modify. *)
+  fun set_node_count (r as ref { node_count = _, root }, nc) =
+      r := { node_count = nc, root = root }
 
-  fun compute_height ({ root, ... } : dynamic_tree) =
-      let fun ch NONE = 0
-            | ch (SOME (Node { left, right })) =
+  fun set_root (r as ref { node_count, root = _ }, root) =
+      r := { node_count = node_count, root = root }
+
+  fun set_parent (r as ref (Node { aabb, data, parent = _, left, right }),
+                  parent) =
+      r := Node { aabb = aabb, data = data, parent = parent, 
+                  left = left, right = right }
+    | set_parent _ = raise BDDDynamicTree "expected node; got empty"
+
+  fun set_left (r as ref (Node { aabb, data, parent, left = _, right }),
+                left) =
+      r := Node { aabb = aabb, data = data, parent = parent, 
+                  left = left, right = right }
+    | set_left _ = raise BDDDynamicTree "expected node; got empty"
+
+  fun set_right (r as ref (Node { aabb, data, parent, left, right = _ }),
+                 right) =
+      r := Node { aabb = aabb, data = data, parent = parent, 
+                  left = left, right = right }
+    | set_right _ = raise BDDDynamicTree "expected node; got empty"
+
+  fun !! (ref (Node x)) = x
+    | !! _ = raise BDDDynamicTree "expected node; got empty"
+
+  fun user_data n = #data (!! n)
+  fun fat_aabb n = #aabb (!! n)
+
+  (* There is one empty node. - won't work - value restriction.
+     could make one as part of every tree... *)
+  (* val empty = ref Empty *)
+  (* Assumes there is one empty node *)
+  fun is_leaf n = (* #left (!!n) = empty *)
+      case #left (!!n) of
+          ref Empty => true
+        | _ => false
+
+  fun compute_height (ref { root, ... } : 'a dynamic_tree) =
+      let fun ch Empty = 0
+            | ch (Node { left, right, ... }) =
           1 + Int.max(ch (!left), ch (!right))
       in ch (!root)
       end
 
-  fun dynamic_tree () = { node_count = ref 0, root = ref NONE }
+  fun dynamic_tree () = ref { node_count = 0, root = ref Empty }
 
-  fun 'a aabb_proxy (tree : dynamic_tree, aabb : aabb, a : 'a) : 'a aabb_proxy =
+  fun insert_leaf (tree as ref { root, ... } : 'a dynamic_tree,
+                   node as ref (Node { aabb, data, parent, left, right })) =
+      raise Unimplemented "insert_leaf"
+
+  fun rebalance iters =
+      raise Unimplemented "rebalance"
+
+  fun aabb_proxy (tree (* : 'a dynamic_tree *), aabb : aabb, a (* : 'a*) ) 
+      (* : 'a aabb_proxy *) =
       let
+          (* Fatten the aabb. *)
           val r : vec2 = vec2(aabb_extension, aabb_extension)
+          val fat : aabb = { lowerbound = #lowerbound aabb :-: r,
+                             upperbound = #upperbound aabb :-: r }
+          (* XXX: Probably don't need to pass all this junk to
+             insert_node. *)
+          val node = ref (Node { aabb = fat, data = a, parent = ref Empty,
+                                 left = ref Empty, right = ref Empty })
+          fun rebalance_loop try_count =
+              if try_count >= 10 orelse compute_height tree <= 64
+              then node
+              else (rebalance (#node_count (!tree) div 16);
+                    rebalance_loop (try_count + 1))
       in
-          HERE
+          set_node_count (tree, #node_count (!tree) + 1);
+          insert_leaf (tree, node);
+          (* Rebalance if necessary. *)
+          rebalance_loop 0
       end
-      
+
+  (* Derive the AABB for an interior node, based on its children
+     (which must have accurate AABBs. Set it and return it. *)
+  fun set_derived_aabb (r as ref (Node { aabb = _, data, parent, 
+                                         left, right }))
+      let val new_aabb = 
+          BDDCollision.aabb_combine (#aabb (!!left), #aabb (!!right))
+      in r := Node { aabb = new_aabb, data = data, parent = parent, 
+                     left = left, right = right }
+      end
+    | set_derived_aabb _ = raise BDDDynamicTree "expected node; got empty"
+
+  (* Assumes the proxy is a leaf. *)
+  fun remove_leaf (tree (* : 'a dynamic_tree *), 
+                   proxy (* : 'a aabb_proxy *)) =
+      let val { parent, ... } = !!proxy
+      in
+          (* If it's the root, we just make the tree empty. 
+             Port note: Throughout this code, Box2D uses equality
+             on proxy IDs (integers); I ref equality. *)
+          case !parent of
+              Empty => set_root (tree, ref Empty)
+            | Node { left, right, parent = grandparent, ... } =>
+                let
+                    (* Get the other child of our parent. *)
+                    val sibling = if left = proxy 
+                                  then right
+                                  else left
+                in
+                    case !grandparent of
+                        (* Note: discards parent. *)
+                        Empty => (set_parent (sibling, ref Empty);
+                                  set_root (tree, sibling))
+                      | Node { left = g_left, ... } => 
+                            let 
+                                fun adjust ancestor =
+                                  case !ancestor of
+                                      Empty => ()
+                                    | Node { parent, aabb = old_aabb, ... } => 
+                                      let 
+                                        val new_aabb = 
+                                            set_derived_aabb grandparent
+                                      in
+                                        if BDDCollision.aabb_contains (old_aabb, new_aabb)
+                                        then ()
+                                        else adjust parent
+                                      end
+                            in
+                                (* Destroy parent and connect grandparent
+                                   to sibling. *)
+                                if g_left = sibling
+                                then set_left (grandparent, sibling)
+                                else set_right (grandparent, sibling);
+                                set_parent (sibling, grandparent);
+                                (* Adjust ancestor bounds. *)
+                                adjust grandparent
+                            end
+                end
+      end
+
+  fun remove_proxy (tree : 'a dynamic_tree, proxy : 'a aabb_proxy) =
+      if is_leaf proxy
+      then remove_leaf (tree, proxy)
+      else raise BDDDynamicTree "can only remove leaves"
+
+  fun move_proxy (tree : 'a dynamic_tree,
+                  proxy : 'a aabb_proxy,
+                  aabb : aabb,
+                  displacement : vec2) : bool =
+      raise Unimplemented "move_proxy"
+
+  fun query (tree: 'a dynamic_tree,
+             f : 'a aabb_proxy -> bool,
+             aabb : aabb) : unit =
+      raise Unimplemented "query"
+
+  fun ray_cast (tree : 'a dynamic_tree,
+                callback : BDDTypes.ray_cast_input * 'a aabb_proxy -> real,
+                { p1 : BDDMath.vec2, p2 : BDDMath.vec2,
+                  max_fraction : real }) : unit =
+      raise Unimplemented "ray_cast"
+
 (*
-
-// Create a proxy in the tree as a leaf node. We return the index
-// of the node instead of a pointer so that we can grow
-// the node pool.
-int32 b2DynamicTree::CreateProxy(const b2AABB& aabb, void* userData)
-{
-        int32 proxyId = AllocateNode();
-
-        // Fatten the aabb.
-        b2Vec2 r(b2_aabbExtension, b2_aabbExtension);
-        m_nodes[proxyId].aabb.lowerBound = aabb.lowerBound - r;
-        m_nodes[proxyId].aabb.upperBound = aabb.upperBound + r;
-        m_nodes[proxyId].userData = userData;
-
-        InsertLeaf(proxyId);
-
-        // Rebalance if necessary.
-        int32 iterationCount = m_nodeCount >> 4;
-        int32 tryCount = 0;
-        int32 height = ComputeHeight();
-        while (height > 64 && tryCount < 10)
-        {
-                Rebalance(iterationCount);
-                height = ComputeHeight();
-                ++tryCount;
-        }
-
-        return proxyId;
-}
-
-void b2DynamicTree::DestroyProxy(int32 proxyId)
-{
-        b2Assert(0 <= proxyId && proxyId < m_nodeCapacity);
-        b2Assert(m_nodes[proxyId].IsLeaf());
-
-        RemoveLeaf(proxyId);
-        FreeNode(proxyId);
-}
 
 bool b2DynamicTree::MoveProxy(int32 proxyId, const b2AABB& aabb, const b2Vec2& displacement)
 {
@@ -219,62 +336,6 @@ void b2DynamicTree::InsertLeaf(int32 leaf)
                 m_nodes[sibling].parent = node2;
                 m_nodes[leaf].parent = node2;
                 m_root = node2;
-        }
-}
-
-void b2DynamicTree::RemoveLeaf(int32 leaf)
-{
-        if (leaf == m_root)
-        {
-                m_root = b2_nullNode;
-                return;
-        }
-
-        int32 node2 = m_nodes[leaf].parent;
-        int32 node1 = m_nodes[node2].parent;
-        int32 sibling;
-        if (m_nodes[node2].child1 == leaf)
-        {
-                sibling = m_nodes[node2].child2;
-        }
-        else
-        {
-                sibling = m_nodes[node2].child1;
-        }
-
-        if (node1 != b2_nullNode)
-        {
-                // Destroy node2 and connect node1 to sibling.
-                if (m_nodes[node1].child1 == node2)
-                {
-                        m_nodes[node1].child1 = sibling;
-                }
-                else
-                {
-                        m_nodes[node1].child2 = sibling;
-                }
-                m_nodes[sibling].parent = node1;
-                FreeNode(node2);
-
-                // Adjust ancestor bounds.
-                while (node1 != b2_nullNode)
-                {
-                        b2AABB oldAABB = m_nodes[node1].aabb;
-                        m_nodes[node1].aabb.Combine(m_nodes[m_nodes[node1].child1].aabb, m_nodes[m_nodes[node1].child2].aabb);
-
-                        if (oldAABB.Contains(m_nodes[node1].aabb))
-                        {
-                                break;
-                        }
-
-                        node1 = m_nodes[node1].parent;
-                }
-        }
-        else
-        {
-                m_root = sibling;
-                m_nodes[sibling].parent = b2_nullNode;
-                FreeNode(node2);
         }
 }
 
