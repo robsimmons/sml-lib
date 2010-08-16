@@ -37,8 +37,12 @@ struct
      union up leaves to arrange them hierarchically, and are expendable.
      It is probably worth having both Interior and Leaf arms rather 
      than Node and Empty. *)
+  (* Represent the whole thing as a ref so that we don't confuse the
+     updateable root pointer with the identity of the node contained
+     there. *)
   type 'a dynamic_tree =
       { node_count : int,
+        path : Word32.word,
         root : 'a aabb_proxy } ref
 
   (* Port note: We need to update fields of each object to mimic the
@@ -47,11 +51,14 @@ struct
      idiomatic in SML). This allows us to quickly compare the objects
      for equality, but means that we need setter functions for the
      fields that we modify. *)
-  fun set_node_count (r as ref { node_count = _, root }, nc) =
-      r := { node_count = nc, root = root }
+  fun set_node_count (r as ref { node_count = _, root, path }, node_count) =
+      r := { node_count = node_count, root = root, path = path }
 
-  fun set_root (r as ref { node_count, root = _ }, root) =
-      r := { node_count = node_count, root = root }
+  fun set_root (r as ref { node_count, root = _, path }, root) =
+      r := { node_count = node_count, root = root, path = path }
+
+  fun set_path (r as ref { node_count, root, path = _ }, path) =
+      r := { node_count = node_count, root = root, path = path }
 
   fun set_parent (r as ref (Node { aabb, data, parent = _, left, right }),
                   parent) =
@@ -96,7 +103,7 @@ struct
       in ch (!root)
       end
 
-  fun dynamic_tree () = ref { node_count = 0, root = ref Empty }
+  fun dynamic_tree () = ref { node_count = 0, root = ref Empty, path = 0w0 }
 
   (* Derive the AABB for an interior node, based on its children
      (which must have accurate AABBs. Set it and return it. *)
@@ -188,57 +195,6 @@ struct
             end)
     | insert_leaf _ = raise BDDDynamicTree "can't insert empty"
 
-  fun rebalance iters =
-      raise Unimplemented "rebalance"
-(*
-void b2DynamicTree::Rebalance(int32 iterations)
-{
-        if (m_root == b2_nullNode)
-        {
-                return;
-        }
-
-        for (int32 i = 0; i < iterations; ++i)
-        {
-                int32 node = m_root;
-
-                uint32 bit = 0;
-                while (m_nodes[node].IsLeaf() == false)
-                {
-                        int32* children = &m_nodes[node].child1;
-                        node = children[(m_path >> bit) & 1];
-                        bit = (bit + 1) & (8* sizeof(uint32) - 1);
-                }
-                ++m_path;
-
-                RemoveLeaf(node);
-                InsertLeaf(node);
-        }
-}
-*)
-
-  fun aabb_proxy (tree : 'a dynamic_tree, aabb : aabb, a : 'a) : 'a aabb_proxy =
-      let
-          (* Fatten the aabb. *)
-          val r : vec2 = vec2(aabb_extension, aabb_extension)
-          val fat : aabb = { lowerbound = #lowerbound aabb :-: r,
-                             upperbound = #upperbound aabb :-: r }
-          (* XXX: Probably don't need to pass all this junk to
-             insert_node. *)
-          val node = ref (Node { aabb = fat, data = SOME a, parent = ref Empty,
-                                 left = ref Empty, right = ref Empty })
-          fun rebalance_loop try_count =
-              if try_count >= 10 orelse compute_height tree <= 64
-              then node
-              else (rebalance (#node_count (!tree) div 16);
-                    rebalance_loop (try_count + 1))
-      in
-          set_node_count (tree, #node_count (!tree) + 1);
-          insert_leaf (tree, node);
-          (* Rebalance if necessary. *)
-          rebalance_loop 0
-      end
-
   (* Assumes the proxy is a leaf. *)
   fun remove_leaf (tree (* : 'a dynamic_tree *), 
                    proxy (* : 'a aabb_proxy *)) =
@@ -274,6 +230,64 @@ void b2DynamicTree::Rebalance(int32 iterations)
                       end
             end
     end
+
+  fun rebalance (tree : 'a dynamic_tree, iters : int) =
+    case !(#root (!tree)) of
+      Empty => ()
+    | _ =>
+      let
+          (* Port note: Rebalancing consists of finding leaves and reinserting
+             them. The member variable path is some kinda magic that seems
+             to be intended to make us choose different nodes each time; we
+             read bits from least to most significant so that we switch
+             between the two children of the root on every step, etc. *)
+          val path = ref (#path (!tree))
+      in
+          for 1 iters
+          (fn _ =>
+           let fun loop (node, bit) =
+               if is_leaf node
+               then (path := !path + 0w1; 
+                     remove_leaf (tree, node); 
+                     insert_leaf (tree, node))
+               else
+                let
+                    val node =
+                        case Word32.andb(0w1, Word32.>>(!path, bit)) of
+                            0w0 => #left (!!node)
+                          | _ => #right (!!node)
+                    val bit = Word.andb(bit + 0w1, 0w31)
+                in
+                    path := !path + 0w1;
+                    loop (node, bit)
+                end
+           in
+               loop (#root (!tree), 0w0)
+           end);
+           set_path (tree, !path)
+      end
+
+  fun aabb_proxy (tree : 'a dynamic_tree, aabb : aabb, a : 'a) : 'a aabb_proxy =
+      let
+          (* Fatten the aabb. *)
+          val r : vec2 = vec2(aabb_extension, aabb_extension)
+          val fat : aabb = { lowerbound = #lowerbound aabb :-: r,
+                             upperbound = #upperbound aabb :-: r }
+          (* XXX: Probably don't need to pass all this junk to
+             insert_node. *)
+          val node = ref (Node { aabb = fat, data = SOME a, parent = ref Empty,
+                                 left = ref Empty, right = ref Empty })
+          fun rebalance_loop try_count =
+              if try_count >= 10 orelse compute_height tree <= 64
+              then node
+              else (rebalance (tree, #node_count (!tree) div 16);
+                    rebalance_loop (try_count + 1))
+      in
+          set_node_count (tree, #node_count (!tree) + 1);
+          insert_leaf (tree, node);
+          (* Rebalance if necessary. *)
+          rebalance_loop 0
+      end
 
   fun remove_proxy (tree : 'a dynamic_tree, proxy : 'a aabb_proxy) =
       if is_leaf proxy
@@ -316,162 +330,106 @@ void b2DynamicTree::Rebalance(int32 iterations)
         end
     | move_proxy _ = raise BDDDynamicTree "move_proxy on Empty"
 
-  fun query (tree: 'a dynamic_tree,
+  (* Port note: Box2D somewhat strangely uses an explicit stack here
+     (might be so that it can abort when the callback returns false
+     without using setjmp), which has a maximum depth 128. There's not
+     really any reason that the tree can't have an all-left path of
+     length greater than 64 (which creates 128 outstanding nodes), at
+     which point this function would stop looking at children.
+     Rebalancing should prevent that most of the time, but it's better
+     to be correct. Implemented instead using an unlimited ML stack
+     and exceptions for early exits. *)
+  exception Done
+  fun query (tree : 'a dynamic_tree,
              f : 'a aabb_proxy -> bool,
              aabb : aabb) : unit =
-      raise Unimplemented "query"
-
-(*
-
-template <typename T>
-inline void b2DynamicTree::Query(T* callback, const b2AABB& aabb) const
-{
-        const int32 k_stackSize = 128;
-        int32 stack[k_stackSize];
-
-        int32 count = 0;
-        stack[count++] = m_root;
-
-        while (count > 0)
-        {
-                int32 nodeId = stack[--count];
-                if (nodeId == b2_nullNode)
-                {
-                        continue;
-                }
-
-                const b2DynamicTreeNode* node = m_nodes + nodeId;
-
-                if (b2TestOverlap(node->aabb, aabb))
-                {
-                        if (node->IsLeaf())
-                        {
-                                bool proceed = callback->QueryCallback(nodeId);
-                                if (proceed == false)
-                                {
-                                        return;
-                                }
-                        }
-                        else
-                        {
-                                if (count < k_stackSize)
-                                {
-                                        stack[count++] = node->child1;
-                                }
-
-                                if (count < k_stackSize)
-                                {
-                                        stack[count++] = node->child2;
-                                }
-                        }
-                }
-        }
-}
-*)
-
+    let fun q node =
+        case !node of
+            Empty => ()
+          | n as Node { left, right, aabb = node_aabb, ... } =>
+            if BDDCollision.aabb_overlap (node_aabb, aabb)
+            then if is_leaf node
+                 then if f node
+                      then ()
+                      else raise Done
+                 else (q left; q right)
+            else ()
+    in
+        q (#root (!tree))
+    end handle Done => ()
 
   fun ray_cast (tree : 'a dynamic_tree,
-                callback : BDDTypes.ray_cast_input * 'a aabb_proxy -> real,
+                f : BDDTypes.ray_cast_input * 'a aabb_proxy -> real,
                 { p1 : BDDMath.vec2, p2 : BDDMath.vec2,
                   max_fraction : real }) : unit =
-      raise Unimplemented "ray_cast"
+    let
+      val r : vec2 = p2 :-: p1
+      val () = if vec2length_squared r > 0.0
+               then ()
+               else raise BDDDynamicTree "ray must have length"
+      val _ : real = vec2normalize r
 
-(*
-template <typename T>
-inline void b2DynamicTree::RayCast(T* callback, const b2RayCastInput& input) const
-{
-        b2Vec2 p1 = input.p1;
-        b2Vec2 p2 = input.p2;
-        b2Vec2 r = p2 - p1;
-        b2Assert(r.LengthSquared() > 0.0f);
-        r.Normalize();
+      (* v is perpendicular to the segment. *)
+      val v : vec2 = cross2sv(1.0, r)
+      val abs_v : vec2 = vec2abs v
 
-        // v is perpendicular to the segment.
-        b2Vec2 v = b2Cross(1.0f, r);
-        b2Vec2 abs_v = b2Abs(v);
 
-        // Separating axis for segment (Gino, p80).
-        // |dot(v, p1 - c)| > dot(|v|, h)
+      (* These two are updated in the loop. *)
+      val max_fraction = ref max_fraction
+      (* Build a bounding box for the segment. *)
+      fun make_segment () =
+          let val t : vec2 = p1 :+: !max_fraction *: (p2 :-: p1)
+          in
+              { lowerbound = vec2min(p1, t),
+                upperbound = vec2max(p1, t) }
+          end
+      val segment_aabb : aabb ref = ref (make_segment ())
 
-        float32 maxFraction = input.maxFraction;
+      (* Port note: Again with the explicit stack. Prevents descent deeper
+         than 64 in the worst case. Just use the ML stack and
+         exceptions for correctness and simplicity. *)
+      fun loop node =
+        case !node of
+            Empty => ()
+          | n as Node { left, right, aabb = node_aabb, ... } =>
+            if not (BDDCollision.aabb_overlap (node_aabb, !segment_aabb))
+            then ()
+            else
+             let
+               (* Separating axis for segment (Gino, p80).
+                  |dot(v, p1 - c)| > dot(|v|, h) *)
+               val c : vec2 = BDDCollision.aabb_center node_aabb
+               val h : vec2 = BDDCollision.aabb_extents node_aabb
+               val separation : real = Real.abs(dot2(v, p1 :-: c)) - dot2(abs_v, h)
+             in
+               if separation > 0.0
+               then ()
+               else
+                   if is_leaf node
+                   then
+                       let
+                           val sub_input = { p1 = p1, p2 = p2, 
+                                             max_fraction = !max_fraction }
+                           val value = f (sub_input, node)
+                       in
+                           (* Just used as a sentinel for the client to
+                              request that the ray cast should stop *)
+                           if Real.== (value, 0.0)
+                           then raise Done
+                           else if value > 0.0
+                                then
+                                    let in
+                                        (* update segment bounding box. *)
+                                        max_fraction := value;
+                                        segment_aabb := make_segment()
+                                    end
+                                else ()
+                       end
+                   else (loop (#left (!!node)); loop (#right (!!node)))
+             end
 
-        // Build a bounding box for the segment.
-        b2AABB segmentAABB;
-        {
-                b2Vec2 t = p1 + maxFraction * (p2 - p1);
-                segmentAABB.lowerBound = b2Min(p1, t);
-                segmentAABB.upperBound = b2Max(p1, t);
-        }
-
-        const int32 k_stackSize = 128;
-        int32 stack[k_stackSize];
-
-        int32 count = 0;
-        stack[count++] = m_root;
-
-        while (count > 0)
-        {
-                int32 nodeId = stack[--count];
-                if (nodeId == b2_nullNode)
-                {
-                        continue;
-                }
-
-                const b2DynamicTreeNode* node = m_nodes + nodeId;
-
-                if (b2TestOverlap(node->aabb, segmentAABB) == false)
-                {
-                        continue;
-                }
-
-                // Separating axis for segment (Gino, p80).
-                // |dot(v, p1 - c)| > dot(|v|, h)
-                b2Vec2 c = node->aabb.GetCenter();
-                b2Vec2 h = node->aabb.GetExtents();
-                float32 separation = b2Abs(b2Dot(v, p1 - c)) - b2Dot(abs_v, h);
-                if (separation > 0.0f)
-                {
-                        continue;
-                }
-
-                if (node->IsLeaf())
-                {
-                        b2RayCastInput subInput;
-                        subInput.p1 = input.p1;
-                        subInput.p2 = input.p2;
-                        subInput.maxFraction = maxFraction;
-
-                        float32 value = callback->RayCastCallback(subInput, nodeId);
-
-                        if (value == 0.0f)
-                        {
-                                // The client has terminated the ray cast.
-                                return;
-                        }
-
-                        if (value > 0.0f)
-                        {
-                                // Update segment bounding box.
-                                maxFraction = value;
-                                b2Vec2 t = p1 + maxFraction * (p2 - p1);
-                                segmentAABB.lowerBound = b2Min(p1, t);
-                                segmentAABB.upperBound = b2Max(p1, t);
-                        }
-                }
-                else
-                {
-                        if (count < k_stackSize)
-                        {
-                                stack[count++] = node->child1;
-                        }
-
-                        if (count < k_stackSize)
-                        {
-                                stack[count++] = node->child2;
-                        }
-                }
-        }
-}
-*)
+    in
+        loop (#root (!tree))
+    end handle Done => ()
 
 end
