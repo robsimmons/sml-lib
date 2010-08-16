@@ -51,7 +51,7 @@ sig
   (* ray_cast tree callback { p1, p2, max_fraction }
      Ray-cast against the proxies in the tree. This relies on the callback
      to perform an exact ray-cast in the case were the proxy contains a shape.
-     The callback also performs the any collision filtering. This has performance
+     The callback also performs the collision filtering. This has performance
      roughly equal to k * log(n), where k is the number of collisions and n is the
      number of proxies in the tree.
      The input ray extends from p1 to p1 + maxFraction * (p2 - p1).
