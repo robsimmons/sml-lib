@@ -16,7 +16,12 @@ struct
   (* Port note: Corresponds to DynamicTreeNode in b2dynamictree.h.
      I decided to use more idiomatic SML instead of the hand-written
      allocator in Box2D, since it's not clear it'd be faster than
-     a good generational gc. *)
+     a good generational gc.
+
+     PERF: As I worked through it I realized there are some representation
+     invariants that could be enforced with types, which would make the
+     code clearer and would remove some of the awkward re-testing !! stuff.
+     It deserves another pass. *)
   datatype 'a tree_node =
       Node of { (* Fattened aabb *)
                 aabb : aabb,
