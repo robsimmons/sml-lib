@@ -156,6 +156,7 @@ sig
      alpha is a factor in [0,1], where 0 indicates t0. 
      Modifies the transform. *)
   val sweep_gettransform : sweep * transform * real -> unit
+  val sweep_transform : sweep * real -> transform
   (* Advance the sweep forward, yielding a new initial state.
      t is the new initial time. *)
   val sweep_advance : sweep * real -> unit

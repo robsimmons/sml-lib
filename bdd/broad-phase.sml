@@ -27,39 +27,6 @@ struct
 	      (* Enqueued moves for the next update_pairs. *)
 	      move_buffer : 'a proxy list ref }
 
-  (* Port note: ? *)
-
-(*
-
-void b2BroadPhase::BufferMove(int32 proxyId)
-{
-	if (m_moveCount == m_moveCapacity)
-	{
-		int32* oldBuffer = m_moveBuffer;
-		m_moveCapacity *= 2;
-		m_moveBuffer = (int32* )b2Alloc(m_moveCapacity * sizeof(int32));
-		memcpy(m_moveBuffer, oldBuffer, m_moveCount * sizeof(int32));
-		b2Free(oldBuffer);
-	}
-
-	m_moveBuffer[m_moveCount] = proxyId;
-	++m_moveCount;
-}
-
-void b2BroadPhase::UnBufferMove(int32 proxyId)
-{
-	for (int32 i = 0; i < m_moveCount; ++i)
-	{
-		if (m_moveBuffer[i] == proxyId)
-		{
-			m_moveBuffer[i] = e_nullProxy;
-			return;
-		}
-	}
-}
-
-*)
-
   (* nb. doesn't remove existing moves.
      Port note: Stored in the opposite order from Box2D, which
      uses a growing array. *)

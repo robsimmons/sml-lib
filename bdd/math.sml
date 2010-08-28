@@ -15,18 +15,18 @@ struct
   fun inv_sqrt x = 1.0 / Math.sqrt x
   (* PERF: Use magic 0x5f3759df method.
 {
-	union
-	{
-		float32 x;
-		int32 i;
-	} convert;
+        union
+        {
+                float32 x;
+                int32 i;
+        } convert;
 
-	convert.x = x;
-	float32 xhalf = 0.5f * x;
-	convert.i = 0x5f3759df - (convert.i >> 1);
-	x = convert.x;
-	x = x * (1.5f - xhalf * x * x);
-	return x;
+        convert.x = x;
+        float32 xhalf = 0.5f * x;
+        convert.i = 0x5f3759df - (convert.i >> 1);
+        x = convert.x;
+        x = x * (1.5f - xhalf * x * x);
+        return x;
 }
 *)
 
@@ -68,14 +68,14 @@ struct
   fun vec2normalize (v as {x, y}) =
       let val length = vec2length v
       in
-	  if length < BDDSettings.epsilon
-	  then 0.0
-	  else let val inv = 1.0 / length
-	       in
-		   x := !x * inv;
-		   y := !y * inv;
-		   length
-	       end
+          if length < BDDSettings.epsilon
+          then 0.0
+          else let val inv = 1.0 / length
+               in
+                   x := !x * inv;
+                   y := !y * inv;
+                   length
+               end
       end
 
   fun vec2is_valid {x = ref x, y = ref y} =
@@ -91,8 +91,8 @@ struct
   fun vec3zero {x, y, z} = (x := 0.0; y := 0.0; z := 0.0)
   fun vec3set ({x, y, z}, xx, yy, zz) = (x := xx; y := yy; z := zz)
   fun vec3neg ({x, y, z} : vec3) = { x = ref (0.0 - !x), 
-				     y = ref (0.0 - !y), 
-				     z = ref (0.0 - !z) }
+                                     y = ref (0.0 - !y), 
+                                     z = ref (0.0 - !z) }
   fun vec3idx ({x, y, z} : vec3) 0 = !x
     | vec3idx {x, y, z} 1 = !y
     | vec3idx {x, y, z} 2 = !z
@@ -111,25 +111,25 @@ struct
   type mat22 = { col1 : vec2, col2 : vec2 }
 
   fun mat22cols (col1, col2) = { col1 = vec2copy col1,
-				 col2 = vec2copy col2 }
+                                 col2 = vec2copy col2 }
 
   fun mat22copy { col1, col2 } = mat22cols (col1, col2)
 
   fun mat22with (a11, a12, 
-		 a21, a22) =
+                 a21, a22) =
       { col1 = vec2(a11, 
-		    a21),
-	                    col2 = vec2(a12, 
-					a22) }
+                    a21),
+                            col2 = vec2(a12, 
+                                        a22) }
 
   (* Construct this matrix using an angle. This matrix becomes
      an orthonormal rotation matrix. *)
   fun mat22angle angle =
       (* PERF compute sin and cos together *)
       let val c = Math.cos angle
-	  val s = Math.sin angle
+          val s = Math.sin angle
       in { col1 = vec2(c, ~s),
-	   col2 = vec2(s, c) }
+           col2 = vec2(s, c) }
       end
 
   fun mat22set ({ col1, col2 }, c1, c2) =
@@ -138,17 +138,17 @@ struct
 
   fun mat22setangle ({ col1, col2 } : mat22, angle) =
       let val c = Math.cos angle
-	  val s = Math.sin angle
+          val s = Math.sin angle
       in
-	  vec2set(col1, c, ~s);
-	  vec2set(col2, s, c)
+          vec2set(col1, c, ~s);
+          vec2set(col2, s, c)
       end
 
   fun mat22setidentity ({ col1, col2 } : mat22) =
       (vec2set(col1, 1.0, 
-	             0.0);
+                     0.0);
                              vec2set(col2, 0.0, 
-					   1.0))
+                                           1.0))
 
   fun mat22setzero ({ col1, col2 } : mat22) =
       (vec2setzero col1; vec2setzero col2)
@@ -158,33 +158,33 @@ struct
 
   fun mat22inverse ({ col1, col2 } : mat22) =
       let
-	  val a = vec2x col1
-	  val b = vec2x col2
-	  val c = vec2y col1
-	  val d = vec2y col2
-	  val det = a * d - b * c
-	  val det = if Real.!= (det, 0.0)
-		    then 1.0 / det
-		    else det
+          val a = vec2x col1
+          val b = vec2x col2
+          val c = vec2y col1
+          val d = vec2y col2
+          val det = a * d - b * c
+          val det = if Real.!= (det, 0.0)
+                    then 1.0 / det
+                    else det
       in
-	  mat22with(det * d, ~det * b,
-		    ~det * c, det * a)
+          mat22with(det * d, ~det * b,
+                    ~det * c, det * a)
       end
 
   (* Solve A * x = b, where b is a column vector. This is more efficient
      than computing the inverse in one-shot cases. *)
   fun mat22solve ({ col1, col2 }, b : vec2) : vec2 =
       let
-	  val a11 = vec2x col1   val a12 = vec2x col2
-	  val a21 = vec2y col1   val a22 = vec2y col2
+          val a11 = vec2x col1   val a12 = vec2x col2
+          val a21 = vec2y col1   val a22 = vec2y col2
 
-	  val det = a11 * a22 - a12 * a21
-	  val det = if Real.!= (det, 0.0)
-		    then 1.0 / det
-		    else det
+          val det = a11 * a22 - a12 * a21
+          val det = if Real.!= (det, 0.0)
+                    then 1.0 / det
+                    else det
       in
-	  vec2(det * (a22 * vec2x b - a12 * vec2y b),
-	       det * (a11 * vec2y b - a21 * vec2x b))
+          vec2(det * (a22 * vec2x b - a12 * vec2y b),
+               det * (a11 * vec2y b - a21 * vec2x b))
       end
 
 
@@ -209,34 +209,34 @@ struct
 
   fun cross3vv(a : vec3, b : vec3) : vec3 =
       vec3 (vec3y a * vec3z b - vec3z a * vec3y b, 
-	    vec3z a * vec3x b - vec3x a * vec3z b, 
-	    vec3x a * vec3y b - vec3y a * vec3x b)
+            vec3z a * vec3x b - vec3x a * vec3z b, 
+            vec3x a * vec3y b - vec3y a * vec3x b)
 
   fun mat33solve33 ({ col1, col2, col3 }, b : vec3) : vec3 =
       let
-	  val cross23 = cross3vv (col2, col3)
-	  val det = dot3 (col1, cross23)
-	  val det = if Real.!= (det, 0.0)
-		    then 1.0 / det
-		    else det
+          val cross23 = cross3vv (col2, col3)
+          val det = dot3 (col1, cross23)
+          val det = if Real.!= (det, 0.0)
+                    then 1.0 / det
+                    else det
       in
-	  vec3(det * dot3(b, cross23),
-	       det * dot3(col1, cross3vv(b, col3)),
-	       det * dot3(col1, cross3vv(col2, b)))
+          vec3(det * dot3(b, cross23),
+               det * dot3(col1, cross3vv(b, col3)),
+               det * dot3(col1, cross3vv(col2, b)))
       end
 
   fun mat33solve22 ({ col1, col2, col3 } : mat33, b : vec2) : vec2 =
       let
-	  val a11 = vec3x col1     val a12 = vec3x col2
-	  val a21 = vec3y col1     val a22 = vec3y col2
+          val a11 = vec3x col1     val a12 = vec3x col2
+          val a21 = vec3y col1     val a22 = vec3y col2
        
-	  val det = a11 * a22 - a12 * a21
-	  val det = if Real.!= (det, 0.0)
-		    then 1.0 / det
-		    else det
+          val det = a11 * a22 - a12 * a21
+          val det = if Real.!= (det, 0.0)
+                    then 1.0 / det
+                    else det
       in
-	  vec2(det * (a22 * vec2x b - a12 * vec2y b),
-	       det * (a11 * vec2y b - a21 * vec2x b))
+          vec2(det * (a22 * vec2x b - a12 * vec2y b),
+               det * (a11 * vec2y b - a21 * vec2x b))
       end
 
   type transform = { position : vec2, r : mat22 }
@@ -247,6 +247,10 @@ struct
       (vec2setzero position;
        mat22setidentity r)
 
+  fun identity_transform () = { position = vec2 (0.0, 0.0),
+                                r = mat22with (1.0, 0.0,
+                                               0.0, 1.0) }
+
   fun transform_set ({ position, r }, pp, rr : real) =
       (vec2set(position, vec2x pp, vec2y pp);
        mat22setangle(r, rr))
@@ -256,9 +260,9 @@ struct
   (* Don't modify these. *)
   val vec2_zero = vec2(0.0, 0.0)
   val mat22_identity = mat22with(1.0, 0.0,
-				 0.0, 1.0)
+                                 0.0, 1.0)
   val transform_identity = { position = vec2 (0.0, 0.0),
-			     r = mat22_identity }
+                             r = mat22_identity }
 
   (* Functional math on vectors, matrices, etc. *)
 
@@ -267,16 +271,16 @@ struct
 
   fun vec3sub (a : vec3, b : vec3) : vec3 =
       vec3 (vec3x a - vec3x b,
-	    vec3y a - vec3y b,
-	    vec3z a - vec3z b)
+            vec3y a - vec3y b,
+            vec3z a - vec3z b)
 
   fun vec2add (a : vec2, b : vec2) : vec2 =
       vec2 (vec2x a + vec2x b, vec2y a + vec2y b)
 
   fun vec3add (a : vec3, b : vec3) : vec3 =
       vec3 (vec3x a + vec3x b,
-	    vec3y a + vec3y b,
-	    vec3z a + vec3z b)
+            vec3y a + vec3y b,
+            vec3z a + vec3z b)
 
   fun mat22add (a : mat22, b : mat22) : mat22 =
       mat22cols (vec2add (#col1 a, #col1 b), vec2add (#col2 a, #col2 b)) 
@@ -288,32 +292,32 @@ struct
 
   fun mul22v (a : mat22, v : vec2) : vec2 =
       vec2 (vec2x (#col1 a) * vec2x v +
-	    vec2x (#col2 a) * vec2y v,
-	    vec2y (#col1 a) * vec2x v +
-	    vec2y (#col2 a) * vec2y v)
+            vec2x (#col2 a) * vec2y v,
+            vec2y (#col1 a) * vec2x v +
+            vec2y (#col2 a) * vec2y v)
 
   fun mul22m (a : mat22, b : mat22) : mat22 =
       mat22cols (mul22v(a, #col1 b), mul22v(a, #col2 b))
 
   fun mul33v (a : mat33, v : vec3) : vec3 =
       vec3add(vec3add (vec3stimes (vec3x v, #col1 a),
-		       vec3stimes (vec3y v, #col2 a)),
-	      vec3stimes (vec3z v, #col3 a))
+                       vec3stimes (vec3y v, #col2 a)),
+              vec3stimes (vec3z v, #col3 a))
 
   fun multransformv (t : transform, v : vec2) : vec2 =
       let
-	  val x = vec2x (transformposition t) +
-	      vec2x (#col1 (transformr t)) *
-	      vec2x v +
-	      vec2x (#col2 (transformr t)) *
-	      vec2y v
-	  val y = vec2y (transformposition t) +
-	      vec2y (#col1 (transformr t)) *
-	      vec2x v +
-	      vec2y (#col2 (transformr t)) *
-	      vec2y v
+          val x = vec2x (transformposition t) +
+              vec2x (#col1 (transformr t)) *
+              vec2x v +
+              vec2x (#col2 (transformr t)) *
+              vec2y v
+          val y = vec2y (transformposition t) +
+              vec2y (#col1 (transformr t)) *
+              vec2x v +
+              vec2y (#col2 (transformr t)) *
+              vec2y v
       in
-	vec2 (x, y)
+        vec2 (x, y)
       end
 
   fun vec2eq (a, b) = Real.== (vec2x a, vec2x b) andalso
@@ -332,11 +336,11 @@ struct
 
   fun vec2min (a : vec2, b : vec2) =
       vec2 (Real.min (vec2x a, vec2x b),
-	    Real.min (vec2y a, vec2y b))
+            Real.min (vec2y a, vec2y b))
 
   fun vec2max (a : vec2, b : vec2) =
       vec2 (Real.max (vec2x a, vec2x b),
-	    Real.max (vec2y a, vec2y b))
+            Real.max (vec2y a, vec2y b))
 
   fun clampr (a, low, high) =
       Real.max(low, Real.min(a, high))
@@ -349,9 +353,9 @@ struct
       vec2(dot2(v, #col1 a), dot2(v, #col2 a))
   fun mul_t22mm (a : mat22, b : mat22) : mat22 =
       let val c1 = vec2(dot2(#col1 a, #col1 b), dot2(#col2 a, #col1 b))
-	  val c2 = vec2(dot2(#col1 a, #col2 b), dot2(#col2 a, #col2 b))
+          val c2 = vec2(dot2(#col1 a, #col2 b), dot2(#col2 a, #col2 b))
       in
-	  mat22cols (c1, c2)
+          mat22cols (c1, c2)
       end
   fun mul_ttransformv (t : transform, v : vec2) : vec2 =
       mul_t22mv (transformr t, vec2sub (v, transformposition t))
@@ -361,13 +365,13 @@ struct
      next largest power of two. *)
   fun next_power_of_two (w : Word32.word) =
       let
-	  val w = Word32.orb(w, Word32.>>(w, 0w1))
-	  val w = Word32.orb(w, Word32.>>(w, 0w2))
-	  val w = Word32.orb(w, Word32.>>(w, 0w4))
-	  val w = Word32.orb(w, Word32.>>(w, 0w8))
-	  val w = Word32.orb(w, Word32.>>(w, 0w16))
+          val w = Word32.orb(w, Word32.>>(w, 0w1))
+          val w = Word32.orb(w, Word32.>>(w, 0w2))
+          val w = Word32.orb(w, Word32.>>(w, 0w4))
+          val w = Word32.orb(w, Word32.>>(w, 0w8))
+          val w = Word32.orb(w, Word32.>>(w, 0w16))
       in
-	  w + 0w1
+          w + 0w1
       end
 
   fun is_power_of_two (w : Word32.word) =
@@ -375,45 +379,53 @@ struct
 
 
   type sweep = { 
-		 (* local center of mass position *)
-		 local_center : vec2, 
-		 (* center world positions *)
-		 c0 : vec2,
-		 c : vec2,
-		 (* world angles *)
-		 a0 : real ref,
-		 a : real ref
-	       }
+                 (* local center of mass position *)
+                 local_center : vec2, 
+                 (* center world positions *)
+                 c0 : vec2,
+                 c : vec2,
+                 (* world angles *)
+                 a0 : real ref,
+                 a : real ref
+               }
 
   fun sweep_gettransform ({ local_center, c0, c, a0, a }, 
-			  transform : transform, 
-			  alpha : real) =
+                          transform : transform, 
+                          alpha : real) =
       let val angle : real = 1.0 - alpha * !a0 + alpha * !a
       in
-	  vec2setfrom (transformposition transform,
-		       vec2add(vec2stimes (1.0 - alpha, c0),
-			       vec2stimes (alpha, c)));
-	  mat22setangle (transformr transform, angle);
+          vec2setfrom (transformposition transform,
+                       vec2add(vec2stimes (1.0 - alpha, c0),
+                               vec2stimes (alpha, c)));
+          mat22setangle (transformr transform, angle);
 
-	  vec2minuseq (transformposition transform,
-		       mul22v(transformr transform,
-			      local_center))
+          vec2minuseq (transformposition transform,
+                       mul22v(transformr transform,
+                              local_center))
+      end
+
+  (* PERF *)
+  fun sweep_transform (arg, alpha : real) =
+      let val transform = identity_transform ()
+      in
+          sweep_gettransform (arg, transform, alpha);
+          transform
       end
 
   fun sweep_advance({c0, c, a0, a, ...} : sweep, t : real) =
       let in
-	  vec2setfrom(c0, vec2add(vec2stimes(1.0 - t, c0),
-				  vec2stimes(t, c)));
-	  a0 := (1.0 - t) * !a0 + t * !a
+          vec2setfrom(c0, vec2add(vec2stimes(1.0 - t, c0),
+                                  vec2stimes(t, c)));
+          a0 := (1.0 - t) * !a0 + t * !a
       end
 
   fun sweep_normalize ({ a0, a, ... } : sweep) =
       let 
-	  val twopi = 2.0 * BDDSettings.pi
-	  val d = twopi * real (Real.floor(!a0 / twopi))
+          val twopi = 2.0 * BDDSettings.pi
+          val d = twopi * real (Real.floor(!a0 / twopi))
       in
-	  a0 := !a0 - d;
-	  a := !a - d
+          a0 := !a0 - d;
+          a := !a - d
       end
 
 end

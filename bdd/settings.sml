@@ -53,8 +53,9 @@ struct
   (* Maximum number of contacts to be handled to solve a TOI impact. *)
   val max_toi_contacts = 32
 
-  (* A velocity threshold for elastic collisions. Any collision with a relative linear
-     velocity below this threshold will be treated as inelastic. *)
+  (* A velocity threshold for elastic collisions. Any collision with a
+     relative linear velocity below this threshold will be treated as
+     inelastic. *)
   val velocity_threshold = 1.0
 
   (* The maximum linear position correction used when solving constraints. 
