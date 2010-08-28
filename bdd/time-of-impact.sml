@@ -129,8 +129,72 @@ struct
              end
     end
 
-  fun find_min_separation (sep : separation_function, t : real) : real * int * int =
-      raise BDDTimeOfImpact "unimplemented find_min_Separation"
+  fun find_min_separation ({ proxya : distance_proxy,
+                             proxyb : distance_proxy,
+                             sweepa : sweep,
+                             sweepb : sweep,
+                             typ : separation_type,
+                             local_point : vec2,
+                             axis : vec2 } : separation_function, 
+                           t : real) : real * int * int =
+    let
+        val xfa : transform = sweep_transform (sweepa, t)
+        val xfb : transform = sweep_transform (sweepb, t)
+    in
+        case typ of
+            TPoints =>
+              let
+                  val axis_a : vec2 = mul_t22mv (transformr xfa, axis)
+                  val axis_b : vec2 = mul_t22mv (transformr xfb, vec2neg axis)
+
+                  val indexa = #support proxya axis_a
+                  val indexb = #support proxyb axis_b
+
+                  val local_point_a : vec2 = #vertex proxya indexa
+                  val local_point_b : vec2 = #vertex proxyb indexb
+
+                  val point_a : vec2 = xfa @*: local_point_a
+                  val point_b : vec2 = xfb @*: local_point_b
+
+                  val separation : real = dot2(point_b :-: point_a, axis)
+              in
+                  (separation, indexa, indexb)
+              end
+
+         | TFaceA => 
+              let
+                  val normal : vec2 = mul22v (transformr xfa, axis)
+                  val point_a : vec2 = xfa @*: local_point
+                  val axis_b : vec2 = mul_t22mv (transformr xfb, vec2neg normal)
+
+                  val indexa = ~1
+                  val indexb = #support proxyb axis_b
+                      
+                  val local_point_b = #vertex proxyb indexb
+                  val point_b = xfb @*: local_point_b
+
+                  val separation = dot2(point_b :-: point_a, normal)
+              in
+                  (separation, indexa, indexb)
+              end
+
+         | TFaceB => 
+              let
+                  val normal = mul22v (transformr xfb, axis)
+                  val point_b = xfb @*: local_point
+
+                  val axis_a : vec2 = mul_t22mv(transformr xfa, vec2neg normal)
+                  val indexb = ~1
+                  val indexa = #support proxya axis_a
+
+                  val local_point_a = #vertex proxya indexa
+                  val point_a = xfa @*: local_point_a
+
+                  val separation = dot2 (point_a :-: point_b, normal)
+              in
+                  (separation, indexa, indexb)
+              end
+    end
 
   fun evaluate _ = 
       raise BDDTimeOfImpact "unimplemented evaluate"

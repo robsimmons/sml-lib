@@ -126,6 +126,7 @@ sig
   val multransformv : transform * vec2 -> vec2
 
   (* These multiply the transpose of the (first) matrix. *)
+  (* XXX these should probably be called mul_t22v etc. to match above *)
   val mul_t22mv : mat22 * vec2 -> vec2
   val mul_t22mm : mat22 * mat22 -> mat22
   val mul_ttransformv : transform * vec2 -> vec2
