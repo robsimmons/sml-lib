@@ -196,8 +196,58 @@ struct
               end
     end
 
-  fun evaluate _ = 
-      raise BDDTimeOfImpact "unimplemented evaluate"
+  fun evaluate ({ proxya : distance_proxy,
+                  proxyb : distance_proxy,
+                  sweepa : sweep,
+                  sweepb : sweep,
+                  typ : separation_type,
+                  local_point : vec2,
+                  axis : vec2 } : separation_function, 
+                indexa : int, indexb : int, t : real) : real =
+    let
+        val xfa : transform = sweep_transform (sweepa, t)
+        val xfb : transform = sweep_transform (sweepb, t)
+    in
+        case typ of
+            TPoints =>
+              let
+                  val axis_a : vec2 = mul_t22mv (transformr xfa, axis)
+                  val axis_b : vec2 = mul_t22mv (transformr xfb, vec2neg axis)
+
+                  val local_point_a : vec2 = #vertex proxya indexa
+                  val local_point_b : vec2 = #vertex proxyb indexb
+
+                  val point_a = xfa @*: local_point_a
+                  val point_b = xfb @*: local_point_b
+              in
+                  dot2(point_b :-: point_a, axis)
+              end
+
+          | TFaceA => 
+              let
+                  val normal : vec2 = mul22v (transformr xfa, axis)
+                  val point_a : vec2 = xfa @*: local_point
+
+                  val axis_b : vec2 = mul_t22mv (transformr xfb, vec2neg normal)
+
+                  val local_point_b = #vertex proxyb indexb
+                  val point_b = xfb @*: local_point_b
+              in
+                  dot2 (point_b :-: point_a, normal)
+              end
+
+          | TFaceB => 
+              let 
+                  val normal : vec2 = mul22v (transformr xfb, axis)
+                  val point_b = xfb @*: local_point
+
+                  val axis_a : vec2 = mul_t22mv (transformr xfa, vec2neg normal)
+                  val local_point_a : vec2 = #vertex proxya indexa
+                  val point_a : vec2 = xfa @*: local_point_a
+              in
+                  dot2(point_a :-: point_b, normal)
+              end
+    end
 
   (* CCD via the local separating axis method. This seeks progression
      by computing the largest time at which separation is maintained. *)
@@ -309,8 +359,7 @@ struct
                                               1 => a1 + (target - s1) * (a2 - a1) / (s2 - s1)
                                               (* Bisection to guarantee progress *)
                                             | _ => 0.5 * (a1 + a2)
-                                      val (s : real, indexa : int, indexb : int) = 
-                                          evaluate (fcn, t)
+                                      val s : real = evaluate (fcn, indexa, indexb, t)
                                   in
                                       if Real.abs (s - target) < tolerance
                                       (* t2 holds a tentative value for t1 *)
