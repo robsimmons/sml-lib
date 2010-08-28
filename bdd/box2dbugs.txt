@@ -48,3 +48,8 @@ b2BroadPhase.cpp:
 
   "and add them pair buffer" -> "and add them to the pair buffer"
 
+b2TimeOfImpact.cpp:
+
+  The return value of b2SeparationFunction::Initialize isn't used.
+  This might be better as a constructor.
+  

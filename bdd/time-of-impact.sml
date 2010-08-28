@@ -25,8 +25,109 @@ struct
     | STouching
     | SSeparated
 
-  type separation_function = unit
-  fun separation_function _ = raise BDDTimeOfImpact "unimplemented sep"
+  datatype separation_type = TPoints | TFaceA | TFaceB
+  type separation_function = 
+      { proxya : distance_proxy,
+        proxyb : distance_proxy,
+        sweepa : sweep,
+        sweepb : sweep,
+        typ : separation_type,
+        local_point : vec2,
+        axis : vec2 }
+
+  (* XXX when creating the record, need to initialize with proxya, sweepa, etc. *)
+  (* Port note: Original separates construction and initialization. Initialization
+     returns the magnitude of the axis, but it is unused. Removed here. *)
+  fun separation_function (cache, proxya, sweepa, proxyb, sweepb) : separation_function =
+    let
+        val count = !(#count cache)
+        (* PERF assertion *)
+        val () = 
+            if count > 0 andalso !(#count cache) < 3
+            then ()
+            else raise BDDTimeOfImpact "assertion failure"
+
+        val xfa : transform = sweep_transform (sweepa, 0.0)
+        val xfb : transform = sweep_transform (sweepb, 0.0)
+    in
+        if count = 1
+        then 
+            let
+                val local_point_a = #vertex proxya (Array.sub(#indexa cache, 0))
+                val local_point_b = #vertex proxyb (Array.sub(#indexb cache, 0))
+                val point_a = xfa @*: local_point_a
+                val point_b = xfb @*: local_point_b
+                val axis = point_b :-: point_a
+                (* nb. mag unused *)
+                val s : real = vec2normalize axis
+            in
+                { typ = TPoints,
+                  proxya = proxya,
+                  proxyb = proxyb,
+                  sweepa = sweepa,
+                  sweepb = sweepb,
+                  (* PERF uninitialized in original; consider datatype taking args *)
+                  local_point = vec2 (0.0, 0.0),
+                  axis = axis }
+            end
+        else if Array.sub(#indexa cache, 0) = Array.sub(#indexa cache, 1)
+        then
+            let
+                (* Two points on B and one on A. *)
+                val local_point_b1 : vec2 = #vertex proxyb (Array.sub(#indexb cache, 0))
+                val local_point_b2 : vec2 = #vertex proxyb (Array.sub(#indexb cache, 1))
+
+                val axis = cross2vs(local_point_b2 :-: local_point_b1, 1.0)
+                val _ : real = vec2normalize axis
+                val normal : vec2 = mul22v (transformr xfb, axis)
+
+                val local_point = 0.5 *: (local_point_b1 :+: local_point_b2)
+                val point_b : vec2 = xfb @*: local_point
+
+                val local_point_a = #vertex proxya (Array.sub(#indexa cache, 0))
+                val point_a = xfa @*: local_point_a
+
+                val axis = if dot2(point_a :-: point_b, normal) < 0.0
+                           then vec2neg axis
+                           else axis
+            in
+                { typ = TFaceB,
+                  proxya = proxya,
+                  proxyb = proxyb,
+                  sweepa = sweepa,
+                  sweepb = sweepb,
+                  local_point = local_point,
+                  axis = axis }
+            end
+         else
+             let
+                 (* Two points on A and one or two points on B. *)
+                 val local_point_a1 : vec2 = #vertex proxya (Array.sub(#indexa cache, 0))
+                 val local_point_a2 : vec2 = #vertex proxya (Array.sub(#indexa cache, 1))
+                    
+                 val axis = cross2vs(local_point_a2 :-: local_point_a1, 1.0)
+                 val _ : real = vec2normalize axis
+                 val normal : vec2 = mul22v (transformr xfa, axis)
+
+                 val local_point = 0.5 *: (local_point_a1 :+: local_point_a2)
+                 val point_a : vec2 = xfa @*: local_point
+
+                 val local_point_b : vec2 = #vertex proxyb (Array.sub(#indexb cache, 0))
+                 val point_b : vec2 = xfb @*: local_point_b
+
+                 val axis = if dot2(point_b :-: point_a, normal) < 0.0
+                            then vec2neg axis
+                            else axis
+             in
+                 { typ = TFaceA,
+                   proxya = proxya,
+                   proxyb = proxyb,
+                   sweepa = sweepa,
+                   sweepb = sweepb,
+                   local_point = local_point,
+                   axis = axis }
+             end
+    end
 
   fun find_min_separation (sep : separation_function, t : real) : real * int * int =
       raise BDDTimeOfImpact "unimplemented find_min_Separation"
