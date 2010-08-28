@@ -6,8 +6,7 @@ signature BDDTIME_OF_IMPACT =
 sig
 
   datatype state =
-      SUnknown
-    | SFailed
+      SFailed
     | SOverlapped
     | STouching
     | SSeparated
@@ -21,7 +20,6 @@ sig
      Note: use BDDDistance.distance to compute the contact point and
      normal at the time of impact. *)
   val time_of_impact : { proxya : BDDTypes.distance_proxy,
-                         (* XXX has to be same type? *)
                          proxyb : BDDTypes.distance_proxy,
                          sweepa : BDDMath.sweep,
                          sweepb : BDDMath.sweep,

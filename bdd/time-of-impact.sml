@@ -19,8 +19,7 @@ struct
   val MAX_ITERATIONS = 20
 
   datatype state =
-      SUnknown (* XXX unnecessary *)
-    | SFailed
+      SFailed
     | SOverlapped
     | STouching
     | SSeparated
@@ -35,7 +34,6 @@ struct
         local_point : vec2,
         axis : vec2 }
 
-  (* XXX when creating the record, need to initialize with proxya, sweepa, etc. *)
   (* Port note: Original separates construction and initialization. Initialization
      returns the magnitude of the axis, but it is unused. Removed here. *)
   fun separation_function (cache, proxya, sweepa, proxyb, sweepb) : separation_function =
@@ -252,7 +250,6 @@ struct
   (* CCD via the local separating axis method. This seeks progression
      by computing the largest time at which separation is maintained. *)
   fun time_of_impact { proxya : distance_proxy,
-                       (* XXX has to be same type? *)
                        proxyb : distance_proxy,
                        sweepa : sweep,
                        sweepb : sweep,
