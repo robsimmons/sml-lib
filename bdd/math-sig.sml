@@ -14,7 +14,10 @@ sig
   val abs : real -> real
 
   (* 2D column vector. Mutable, for porting purposes. 
-     XXX make totally immutable, if possible. *)
+     Most of the code does not make use of the fact
+     that the vectors are mutable, so it would be good
+     to make them immutable, which is more idiomatic
+     ML and probably performs better. *)
   type vec2
   val vec2 : real * real -> vec2
   val vec2copy : vec2 -> vec2

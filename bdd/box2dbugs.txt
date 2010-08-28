@@ -1,0 +1,50 @@
+
+Notes from my porting project; most are just typos:
+
+
+b2Distance.h:
+
+  The comment for the b2DistanceInput struct is incomplete. (?)
+
+  The comment for b2Distance mentions b2EdgeShape, which doesn't seem
+  to exist. Moreover, the code doesn't care about shapes at all; it
+  just uses the proxies in the input.
+
+b2Distance.cpp:
+
+  Is the break inside b2Distance ("ensure progress") supposed to
+  be commented out? If it is, then there's some dead code, like all
+  of the distanceSqr calculations.
+
+  In the cuts of the GJK loop, the declaration
+  b2Vec2 wBLocal;
+  is dead.
+
+  "still no overlapped" -> "still not overlapped"
+
+b2DynamicTree.h:
+
+  "perform a exact" -> "perform an exact"
+
+  The comment
+
+    // Separating axis for segment (Gino, p80).
+    // |dot(v, p1 - c)| > dot(|v|, h)
+
+  appears out of place in the RayCast function before it is repeated
+  in a meaningful spot.
+
+b2DynamicTree.cpp:
+
+  The "find the best sibling" loop is an if..do..while which is
+  exactly equivalent to a simpler while loop.
+
+  
+b2BroadPhase.h:
+
+  "call UpdatePairs to finalized" -> "call UpdatePairs to finalize"
+
+b2BroadPhase.cpp:
+
+  "and add them pair buffer" -> "and add them to the pair buffer"
+

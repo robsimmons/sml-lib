@@ -27,6 +27,8 @@ struct
                 aabb : aabb,
                 (* Set for leaves; NONE for internal nodes. *)
                 data : 'a option,
+                (* XXX: overflow possibility. *)
+                stamp : int,
                 (* Port note: Box2D has a possibility for
                    a 'next' pointer here, but it's just
                    so that the structure can be stored 
@@ -50,6 +52,18 @@ struct
         path : Word32.word,
         root : 'a aabb_proxy } ref
 
+  fun cmp_proxy (ref (Node { stamp = a, ... }),
+                 ref (Node { stamp = b, ... })) = Int.compare (a, b)
+    | cmp_proxy _ = raise BDDDynamicTree "can only compare leaves."
+
+  fun eq_proxy p = EQUAL = cmp_proxy p
+
+  local 
+      val next_stamp_ = ref 0
+  in
+      fun next_stamp () = (next_stamp_ := !next_stamp_ + 1;
+                           !next_stamp_)
+  end
   (* Port note: We need to update fields of each object to mimic the
      imperative style of Box2D. We treat the object itself as a ref,
      rather than the updatable fields (the latter would be more
@@ -65,22 +79,26 @@ struct
   fun set_path (r as ref { node_count, root, path = _ }, path) =
       r := { node_count = node_count, root = root, path = path }
 
-  fun set_parent (r as ref (Node { aabb, data, parent = _, left, right }),
+  fun set_parent (r as ref (Node { aabb, data, parent = _, left, right,
+                                   stamp }),
                   parent) =
       r := Node { aabb = aabb, data = data, parent = parent, 
-                  left = left, right = right }
+                  left = left, right = right, stamp = stamp }
     | set_parent _ = raise BDDDynamicTree "expected node; got empty"
 
-  fun set_left (r as ref (Node { aabb, data, parent, left = _, right }),
+  fun set_left (r as ref (Node { aabb, data, parent, left = _, right,
+                                 stamp }),
                 left) =
       r := Node { aabb = aabb, data = data, parent = parent, 
-                  left = left, right = right }
+                  left = left, right = right,
+                  stamp = stamp }
     | set_left _ = raise BDDDynamicTree "expected node; got empty"
 
-  fun set_right (r as ref (Node { aabb, data, parent, left, right = _ }),
+  fun set_right (r as ref (Node { aabb, data, parent, left, right = _,
+                                  stamp }),
                  right) =
       r := Node { aabb = aabb, data = data, parent = parent, 
-                  left = left, right = right }
+                  left = left, right = right, stamp = stamp }
     | set_right _ = raise BDDDynamicTree "expected node; got empty"
 
   fun !! (ref (Node x)) = x
@@ -113,11 +131,11 @@ struct
   (* Derive the AABB for an interior node, based on its children
      (which must have accurate AABBs. Set it and return it. *)
   fun set_derived_aabb (r as ref (Node { aabb = _, data, parent, 
-                                         left, right })) =
+                                         left, right, stamp })) =
       let val new_aabb =
           BDDCollision.aabb_combine (#aabb (!!left), #aabb (!!right))
       in r := Node { aabb = new_aabb, data = data, parent = parent, 
-                     left = left, right = right };
+                     left = left, right = right, stamp = stamp };
           new_aabb
       end
     | set_derived_aabb _ = raise BDDDynamicTree "expected node; got empty"
@@ -138,7 +156,7 @@ struct
            end
 
   fun insert_leaf (tree as ref { root, ... } : 'a dynamic_tree,
-                   leaf as ref (Node { aabb, data, parent, left, right })) =
+                   leaf as ref (Node { aabb, data, parent, left, right, stamp })) =
       (case !root of
            Empty => 
                let in
@@ -175,6 +193,9 @@ struct
                                       aabb = BDDCollision.aabb_combine 
                                           (#aabb (!!leaf),
                                            #aabb (!!sibling)),
+                                      (* PERF: Probably don't need stamps for
+                                         interior nodes. *)
+                                      stamp = next_stamp (),
                                       (* Port note: Same in both branches. *)
                                       left = sibling,
                                       right = leaf })
@@ -281,7 +302,8 @@ struct
           (* XXX: Probably don't need to pass all this junk to
              insert_node. *)
           val node = ref (Node { aabb = fat, data = SOME a, parent = ref Empty,
-                                 left = ref Empty, right = ref Empty })
+                                 left = ref Empty, right = ref Empty,
+                                 stamp = next_stamp () })
           fun rebalance_loop try_count =
               if try_count >= 10 orelse compute_height tree <= 64
               then node
@@ -300,7 +322,8 @@ struct
       else raise BDDDynamicTree "can only remove leaves"
 
   fun move_proxy (tree : 'a dynamic_tree,
-                  proxy as ref (Node { aabb = proxy_aabb, data, ... }) : 'a aabb_proxy,
+                  proxy as ref (Node { aabb = proxy_aabb, 
+                                       data, stamp, ... }) : 'a aabb_proxy,
                   aabb : aabb,
                   displacement : vec2) : bool =
       if BDDCollision.aabb_contains (proxy_aabb, aabb)
@@ -329,7 +352,7 @@ struct
                                #upperbound aabb :+: displacement :+: vec2(bux, buy) }
         in
             proxy := Node { aabb = b, data = data, parent = ref Empty,
-                            left = ref Empty, right = ref Empty };
+                            left = ref Empty, right = ref Empty, stamp = stamp };
             insert_leaf (tree, proxy);
             true
         end

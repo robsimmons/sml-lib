@@ -414,8 +414,6 @@ inline const b2Vec2& b2DistanceProxy::GetSupportVertex(const b2Vec2& d) const
           val start_simplex = 
               read_cache(cache, proxya, transforma, proxyb, transformb)
 
-      (* b2SimplexVertex* vertices = &simplex.m_v1; *)
-
           (* Port note: In the Box2D source code there are loop
              variables distance_sqr1 and 2. But they are dead,
              because the test labeled "ensure progress" is
