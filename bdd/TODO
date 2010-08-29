@@ -1,4 +1,7 @@
 
+Test time-of-impact, dynamic-tree, and broad-phase.
+
+
 Replace awkward vec2normalize with calls to vec2normalized.
 
 Generally: Track down imperative access to vec2, mat22, and transform.

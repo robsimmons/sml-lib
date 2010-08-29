@@ -196,7 +196,7 @@ struct
             mm 0 l
         end
 
-    (* should be optimized to do less consing. (split mainly) *)
+    (* PERF: should be optimized to do less consing. (split mainly) *)
     fun sort cmp l =
         let
             fun split l =
@@ -256,6 +256,33 @@ struct
                 end
 
         in map #1 (ms tagged)
+        end
+
+    (* PERF: should also be optimized to do less consing. *)
+    fun sort_unique cmp l =
+        let
+            fun split l =
+                let fun s a1 a2 nil = (a1, a2)
+                      | s a1 a2 (h :: t) = s a2 (h :: a1) t
+                in s nil nil l
+                end
+
+            fun merge a nil = a
+              | merge nil b = b
+              | merge (aa as (a :: ta)) (bb as (b :: tb)) =
+                case cmp (a, b) of
+                    EQUAL => (a :: merge ta tb)
+                  | LESS => (a :: merge ta bb)
+                  | GREATER => (b :: merge aa tb)
+
+            fun ms nil = nil
+              | ms [s] = [s]
+              | ms [a, b] = merge [a] [b]
+              | ms ll = 
+                let val (a, b) = split ll
+                in merge (ms a) (ms b)
+                end
+        in ms l
         end
 
     fun min f l =

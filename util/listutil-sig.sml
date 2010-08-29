@@ -177,6 +177,9 @@ sig
     (* on equal elements, use original list order *)
     val stablesort : ('a * 'a -> order) -> 'a list -> 'a list
 
+    (* Sort, and also remove duplicates (arbitrarily). *)
+    val sort_unique : ('a * 'a -> order) -> 'a list -> 'a list
+
     (* like hd o sort, but linear time *)
     val min : ('a * 'a -> order) -> 'a list -> 'a
     val max : ('a * 'a -> order) -> 'a list -> 'a
