@@ -92,7 +92,7 @@ struct
       { centroid = 0.5 *: (v1 :+: v2),
         vertices = Array.fromList [v1, v2],
         normals = let val n = cross2vs(v2 :-: v1, 1.0)
-                  in 
+                  in
                       ignore (vec2normalize n : real);
                       Array.fromList [n, vec2neg n]
                   end }
@@ -111,9 +111,9 @@ struct
 
           val inv3 = 1.0 / 3.0
       in
-          Array.appi 
+          Array.appi
           (fn (i, a) =>
-           let 
+           let
                (* Triangle vertices. *)
                val p1 = pref
                val p2 = a
@@ -136,14 +136,14 @@ struct
       end
 
   fun polygon (vecs : vec2 list) : polygon =
-    let 
+    let
         val num = length vecs
         val () = if num < 2 orelse num > max_polygon_vertices
                  then raise BDDPolygon "not enough vertices, or too many"
                  else ()
         val vertices = Array.fromList (map vec2copy vecs)
         (* Compute normals. Ensure the edges have non-zero length. *)
-        val normals = Array.tabulate 
+        val normals = Array.tabulate
             (num,
              (fn i1 =>
               let val i2 = if i1 + 1 < num
@@ -183,8 +183,8 @@ struct
       end
 
   exception NoRay
-  fun ray_cast ({ vertices, normals, ... } : polygon, 
-                xf : transform, 
+  fun ray_cast ({ vertices, normals, ... } : polygon,
+                xf : transform,
                 { p1 : BDDMath.vec2, p2 : BDDMath.vec2,
                   max_fraction : real }) : BDDTypes.ray_cast_output option =
       let
@@ -198,17 +198,17 @@ struct
             let val v1 = Array.sub (vertices, 0)
                 val v2 = Array.sub (vertices, 1)
                 val normal = Array.sub (normals, 0)
-                    
+
                 (* q = p1 + t * d
                    dot(normal, q - v1) = 0
                    dot(normal, p1 - v1) + t * dot(normal, d) = 0 *)
                 val numerator = dot2(normal, v1 :-: p1)
                 val denominator = dot2(normal, d)
-                    
+
                 val () = if Real.==(denominator, 0.0)
                          then raise NoRay
                          else ()
-                             
+
                 val t = numerator / denominator
                 val () = if t < 0.0 orelse 1.0 < t
                          then raise NoRay
@@ -218,7 +218,7 @@ struct
                    s = dot(q - v1, r) / dot(r, r) *)
                 val r = v2 :-: v1
                 val rr = dot2(r, r)
-                    
+
                 val () = if Real.== (rr, 0.0)
                          then raise NoRay
                          else ()
@@ -253,11 +253,11 @@ struct
                       then raise NoRay
                       else ()
                  else
-                     let 
+                     let
                          (* Note: we want this predicate without division:
                             lower < numerator / denominator, where denominator < 0
                             Since denominator < 0, we have to flip the inequality:
-                            lower < numerator / denominator <==> 
+                            lower < numerator / denominator <==>
                               denominator * lower > numerator. *)
                      in
                          if denominator < 0.0 andalso numerator < !lower * denominator
@@ -298,124 +298,119 @@ struct
       end handle NoRay => NONE
 
   fun compute_aabb ({vertices, ...} : polygon, xf : transform) : aabb =
-      raise BDDPolygon "unimplemented"
+      let
+        val start = xf @*: Array.sub(vertices, 0)
+        val lower = ref start
+        val upper = ref start
 
-(*
-void b2PolygonShape::ComputeAABB(b2AABB* aabb, const b2Transform& xf) const
-{
-        b2Vec2 lower = b2Mul(xf, m_vertices[0]);
-        b2Vec2 upper = lower;
+        (* Want ArrayUtil.combinel... *)
+        val () = for 1 (Array.length vertices - 1)
+            (fn i =>
+             let val vec = xf @*: Array.sub(vertices, i)
+             in lower := vec2min (!lower, vec);
+                upper := vec2max (!upper, vec)
+             end)
+        val r = vec2(polygon_radius, polygon_radius)
+      in
+          { lowerbound = !lower :-: r,
+            upperbound = !upper :-: r }
+      end
 
-        for (int32 i = 1; i < m_vertexCount; ++i)
-        {
-                b2Vec2 v = b2Mul(xf, m_vertices[i]);
-                lower = b2Min(lower, v);
-                upper = b2Max(upper, v);
-        }
-
-        b2Vec2 r(m_radius, m_radius);
-        aabb->lowerBound = lower - r;
-        aabb->upperBound = upper + r;
-}
-*)
   fun compute_mass ({vertices, ...} : polygon, density : real) : BDDTypes.mass_data =
-      raise BDDPolygon "unimplemented"
+          (* PERF assertion *)
+      if Array.length vertices < 2
+      then raise BDDPolygon "too few points"
+      else if Array.length vertices = 2
+      (* A line segment has zero mass. *)
+      then { center = 0.5 *: (Array.sub(vertices, 0) :+: Array.sub(vertices, 1)),
+             mass = 0.0,
+             i = 0.0 }
+      else
+      let
+          (* Polygon mass, centroid, and inertia.
+             Let rho be the polygon density in mass per unit area.
+             Then:
+             mass = rho * int(dA)
+             centroid.x = (1/mass) * rho * int(x * dA)
+             centroid.y = (1/mass) * rho * int(y * dA)
+             I = rho * int((x*x + y*y) * dA)
 
-(*
-void b2PolygonShape::ComputeMass(b2MassData* massData, float32 density) const
-{
-        // Polygon mass, centroid, and inertia.
-        // Let rho be the polygon density in mass per unit area.
-        // Then:
-        // mass = rho * int(dA)
-        // centroid.x = (1/mass) * rho * int(x * dA)
-        // centroid.y = (1/mass) * rho * int(y * dA)
-        // I = rho * int((x*x + y*y) * dA)
-        //
-        // We can compute these integrals by summing all the integrals
-        // for each triangle of the polygon. To evaluate the integral
-        // for a single triangle, we make a change of variables to
-        // the (u,v) coordinates of the triangle:
-        // x = x0 + e1x * u + e2x * v
-        // y = y0 + e1y * u + e2y * v
-        // where 0 <= u && 0 <= v && u + v <= 1.
-        //
-        // We integrate u from [0,1-v] and then v from [0,1].
-        // We also need to use the Jacobian of the transformation:
-        // D = cross(e1, e2)
-        //
-        // Simplification: triangle centroid = (1/3) * (p1 + p2 + p3)
-        //
-        // The rest of the derivation is handled by computer algebra.
+             We can compute these integrals by summing all the integrals
+             for each triangle of the polygon. To evaluate the integral
+             for a single triangle, we make a change of variables to
+             the (u,v) coordinates of the triangle:
+             x = x0 + e1x * u + e2x * v
+             y = y0 + e1y * u + e2y * v
+             where 0 <= u && 0 <= v && u + v <= 1.
 
-        b2Assert(m_vertexCount >= 2);
+             We integrate u from [0,1-v] and then v from [0,1].
+             We also need to use the Jacobian of the transformation:
+             D = cross(e1, e2)
 
-        // A line segment has zero mass.
-        if (m_vertexCount == 2)
-        {
-                massData->center = 0.5f * (m_vertices[0] + m_vertices[1]);
-                massData->mass = 0.0f;
-                massData->I = 0.0f;
-                return;
-        }
+             Simplification: triangle centroid = (1/3) * (p1 + p2 + p3)
 
-        b2Vec2 center; center.Set(0.0f, 0.0f);
-        float32 area = 0.0f;
-        float32 I = 0.0f;
+             The rest of the derivation is handled by computer algebra. *)
+          val center = ref (vec2 (0.0, 0.0))
+          val area = ref 0.0
+          val i = ref 0.0
 
-        // pRef is the reference point for forming triangles.
-        // It's location doesn't change the result (except for rounding error).
-        b2Vec2 pRef(0.0f, 0.0f);
-#if 0
-        // This code would put the reference point inside the polygon.
-        for (int32 i = 0; i < m_vertexCount; ++i)
-        {
-                pRef += m_vertices[i];
-        }
-        pRef *= 1.0f / count;
-#endif
+          (* Port note: A lot of this function is the same as a compute_centroid. 
+             I didn't try to merge them, to better mimic Box2D organization. *)
+          (* ppef is the reference point for forming triangles.
+             Its location doesn't change the result (except for rounding error). *)
+          val pref = vec2 (0.0, 0.0)
+          val inv3 = 1.0 / 3.0
 
-        const float32 k_inv3 = 1.0f / 3.0f;
+          val () =
+          Array.appi
+          (fn (idx, a) =>
+           let
+               (* Triangle vertices. *)
+               val p1 = pref
+               val p2 = a
+               val p3 = if idx + 1 < Array.length vertices
+                        then Array.sub(vertices, idx + 1)
+                        else Array.sub(vertices, 0)
+               val e1 = p2 :-: p1
+               val e2 = p3 :-: p1
+               val d : real = cross2vv (e1, e2)
+               val triangle_area : real = 0.5 * d
 
-        for (int32 i = 0; i < m_vertexCount; ++i)
-        {
-                // Triangle vertices.
-                b2Vec2 p1 = pRef;
-                b2Vec2 p2 = m_vertices[i];
-                b2Vec2 p3 = i + 1 < m_vertexCount ? m_vertices[i+1] : m_vertices[0];
+               val (px, py) = vec2xy p1
+               val (ex1, ey1) = vec2xy e1
+               val (ex2, ey2) = vec2xy e2
 
-                b2Vec2 e1 = p2 - p1;
-                b2Vec2 e2 = p3 - p1;
+               (* PERF: Factor out px* and py* in third term? IEEE surprises? *)
+               val intx2 = inv3 * (0.25 * (ex1 * ex1 +
+                                           ex2 * ex1 +
+                                           ex2 * ex2) +
+                                   (px * ex1 + 
+                                    px * ex2)) + 0.5 * px * px
+               val inty2 = inv3 * (0.25 * (ey1 * ey1 +
+                                           ey2 * ey1 +
+                                           ey2 * ey2) +
+                                   (py * ey1 + 
+                                    py * ey2)) + 0.5 * py * py
+           in
+               area := !area + triangle_area;
+               (* area-weighted centroid *)
+               center := !center :+: ((triangle_area * inv3) *: (p1 :+: p2 :+: p3));
+               i := !i + d * (intx2 + inty2)
+           end) vertices
+          
+          (* Total mass *)
+          val mass = density * !area
+          
+          (* Center of mass *)
+          val center =
+              if !area < epsilon
+              then raise BDDPolygon "area not positive"
+              else (1.0 / !area) *: !center
 
-                float32 D = b2Cross(e1, e2);
-
-                float32 triangleArea = 0.5f * D;
-                area += triangleArea;
-
-                // Area weighted centroid
-                center += triangleArea * k_inv3 * (p1 + p2 + p3);
-
-                float32 px = p1.x, py = p1.y;
-                float32 ex1 = e1.x, ey1 = e1.y;
-                float32 ex2 = e2.x, ey2 = e2.y;
-
-                float32 intx2 = k_inv3 * (0.25f * (ex1*ex1 + ex2*ex1 + ex2*ex2) + (px*ex1 + px*ex2)) + 0.5f*px*px;
-                float32 inty2 = k_inv3 * (0.25f * (ey1*ey1 + ey2*ey1 + ey2*ey2) + (py*ey1 + py*ey2)) + 0.5f*py*py;
-
-                I += D * (intx2 + inty2);
-        }
-
-        // Total mass
-        massData->mass = density * area;
-
-        // Center of mass
-        b2Assert(area > b2_epsilon);
-        center *= 1.0f / area;
-        massData->center = center;
-
-        // Inertia tensor relative to the local origin.
-        massData->I = density * I;
-}
-*)
+          (* Inertia tensor relative to the local origin. *)
+          val i = density * !i
+      in
+          { mass = mass, center = center, i = i }
+      end
 
 end

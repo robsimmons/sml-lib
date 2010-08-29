@@ -4,7 +4,7 @@ Notes from my porting project; most are just typos:
 b2PolygonShape.cpp:
 
   "It's location doesn't" -> "Its location doesn't"
-
+  (in both copies of this code :))
 
 b2Distance.h:
 

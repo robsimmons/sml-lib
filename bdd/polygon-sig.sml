@@ -4,7 +4,7 @@
    settings.sml; since these must be convex there's not usually much reason
    to make it larger than the default. Complex shapes are typically made
    of multiple polygons linked together.
-   
+
    More code pertaining to polygons is in collision.sml, to mimic the
    organization of Box2D.
 
@@ -21,7 +21,7 @@ sig
 
   val clone : polygon -> polygon
 
-  (* Must be no more than BDDSettings.max_polygon_vertices. 
+  (* Must be no more than BDDSettings.max_polygon_vertices.
      Must use CCW winding order, assuming the z axis is pointing
      towards your face. Note: If y increases towards the bottom
      of the screen (like e.g. SDL) then you want CW winding.
@@ -36,7 +36,7 @@ sig
      angle is the rotation of the box (radians) in local coordinates. *)
   val rotated_box : real * real * BDDMath.vec2 * real -> polygon
 
-  (* A single edge, between the two points. 
+  (* A single edge, between the two points.
      XXX tom: specify winding order? does it matter?
      *)
   val edge : BDDMath.vec2 * BDDMath.vec2 -> polygon
