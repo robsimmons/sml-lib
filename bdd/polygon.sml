@@ -182,136 +182,120 @@ struct
           loop 0
       end
 
+  exception NoRay
   fun ray_cast ({ vertices, normals, ... } : polygon, 
                 xf : transform, 
                 { p1 : BDDMath.vec2, p2 : BDDMath.vec2,
                   max_fraction : real }) : BDDTypes.ray_cast_output option =
-      raise BDDPolygon "unimplemented"
-(*
+      let
+          (* Put the ray into the polygon's frame of reference. *)
+          val p1 : vec2 = mul_t22mv (transformr xf, p1 :-: transformposition xf)
+          val p2 : vec2 = mul_t22mv (transformr xf, p2 :-: transformposition xf)
+          val d : vec2 = p2 :-: p1
+      in
+          if Array.length vertices = 2
+          then
+            let val v1 = Array.sub (vertices, 0)
+                val v2 = Array.sub (vertices, 1)
+                val normal = Array.sub (normals, 0)
+                    
+                (* q = p1 + t * d
+                   dot(normal, q - v1) = 0
+                   dot(normal, p1 - v1) + t * dot(normal, d) = 0 *)
+                val numerator = dot2(normal, v1 :-: p1)
+                val denominator = dot2(normal, d)
+                    
+                val () = if Real.==(denominator, 0.0)
+                         then raise NoRay
+                         else ()
+                             
+                val t = numerator / denominator
+                val () = if t < 0.0 orelse 1.0 < t
+                         then raise NoRay
+                         else ()
+                val q = p1 :+: t *: d
+                (* q = v1 + s * r
+                   s = dot(q - v1, r) / dot(r, r) *)
+                val r = v2 :-: v1
+                val rr = dot2(r, r)
+                    
+                val () = if Real.== (rr, 0.0)
+                         then raise NoRay
+                         else ()
 
-bool b2PolygonShape::RayCast(b2RayCastOutput* output, const b2RayCastInput& input, const b2Transform& xf) const
-{
-        // Put the ray into the polygon's frame of reference.
-        b2Vec2 p1 = b2MulT(xf.R, input.p1 - xf.position);
-        b2Vec2 p2 = b2MulT(xf.R, input.p2 - xf.position);
-        b2Vec2 d = p2 - p1;
+                val s = dot2(q :-: v1, r) / rr
+                val () = if s < 0.0 orelse 1.0 < s
+                         then raise NoRay
+                         else ()
+            in
+                SOME { fraction = t,
+                       normal = if numerator > 0.0
+                                then vec2neg normal
+                                else normal }
+            end
+          else
+            let val lower = ref 0.0
+                val upper = ref max_fraction
+                val index = ref ~1
+            in
+              for 0 (Array.length vertices - 1)
+              (fn i =>
+               let
+                 (* p = p1 + a * d
+                    dot(normal, p - v) = 0
+                    dot(normal, p1 - v) + a * dot(normal, d) = 0 *)
+                 val numerator : real = dot2(Array.sub(normals, i),
+                                             Array.sub(vertices, i) :-: p1)
+                 val denominator : real = dot2(Array.sub(normals, i), d)
+               in
+                 if Real.== (denominator, 0.0)
+                 then if numerator < 0.0
+                      then raise NoRay
+                      else ()
+                 else
+                     let 
+                         (* Note: we want this predicate without division:
+                            lower < numerator / denominator, where denominator < 0
+                            Since denominator < 0, we have to flip the inequality:
+                            lower < numerator / denominator <==> 
+                              denominator * lower > numerator. *)
+                     in
+                         if denominator < 0.0 andalso numerator < !lower * denominator
+                         then (* Increase lower.
+                                 The segment enters this half-space. *)
+                             let in
+                                 lower := numerator / denominator;
+                                 index := i
+                             end
+                         else if denominator > 0.0 andalso numerator < !upper * denominator
+                         then
+                             let in
+                                  (* Decrease upper.
+                                     The segment exits this half-space. *)
+                                  upper := numerator / denominator
+                             end
+                         else ()
+                     end;
+                  (* The use of epsilon here causes the assert on lower to trip
+                     in some cases. Apparently the use of epsilon was to make edge
+                     shapes work, but now those are handled separately. *)
+                  if !upper < !lower
+                  then raise NoRay
+                  else ()
+               end);
 
-        if (m_vertexCount == 2)
-        {
-                b2Vec2 v1 = m_vertices[0];
-                b2Vec2 v2 = m_vertices[1];
-                b2Vec2 normal = m_normals[0];
+               (* PERF assert *)
+               if 0.0 <= !lower andalso !lower <= max_fraction
+               then ()
+               else raise BDDPolygon "assertion failed in ray_cast";
 
-                // q = p1 + t * d
-                // dot(normal, q - v1) = 0
-                // dot(normal, p1 - v1) + t * dot(normal, d) = 0
-                float32 numerator = b2Dot(normal, v1 - p1);
-                float32 denominator = b2Dot(normal, d);
-
-                if (denominator == 0.0f)
-                {
-                        return false;
-                }
-        
-                float32 t = numerator / denominator;
-                if (t < 0.0f || 1.0f < t)
-                {
-                        return false;
-                }
-
-                b2Vec2 q = p1 + t * d;
-
-                // q = v1 + s * r
-                // s = dot(q - v1, r) / dot(r, r)
-                b2Vec2 r = v2 - v1;
-                float32 rr = b2Dot(r, r);
-                if (rr == 0.0f)
-                {
-                        return false;
-                }
-
-                float32 s = b2Dot(q - v1, r) / rr;
-                if (s < 0.0f || 1.0f < s)
-                {
-                        return false;
-                }
-
-                output->fraction = t;
-                if (numerator > 0.0f)
-                {
-                        output->normal = -normal;
-                }
-                else
-                {
-                        output->normal = normal;
-                }
-                return true;
-        }
-        else
-        {
-                float32 lower = 0.0f, upper = input.maxFraction;
-
-                int32 index = -1;
-
-                for (int32 i = 0; i < m_vertexCount; ++i)
-                {
-                        // p = p1 + a * d
-                        // dot(normal, p - v) = 0
-                        // dot(normal, p1 - v) + a * dot(normal, d) = 0
-                        float32 numerator = b2Dot(m_normals[i], m_vertices[i] - p1);
-                        float32 denominator = b2Dot(m_normals[i], d);
-
-                        if (denominator == 0.0f)
-                        {       
-                                if (numerator < 0.0f)
-                                {
-                                        return false;
-                                }
-                        }
-                        else
-                        {
-                                // Note: we want this predicate without division:
-                                // lower < numerator / denominator, where denominator < 0
-                                // Since denominator < 0, we have to flip the inequality:
-                                // lower < numerator / denominator <==> denominator * lower > numerator.
-                                if (denominator < 0.0f && numerator < lower * denominator)
-                                {
-                                        // Increase lower.
-                                        // The segment enters this half-space.
-                                        lower = numerator / denominator;
-                                        index = i;
-                                }
-                                else if (denominator > 0.0f && numerator < upper * denominator)
-                                {
-                                        // Decrease upper.
-                                        // The segment exits this half-space.
-                                        upper = numerator / denominator;
-                                }
-                        }
-
-                        // The use of epsilon here causes the assert on lower to trip
-                        // in some cases. Apparently the use of epsilon was to make edge
-                        // shapes work, but now those are handled separately.
-                        //if (upper < lower - b2_epsilon)
-                        if (upper < lower)
-                        {
-                                return false;
-                        }
-                }
-
-                b2Assert(0.0f <= lower && lower <= input.maxFraction);
-
-                if (index >= 0)
-                {
-                        output->fraction = lower;
-                        output->normal = b2Mul(xf.R, m_normals[index]);
-                        return true;
-                }
-        }
-
-        return false;
-}
-*)
+               if !index >= 0
+               then SOME { fraction = !lower,
+                           normal = mul22v (transformr xf,
+                                            Array.sub(normals, !index)) }
+               else NONE
+            end
+      end handle NoRay => NONE
 
   fun compute_aabb ({vertices, ...} : polygon, xf : transform) : aabb =
       raise BDDPolygon "unimplemented"
