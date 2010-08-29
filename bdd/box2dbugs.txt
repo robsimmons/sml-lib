@@ -3,6 +3,10 @@ Notes from my porting project, to send to the author; most are just
 typos:
 
 
+b2Collision.h:
+
+  "///< not use for Type::e_points"
+  There's no manifold type e_points (any more?)
 
 b2PolygonShape.cpp:
 
@@ -23,7 +27,7 @@ b2Distance.cpp:
   be commented out? If it is, then there's some dead code, like all
   of the distanceSqr calculations.
 
-  In the cuts of the GJK loop, the declaration
+  In the guts of the GJK loop, the declaration
   b2Vec2 wBLocal;
   is dead.
 

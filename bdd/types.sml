@@ -37,7 +37,7 @@ struct
      incident_edge
      incident_vertex
      flip 
-     XXX implement accessors
+     Accessors in BDDCollision.
      *)
   type contact_id = Word32.word
 
@@ -117,6 +117,8 @@ struct
     | RemoveState
 
   (* Used for computing contact manifolds. *)
+  (* TODO(twm): Is this internal? I think it might only
+     be used inside collision.sml. *)
   type clip_vertex = { v : BDDMath.vec2,
                        id : contact_id }
 

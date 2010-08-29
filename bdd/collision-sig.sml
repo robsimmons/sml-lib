@@ -52,6 +52,16 @@ sig
                         BDDCircle.circle * BDDMath.transform -> 
                         BDDTypes.manifold
 
+  (* Pack contact_id from components (all ints must be in [0, 255]). *)
+  val contact_id : { reference_edge : int, incident_edge : int,
+                     incident_vertex : int, flip : bool } -> BDDTypes.contact_id
+
+  val contact_id_reference_edge : BDDTypes.contact_id -> int
+  val contact_id_incident_edge : BDDTypes.contact_id -> int
+  val contact_id_incident_vertex : BDDTypes.contact_id -> int
+  val contact_id_flip : BDDTypes.contact_id -> bool
+
+
   (* clip_segment_to_line (v1, v2, normal, offset)
      Clipping for contact manifolds. Returns either no points (entire segment
      is clipped out) or two points (possibly modified). *)
