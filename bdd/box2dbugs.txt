@@ -1,6 +1,10 @@
 
 Notes from my porting project; most are just typos:
 
+b2PolygonShape.cpp:
+
+  "It's location doesn't" -> "Its location doesn't"
+
 
 b2Distance.h:
 
@@ -53,3 +57,8 @@ b2TimeOfImpact.cpp:
   The return value of b2SeparationFunction::Initialize isn't used.
   This might be better as a constructor.
   
+
+
+
+Several of the examples in the manual.html write "b2Transfrom" instead
+of "b2Transform".

@@ -30,7 +30,7 @@ struct
      come from b2RayCastInput. *)
   type ray_cast_output =
       { normal : BDDMath.vec2,
-        fraction: real }
+        fraction : real }
 
   (* Packed bytes, high to low:
      reference_edge

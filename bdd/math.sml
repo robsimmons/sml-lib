@@ -41,6 +41,7 @@ struct
   fun vec2copy ({x, y} : vec2) = vec2(!x, !y)
   fun vec2x ({x, y = _} : vec2) = !x
   fun vec2y ({x = _, y} : vec2) = !y
+  fun vec2xy {x, y} = (!x, !y)
   fun vec2setzero {x, y} = (x := 0.0; y := 0.0)
   fun vec2set ({x, y}, xx, yy) = (x := xx; y := yy)
   fun vec2setfrom ({x, y} : vec2, {x = xx, y = yy} : vec2) =
@@ -144,6 +145,14 @@ struct
           vec2set(col2, s, c)
       end
 
+  fun mat22rotation angle =
+      let val c = Math.cos angle
+          val s = Math.sin angle
+      in
+          mat22with ( c, s,
+                     ~s, c)
+      end
+
   fun mat22setidentity ({ col1, col2 } : mat22) =
       (vec2set(col1, 1.0, 
                      0.0);
@@ -241,6 +250,9 @@ struct
 
   type transform = { position : vec2, r : mat22 }
   fun transform (pp, rr) = { position = vec2copy pp, r = mat22copy rr }
+  fun transform_pos_angle (pp, angle : real) =
+      { position = vec2copy pp,
+        r = mat22rotation angle }
   fun transformposition { position, r } = position
   fun transformr ({ position, r } : transform) = r
   fun transform_setidentity ({ position, r } : transform) =

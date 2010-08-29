@@ -19,6 +19,9 @@ group is
   circle-sig.sml
   circle.sml
 
+  polygon-sig.sml
+  polygon.sml
+
   shape-sig.sml
   shape.sml
 

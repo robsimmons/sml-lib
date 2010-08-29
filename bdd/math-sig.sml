@@ -23,6 +23,7 @@ sig
   val vec2copy : vec2 -> vec2
   val vec2x : vec2 -> real
   val vec2y : vec2 -> real
+  val vec2xy : vec2 -> real * real
   val vec2setzero : vec2 -> unit
   val vec2set : vec2 * real * real -> unit
   val vec2setfrom : vec2 * vec2 -> unit
@@ -90,11 +91,14 @@ sig
      the position and orientation of rigid frames. *)
   type transform
   val transform : vec2 * mat22 -> transform
+  (* Create with offset and angle *)
+  val transform_pos_angle : vec2 * real -> transform
   val transformposition : transform -> vec2
   val transformr : transform -> mat22
   val transform_setidentity : transform -> unit
   val transform_set : transform * vec2 * real -> unit
   val transform_getangle : transform -> real
+  val identity_transform : unit -> transform
 
   (* Constants. Unfortunately they are mutable. Don't modify them. *)
   val vec2_zero : vec2
