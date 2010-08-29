@@ -59,23 +59,18 @@ sig
                              BDDMath.vec2 * real -> 
                              (BDDTypes.clip_vertex * BDDTypes.clip_vertex) option
 
-(*
+  (* Compute the collision manifold between a polygon and a circle. *)
+  val collide_polygon_and_circle : BDDPolygon.polygon * BDDMath.transform *
+                                   BDDCircle.circle * BDDMath.transform ->
+                                   BDDTypes.manifold
 
-/// Compute the collision manifold between a polygon and a circle.
-void b2CollidePolygonAndCircle(b2Manifold* manifold,
-                                                           const b2PolygonShape* polygon, const b2Transform& xf1,
-                                                           const b2CircleShape* circle, const b2Transform& xf2);
+  (* Compute the collision manifold between two polygons. *)
+  val collide_polygons : BDDPolygon.polygon * BDDMath.transform *
+                         BDDPolygon.polygon * BDDMath.transform ->
+                         BDDTypes.manifold
 
-/// Compute the collision manifold between two polygons.
-void b2CollidePolygons(b2Manifold* manifold,
-                                           const b2PolygonShape* polygon1, const b2Transform& xf1,
-                                           const b2PolygonShape* polygon2, const b2Transform& xf2);
-
-/// Determine if two generic shapes overlap.
-bool b2TestOverlap(const b2Shape* shapeA, const b2Shape* shapeB,
-                                   const b2Transform& xfA, const b2Transform& xfB);
-
-*)
-
-
+  (* Determine if two generic shapes overlap. *)
+  val test_overlap : BDDShape.shape * BDDShape.shape * 
+                     BDDMath.transform * BDDMath.transform ->
+                     bool
 end

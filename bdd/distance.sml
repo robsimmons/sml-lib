@@ -2,7 +2,6 @@
 
 (* Distance calculation using GJK algorithm.
    Corresponding to collision/b2distance.cpp *)
-
 structure BDDDistance :> BDDDISTANCE =
 struct
   open BDDSettings
@@ -25,63 +24,17 @@ struct
         support = (fn _ => 0),
         support_vertex = (fn _ => p),
         radius = radius }
-(* XXX polygons
-    | shape_proxy (BDDShape.Polygon
-        case b2Shape::e_polygon:
-                {
-                        const b2PolygonShape* polygon = (b2PolygonShape* )shape;
-                        m_vertices = polygon->m_vertices;
-                        m_count = polygon->m_vertexCount;
-                        m_radius = polygon->m_radius;
-                }
-                break;
 
-
-inline int32 b2DistanceProxy::GetVertexCount() const
-{
-        return m_count;
-}
-
-inline const b2Vec2& b2DistanceProxy::GetVertex(int32 index) const
-{
-        b2Assert(0 <= index && index < m_count);
-        return m_vertices[index];
-}
-
-inline int32 b2DistanceProxy::GetSupport(const b2Vec2& d) const
-{
-        int32 bestIndex = 0;
-        float32 bestValue = b2Dot(m_vertices[0], d);
-        for (int32 i = 1; i < m_count; ++i)
-        {
-                float32 value = b2Dot(m_vertices[i], d);
-                if (value > bestValue)
-                {
-                        bestIndex = i;
-                        bestValue = value;
-                }
-        }
-
-        return bestIndex;
-}
-
-inline const b2Vec2& b2DistanceProxy::GetSupportVertex(const b2Vec2& d) const
-{
-        int32 bestIndex = 0;
-        float32 bestValue = b2Dot(m_vertices[0], d);
-        for (int32 i = 1; i < m_count; ++i)
-        {
-                float32 value = b2Dot(m_vertices[i], d);
-                if (value > bestValue)
-                {
-                        bestIndex = i;
-                        bestValue = value;
-                }
-        }
-
-        return m_vertices[bestIndex];
-}
-*)
+    | shape_proxy (BDDShape.Polygon (p as { vertices, normals, centroid })) =
+      (* PERF could just use intrinsic length, like elsewhere. *)
+      { vertex_count = Array.length vertices,
+        vertex = (fn idx => Array.sub(vertices, idx)),
+        (* Port note: Box2Dia reimplements these functions here; seems
+           more natural to just use the polygon, which we have anyway *)
+        support = (fn v => BDDPolygon.get_support (p, v)),
+        support_vertex = (fn v => BDDPolygon.get_support_vertex (p, v)),
+        (* Port note: constant. *)
+        radius = BDDSettings.polygon_radius }
 
   fun initial_cache () =
       { metric = ref 0.0,

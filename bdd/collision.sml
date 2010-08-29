@@ -14,6 +14,8 @@ struct
   infix 6 :+: :-: %-% %+% +++
   infix 7 *: *% +*: +*+ #*% @*:
 
+  exception BDDCollision of string
+
   fun initialize_manifold (world_manifold : world_manifold,
                            manifold : manifold,
                            xfa : transform, radiusa : real,
@@ -275,27 +277,151 @@ struct
             else NONE
       end
 
-(*
+  (* Determine if two generic shapes overlap. *)
+  fun test_overlap (shapea : BDDShape.shape, shapeb : BDDShape.shape,
+                    xfa : BDDMath.transform, xfb : BDDMath.transform) : bool =
+      let
+          val input = { proxya = BDDDistance.shape_proxy shapea,
+                        proxyb = BDDDistance.shape_proxy shapeb,
+                        transforma = xfa,
+                        transformb = xfb,
+                        use_radii = true }
+          val cache = BDDDistance.initial_cache ()
+          val { distance, ... } = BDDDistance.distance (input, cache)
+      in
+          distance < 10.0 * epsilon
+      end
 
-bool b2TestOverlap(const b2Shape* shapeA, const b2Shape* shapeB,
-                                   const b2Transform& xfA, const b2Transform& xfB)
-{
-        b2DistanceInput input;
-        input.proxyA.Set(shapeA);
-        input.proxyB.Set(shapeB);
-        input.transformA = xfA;
-        input.transformB = xfB;
-        input.useRadii = true;
 
-        b2SimplexCache cache;
-        cache.count = 0;
+  (* Compute the collision manifold between a polygon and a circle. *)
+  exception NoCollision
+  fun collide_polygon_and_circle ({ centroid, vertices, normals } : BDDPolygon.polygon,
+                                  xfa : BDDMath.transform,
+                                  { p = cirp, radius = cirr } : BDDCircle.circle,
+                                  xfb : BDDMath.transform) : BDDTypes.manifold =
+      let
+        (* Compute circle position in the frame of the polygon. *)
+        val c : vec2 = xfb @*: cirp
+        val c_local : vec2 = mul_ttransformv (xfa, c)
 
-        b2DistanceOutput output;
+        (* Find the min separating edge. *)
+        val normal_index = ref 0
+        val separation : real ref = ref (~max_float)
+        val radius : real = polygon_radius + cirr
+        val vertex_count = Array.length vertices
 
-        b2Distance(&output, &cache, &input);
+        val () = 
+            Util.for 0 (vertex_count - 1)
+            (fn i =>
+             let
+                 val s : real = dot2(Array.sub(normals, i), 
+                                     c_local :-: Array.sub(vertices, i))
+             in
+                 if s > radius
+                 (* early out *)
+                 then raise NoCollision
+                 else if s > !separation
+                      then (separation := s;
+                            normal_index := i)
+                      else ()
+             end)
 
-        return output.distance < 10.0f * b2_epsilon;
-}
-*)
+        (* Vertices that subtend the incident face. *)
+        val vert_index1 = !normal_index
+        val vert_index2 = if vert_index1 + 1 < vertex_count
+                          then vert_index1 + 1
+                          else 0
+        val v1 = Array.sub(vertices, vert_index1)
+        val v2 = Array.sub(vertices, vert_index2)
+           
+        val separation = !separation
+      in
+        (* If the center is inside the polygon ... *)
+        if separation < epsilon
+        then 
+            { point_count = 1,
+              typ = E_FaceA,
+              local_normal = Array.sub(normals, !normal_index),
+              local_point = 0.5 *: (v1 :+: v2),
+              points = Array.fromList [{ local_point = cirp,
+                                         id = 0w0,
+                                         (* PERF uninitialized in Box2D *)
+                                         normal_impulse = 0.0,
+                                         tangent_impulse = 0.0 }] }
+        else
+        let
+            (* Compute barycentric coordinates. *)
+            val u1 : real = dot2(c_local :-: v1, v2 :-: v1)
+            val u2 : real = dot2(c_local :-: v2, v1 :-: v2)
+        in
+            if u1 <= 0.0
+            then (if distance_squared(c_local, v1) > radius * radius
+                  then raise NoCollision
+                  else { point_count = 1,
+                         typ = E_FaceA,
+                         local_normal = vec2normalized (c_local :-: v1),
+                         local_point = v1,
+                         points = Array.fromList [{ local_point = cirp,
+                                                    id = 0w0,
+                                                    (* PERF uninitialized in Box2D *)
+                                                    normal_impulse = 0.0,
+                                                    tangent_impulse = 0.0 }] })
+            else if u2 <= 0.0
+            then (if distance_squared(c_local, v2) > radius * radius
+                  then raise NoCollision
+                  else { point_count = 1,
+                         typ = E_FaceA,
+                         local_normal = vec2normalized(c_local :-: v2),
+                         local_point = v2,
+                         points = Array.fromList [{ local_point = cirp,
+                                                    id = 0w0,
+                                                    (* PERF uninitialized in Box2D *)
+                                                    normal_impulse = 0.0,
+                                                    tangent_impulse = 0.0 }] })
+            else let
+                     val face_center : vec2 = 0.5 *: (v1 :+: v2)
+                     val separation : real = dot2 (c_local :-: face_center,
+                                                   Array.sub(normals, vert_index1))
+                 in if separation > radius
+                    then raise NoCollision
+                    else { point_count = 1,
+                           typ = E_FaceA,
+                           local_normal = Array.sub(normals, vert_index1),
+                           local_point = face_center,
+                           points = Array.fromList [{ local_point = cirp,
+                                                      id = 0w0,
+                                                      (* PERF uninitialized in Box2D *)
+                                                      normal_impulse = 0.0,
+                                                      tangent_impulse = 0.0 }] }
+                 end
+        end
+      end handle NoCollision => 
+          (* XXX should return NONE in the no collision case.
+             These are uninitialized in Box2D, and I guess client
+             code just checks point_count. *)
+          { point_count = 0,
+            typ = E_Circles,
+            points = Array.fromList nil,
+            local_normal = vec2(0.0, 0.0),
+            local_point = vec2(0.0, 0.0) }      
+
+
+  (* Compute the collision manifold between two polygons. *)
+  fun collide_polygons (polya : BDDPolygon.polygon,
+                        xfa : BDDMath.transform,
+                        polyb : BDDPolygon.polygon,
+                        xfb : BDDMath.transform) : BDDTypes.manifold =
+    let
+        (* Find edge normal of max separation on A - return if separating axis is found
+           Find edge normal of max separation on B - return if separation axis is found
+           Choose reference edge as min(minA, minB)
+           Find incident edge
+           Clip
+
+           The normal points from 1 to 2 *)
+    in
+      raise BDDCollision "unimplemented"
+    end
+
 
 end

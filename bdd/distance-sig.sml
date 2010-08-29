@@ -2,7 +2,6 @@
 
 (* Distance calculation using GJK algorithm.
    Corresponding to collision/b2distance.h *)
-
 signature BDDDISTANCE =
 sig
 

@@ -79,6 +79,15 @@ struct
                end
       end
 
+  fun vec2normalized (v as {x, y}) : vec2 =
+      let val length = vec2length v
+      in if length < BDDSettings.epsilon
+         then vec2copy v
+         else let val inv = 1.0 / length
+              in vec2 (!x * inv, !y * inv)
+              end
+      end
+
   fun vec2is_valid {x = ref x, y = ref y} =
       is_valid x andalso is_valid y
       

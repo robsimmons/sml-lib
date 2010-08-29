@@ -7,12 +7,9 @@
 signature BDDSHAPE =
 sig
 
-  (* XXX only circles are implemented, for now *)
-
   datatype shape =
-      Unknown
-    | Circle of BDDCircle.circle
-    | Polygon (* of XXX *)
+      Circle of BDDCircle.circle
+    | Polygon of BDDPolygon.polygon
 
   val clone : shape -> shape
 

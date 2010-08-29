@@ -1,5 +1,8 @@
 
-Notes from my porting project; most are just typos:
+Notes from my porting project, to send to the author; most are just
+typos:
+
+
 
 b2PolygonShape.cpp:
 
@@ -62,3 +65,7 @@ b2TimeOfImpact.cpp:
 
 Several of the examples in the manual.html write "b2Transfrom" instead
 of "b2Transform".
+
+In the graphic illustrating "contact manifolds", the caption in the
+diagram for circle-polygon collision says "two points, one normal",
+which isn't right.

@@ -39,6 +39,8 @@ sig
   (* Convert into a unit vector with the same direction.
      Returns the (old) length. *)
   val vec2normalize : vec2 -> real
+  (* Functional version, preferred. *)
+  val vec2normalized : vec2 -> vec2
   val vec2is_valid : vec2 -> bool
 
   type vec3
@@ -133,6 +135,8 @@ sig
   (* XXX these should probably be called mul_t22v etc. to match above *)
   val mul_t22mv : mat22 * vec2 -> vec2
   val mul_t22mm : mat22 * mat22 -> mat22
+  (* Applies the inverse of a transformation; subtracting the position
+     and then multipling the transform of the rotation matrix. *)
   val mul_ttransformv : transform * vec2 -> vec2
 
   (* Utilities. *)

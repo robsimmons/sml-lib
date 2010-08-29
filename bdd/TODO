@@ -1,0 +1,8 @@
+
+Replace awkward vec2normalize with calls to vec2normalized.
+
+Generally: Track down imperative access to vec2, mat22, and transform.
+Replace with functional ones.
+
+Replace vec2 with real * real.
+Replace mat22 with real^4.
