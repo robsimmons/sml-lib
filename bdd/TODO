@@ -9,3 +9,6 @@ Replace with functional ones.
 
 Replace vec2 with real * real.
 Replace mat22 with real^4.
+
+
+looks like I wrote common/*.cpp in a number of comments where I meant collision/*.cpp.

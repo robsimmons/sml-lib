@@ -65,7 +65,14 @@ b2TimeOfImpact.cpp:
   This might be better as a constructor.
   
 
+b2Fixture.h
 
+  "@param xf the shape world transform." There's no such parameter.
+
+  "This AABB may be enlarge" -> "... enlarged"
+
+
+manual.html:
 
 Several of the examples in the manual.html write "b2Transfrom" instead
 of "b2Transform".
@@ -73,3 +80,9 @@ of "b2Transform".
 In the graphic illustrating "contact manifolds", the caption in the
 diagram for circle-polygon collision says "two points, one normal",
 which isn't right.
+
+In the fixture density section, this sentence was abandoned:
+
+"The mass of a body is automatically adjusted when you "
+
+
