@@ -17,9 +17,10 @@ sig
      inherits its transform from its parent. Fixtures hold additional non-geometric data
      such as friction, collision filters, etc.
      Fixtures have identity and cannot be reused. *)
-  type 'a fixture
+  type ('b, 'f) fixture
 
-  type 'a body
+  (* A body can have its own user data, as well as user data for each fixture. *)
+  type ('b, 'f) body
 
   structure Fixture :
   sig
@@ -50,67 +51,135 @@ sig
     (* Get the child shape. You can modify the child shape, however you should not change the
        number of vertices because this will crash some collision caching mechanisms.
        Manipulating the shape may lead to non-physical behavior. *)
-    val shape : 'a fixture -> BDDShape.shape
-    val set_shape : 'a fixture * BDDShape.shape -> unit
+    val shape : ('b, 'f) fixture -> BDDShape.shape
+    val set_shape : ('b, 'f) fixture * BDDShape.shape -> unit
 
     (* The sensor status of the fixture. *)
-    val set_sensor : 'a fixture * bool -> unit
-    val is_sensor : 'a fixture -> bool
+    val set_sensor : ('b, 'f) fixture * bool -> unit
+    val is_sensor : ('b, 'f) fixture -> bool
 
     (* The contact filtering data. Setting will not update contacts until the next time
        step when either parent body is active and awake. *)
-    val set_filter : 'a fixture * filter -> unit
-    val get_filter : 'a fixture -> filter
+    val set_filter : ('b, 'f) fixture * filter -> unit
+    val get_filter : ('b, 'f) fixture -> filter
 
     (* Get the parent body of this fixture. This is NONE if the fixture is not attached. *)
-    val get_body : 'a fixture -> 'a body option
+    val get_body : ('b, 'f) fixture -> ('b, 'f) body option
 
     (* Get the next fixture in the parent body's fixture list. *)
-    val get_next : 'a fixture -> 'a fixture option (* XXX I assume? *)
+    val get_next : ('b, 'f) fixture -> ('b, 'f) fixture option (* XXX I assume? *)
 
     (* The user data that was assigned in the fixture definition. Use this to
        store your application specific data. *)
-    val get_data : 'a fixture -> 'a
-    val set_data : 'a fixture * 'a -> unit
+    val get_data : ('b, 'f) fixture -> 'f
+    val set_data : ('b, 'f) fixture * 'f -> unit
 
     (* Test a point (in world coordinates) for containment in this fixture. *)
-    val test_point : 'a fixture * BDDMath.vec2 -> bool
+    val test_point : ('b, 'f) fixture * BDDMath.vec2 -> bool
 
     (* Cast a ray against this shape. *)
-    val ray_cast : 'a fixture * BDDTypes.ray_cast_input -> BDDTypes.ray_cast_output option
+    val ray_cast : ('b, 'f) fixture * BDDTypes.ray_cast_input -> BDDTypes.ray_cast_output option
 
     (* Get the mass data for this fixture. The mass data is based on the density and
        the shape. The rotational inertia is about the shape's origin. This operation
        may be expensive. *)
-    val get_mass_data : 'a fixture -> BDDTypes.mass_data
+    val get_mass_data : ('b, 'f) fixture -> BDDTypes.mass_data
 
     (* Density of this fixture. Setting will _not_ automatically adjust the mass
        of the body. You must call reset_mass_data to update the body's mass. *)
-    val set_density : 'a fixture * real -> unit
-    val get_density : 'a fixture -> real
+    val set_density : ('b, 'f) fixture * real -> unit
+    val get_density : ('b, 'f) fixture -> real
 
     (* The coefficient of friction. *)
-    val get_friction : 'a fixture -> real
-    val set_friction : 'a fixture * real -> unit
+    val get_friction : ('b, 'f) fixture -> real
+    val set_friction : ('b, 'f) fixture * real -> unit
 
     (* The coefficient of restitution. *)
-    val get_restitution : 'a fixture -> real
-    val set_restitution : 'a fixture * real -> unit
+    val get_restitution : ('b, 'f) fixture -> real
+    val set_restitution : ('b, 'f) fixture * real -> unit
 
     (* Get the fixture's AABB. This AABB may be enlarge and/or stale.
        If you need a more accurate AABB, compute it using the shape and
        the body transform. *)
-    val get_aabb : 'a fixture -> BDDTypes.aabb
+    val get_aabb : ('b, 'f) fixture -> BDDTypes.aabb
   end
 
 
   structure Body :
   sig
 
-    val create_fixture : 'a body *
+    (* The body type.
+       static: zero mass, zero velocity, may be manually moved
+       kinematic: zero mass, non-zero velocity set by user, moved by solver
+       dynamic: positive mass, non-zero velocity determined by forces, moved by solver *)
+    datatype body_type =
+        Static
+      | Kinematic
+      | Dynamic
+
+    val create :
+        { (* The body type: static, kinematic, or dynamic.
+             Note: if a dynamic body would have zero mass, the mass is set to one. *)
+          typ : body_type,
+
+          (* The initial world position of the body. Avoid creating bodies at
+             the origin since this can lead to many overlapping shapes. *)
+          position : BDDMath.vec2,
+
+          (* The world angle of the body in radians. *)
+          angle : real,
+
+          (* The linear velocity of the body's origin in world co-ordinates. *)
+          linear_velocity : BDDMath.vec2,
+
+          (* The angular velocity of the body. *)
+          angular_velocity : real,
+
+          (* Linear damping is use to reduce the linear velocity. The damping
+             parameter can be larger than 1.0f but the damping effect
+             becomes sensitive to the time step when the damping parameter
+             is large.
+             Default: 0.0 *)
+          linear_damping : real,
+
+          (* Angular damping is use to reduce the angular velocity. The damping
+             parameter can be larger than 1.0f but the damping effect
+             becomes sensitive to the time step when the damping
+             parameter is large.
+             Default: 0.0 *)
+          angular_damping : real,
+
+          (* Set this flag to false if this body should never fall asleep. Note
+             that this increases CPU usage. *)
+          allow_sleep : bool,
+
+          (* Is this body initially awake or sleeping? *)
+          awake : bool,
+
+          (* Should this body be prevented from rotating? Useful for characters. *)
+          fixed_rotation : bool,
+
+          (* Is this a fast moving body that should be prevented from tunneling through
+             other moving bodies? Note that all bodies are prevented from tunneling through
+             kinematic and static bodies. This setting is only considered on dynamic bodies.
+             You should use this flag sparingly since it increases processing time. *)
+          bullet : bool,
+
+          (* Does this body start out active? *)
+          active : bool,
+
+          (* Use this to store application specific body data. *)
+          data : 'b,
+
+          (* Experimental: scales the inertia tensor.
+             Default: 1.0 *)
+          inertia_scale : real } -> ('b, 'f) body
+
+
+    val create_fixture : ('b, 'f) body *
         { (* Cloned. *)
           shape : BDDShape.shape,
-          data : 'a,
+          data : 'f,
           (* The friction coefficient, usually in the range [0, 1].
              Default value 0.2. *)
           friction : real,
@@ -123,7 +192,7 @@ sig
              generates a collision response. *)
           is_sensor : bool,
           (* Contact filtering data. *)
-          filter : Fixture.filter } -> 'a fixture
+          filter : Fixture.filter } -> ('b, 'f) fixture
 
   end
 

@@ -59,6 +59,7 @@ struct
 
     fun set_density (r as ref (F { aabb, density = _, next, body, shape, friction,
                                    restitution, proxy, filter, sensor, data }), density) =
+        (* XXX Box2D has check on range *)
         r := F { aabb = aabb, density = density, next = next, body = body,
                  shape = shape, friction = friction, restitution = restitution,
                  proxy = proxy, filter = filter, sensor = sensor, data = data }
@@ -123,6 +124,11 @@ struct
   (* Internal, bodies *)
   structure B =
   struct
+     datatype body_type =
+        Static
+      | Kinematic
+      | Dynamic
+
     fun get_transform (b : 'a body) : BDDMath.transform = raise BDDBody "unimplemented"
   end
 
