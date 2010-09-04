@@ -161,6 +161,14 @@ sig
      not coincide with the center of mass. However, to support dynamics
      we must interpolate the center of mass position. *)
   type sweep
+      
+  (* world angle *)
+  val sweepa : sweep -> real
+  (* world center *)
+  val sweepc : sweep -> vec2
+  (* local center *)
+  val sweeplocalcenter : sweep -> vec2
+
   (* Get the interpolated transform at a specific time.
      alpha is a factor in [0,1], where 0 indicates t0. 
      Modifies the transform. *)

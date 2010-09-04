@@ -425,6 +425,10 @@ struct
                               local_center))
       end
 
+  fun sweepa ({ a, ... } : sweep) = !a
+  fun sweepc ({ c, ... } : sweep) = c
+  fun sweeplocalcenter ({ local_center, ... } : sweep) = local_center
+
   (* PERF *)
   fun sweep_transform (arg, alpha : real) =
       let val transform = identity_transform ()

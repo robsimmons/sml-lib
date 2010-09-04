@@ -72,6 +72,11 @@ b2Fixture.h
   "This AABB may be enlarge" -> "... enlarged"
 
 
+b2Body.h
+
+  "Creates a fixture and attach it to this body" -> 
+  "Create" or "attaches" (both times)
+
 manual.html:
 
 Several of the examples in the manual.html write "b2Transfrom" instead
