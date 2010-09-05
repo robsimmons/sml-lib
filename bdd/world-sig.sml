@@ -1,22 +1,24 @@
 (* Copyright 2010 Tom Murphy VII and Erin Catto. See COPYING for details. *)
 
-(* A world is a collection of rigid bodies in simulation.
-   Bodies are made up of fixtures, each of which is a shape with some physical
+(* A world is a collection of rigid bodies in simulation. Bodies are
+   made up of fixtures, each of which is a shape with some physical
    properties like density and a coefficient of friction.
 
-   Port note: I merged several different Box2D classes into this one module for
-   BoxDiaDia, because they need to know about each other's implementations.
-   They're arranged into sub-structures roughly corresponding to the original
-   classes.
+   Port note: I merged several different Box2D classes into this one
+   module for BoxDiaDia, because they need to know about each other's
+   implementations. They're arranged into sub-structures roughly
+   corresponding to the original classes.
 
-   I renamed functions like is_bullet to get_bullet to match with the style of
-   the others, since there doesn't seem to be any advantage of irregularity.
+   I renamed functions like is_bullet to get_bullet to match with the
+   style of the others, since there doesn't seem to be any advantage
+   of irregularity.
 
-   Corresponding to dynamics/b2world.h, dynamics/b2body.h, dynamics/b2fixture.h. *)
+   Corresponding to dynamics/b2world.h, dynamics/b2body.h, 
+   dynamics/b2fixture.h. *)
 
-(* The world is defined as a functor over the type of data associated with
-   fixtures and bodies, so that these don't have to be threaded through every
-   function as ('fixture_data, 'body_data). *)
+(* The world is defined as a functor over the type of data associated
+   with fixtures and bodies, so that these don't have to be threaded
+   through every function as ('fixture_data, 'body_data). *)
 signature BDDWORLD_ARG =
 sig
   type fixture_data
@@ -33,10 +35,11 @@ sig
   (* A rigid body. *)
   type body
 
-  (* A fixture is used to attach a shape to a body for collision detection. A fixture
-     inherits its transform from its parent. Fixtures hold additional non-geometric data
-     such as friction, collision filters, etc.
-     Fixtures have identity and cannot be reused. *)
+  (* A fixture is used to attach a shape to a body for collision
+     detection. A fixture inherits its transform from its parent.
+     Fixtures hold additional non-geometric data such as friction,
+     collision filters, etc. Fixtures have identity and cannot be
+     reused. *)
   type fixture
 
   type joint
@@ -52,16 +55,18 @@ sig
     type filter
 
     val filter_mask : 
-      { (* The collision category bits. Normally you would just set one bit. *)
+      { (* The collision category bits. Normally you would just set one bit.
+*)
         category_bits : Word16.word,
 
-        (* The collision mask bits. This states the categories that this
-           shape would accept for collision. *)
+        (* The collision mask bits. This states the categories that this shape
+           would accept for collision. *)
         mask_bits : Word16.word,
 
-        (* Collision groups allow a certain group of objects to never collide (negative)
-           or always collide (positive). Zero means no collision group. Non-zero group
-           filtering always wins against the mask bits. *)
+        (* Collision groups allow a certain group of objects to never collide
+           (negative) or always collide (positive). Zero means no
+           collision group. Non-zero group filtering always wins
+           against the mask bits. *)
         group_index : int } -> filter
 
     (* Give the categories as a list of ints. Usually a fixture
@@ -71,9 +76,10 @@ sig
                         mask : int list,
                         group_index : int } -> filter
 
-    (* Get the child shape. You can modify the child shape, however you should not change the
-       number of vertices because this will crash some collision caching mechanisms.
-       Manipulating the shape may lead to non-physical behavior. *)
+    (* Get the child shape. You can modify the child shape, however you
+       should not change the number of vertices because this will
+       crash some collision caching mechanisms. Manipulating the shape
+       may lead to non-physical behavior. *)
     val shape : fixture -> BDDShape.shape
     val set_shape : fixture * BDDShape.shape -> unit
 
@@ -81,19 +87,21 @@ sig
     val set_sensor : fixture * bool -> unit
     val is_sensor : fixture -> bool
 
-    (* The contact filtering data. Setting will not update contacts until the next time
-       step when either parent body is active and awake. *)
+    (* The contact filtering data. Setting will not update contacts until
+       the next time step when either parent body is active and awake.
+       *)
     val set_filter : fixture * filter -> unit
     val get_filter : fixture -> filter
 
-    (* Get the parent body of this fixture. This is NONE if the fixture is not attached. *)
+    (* Get the parent body of this fixture. This is NONE if the fixture is
+       not attached. *)
     val get_body : fixture -> body option
 
     (* Get the next fixture in the parent body's fixture list. *)
     val get_next : fixture -> fixture option (* XXX I assume? *)
 
-    (* The user data that was assigned in the fixture definition. Use this to
-       store your application specific data. *)
+    (* The user data that was assigned in the fixture definition. Use this
+       to store your application specific data. *)
     val get_data : fixture -> fixture_data
     val set_data : fixture * fixture_data -> unit
 
@@ -101,15 +109,17 @@ sig
     val test_point : fixture * BDDMath.vec2 -> bool
 
     (* Cast a ray against this shape. *)
-    val ray_cast : fixture * BDDTypes.ray_cast_input -> BDDTypes.ray_cast_output option
+    val ray_cast : fixture * BDDTypes.ray_cast_input -> 
+        BDDTypes.ray_cast_output option
 
-    (* Get the mass data for this fixture. The mass data is based on the density and
-       the shape. The rotational inertia is about the shape's origin. This operation
-       may be expensive. *)
+    (* Get the mass data for this fixture. The mass data is based on the
+       density and the shape. The rotational inertia is about the
+       shape's origin. This operation may be expensive. *)
     val get_mass_data : fixture -> BDDTypes.mass_data
 
-    (* Density of this fixture. Setting will _not_ automatically adjust the mass
-       of the body. You must call reset_mass_data to update the body's mass. *)
+    (* Density of this fixture. Setting will _not_ automatically adjust
+       the mass of the body. You must call reset_mass_data to update
+       the body's mass. *)
     val set_density : fixture * real -> unit
     val get_density : fixture -> real
 
@@ -121,8 +131,8 @@ sig
     val get_restitution : fixture -> real
     val set_restitution : fixture * real -> unit
 
-    (* Get the fixture's AABB. This AABB may be enlarge and/or stale.
-       If you need a more accurate AABB, compute it using the shape and
+    (* Get the fixture's AABB. This AABB may be enlarge and/or stale. If
+       you need a more accurate AABB, compute it using the shape and
        the body transform. *)
     val get_aabb : fixture -> BDDTypes.aabb
   end
@@ -134,7 +144,8 @@ sig
     (* The body type.
        static: zero mass, zero velocity, may be manually moved
        kinematic: zero mass, non-zero velocity set by user, moved by solver
-       dynamic: positive mass, non-zero velocity determined by forces, moved by solver *)
+       dynamic: positive mass, non-zero velocity determined by forces, 
+         moved by solver *)
     datatype body_type =
         Static
       | Kinematic
@@ -167,21 +178,23 @@ sig
     (* create_fixture_default (body, shape, data, density)
        Add a fixture based on a shape, with default values for the
        physical parameters above. *)
-    val create_fixture_default : body * BDDShape.shape * body_data * real -> fixture
+    val create_fixture_default : body * BDDShape.shape * body_data * real ->
+                                 fixture
 
-    (* Destroy a fixture. This removes the fixture from the broad-phase and
-       destroys all contacts associated with this fixture. This will
-       automatically adjust the mass of the body if the body is dynamic and the
-       fixture has positive density.
-       All fixtures attached to a body are implicitly destroyed when the body is destroyed.
-       May not be called during callbacks! *)
+    (* Destroy a fixture. This removes the fixture from the broad-phase
+       and destroys all contacts associated with this fixture. This
+       will automatically adjust the mass of the body if the body is
+       dynamic and the fixture has positive density. All fixtures
+       attached to a body are implicitly destroyed when the body is
+       destroyed. May not be called during callbacks! *)
     (* XXX why not just do this from the fixture itself? It has a body ptr. *)
     val destroy_fixture : body * fixture -> unit
 
     (* set_transform (body, position, angle)
-       Set the world position of the body's origin and its angle in radians.
-       This breaks any contacts and wakes the other bodies.
-       Manipulating a body's transform may cause non-physical behavior. *)
+       Set the world position of the body's origin and its angle in
+       radians. This breaks any contacts and wakes the other bodies.
+       Manipulating a body's transform may cause non-physical
+       behavior. *)
     val set_transform : body * BDDMath.vec2 * real -> unit
 
     (* Get the body transform for the body's origin. *)
@@ -265,10 +278,12 @@ sig
     val get_local_vector : body * BDDMath.vec2 -> BDDMath.vec2
 
     (* Get the world linear velocity of a world point attached to this body. *)
-    val get_linear_velocity_from_world_point : body * BDDMath.vec2 -> BDDMath.vec2
+    val get_linear_velocity_from_world_point : body * BDDMath.vec2 -> 
+                                               BDDMath.vec2
 
     (* Get the world velocity of a local point. *)
-    val get_linear_velocity_from_local_point : body * BDDMath.vec2 -> BDDMath.vec2
+    val get_linear_velocity_from_local_point : body * BDDMath.vec2 -> 
+                                               BDDMath.vec2
 
     (* The linear damping of the body. *)
     val set_linear_damping : body * real -> unit
@@ -283,7 +298,8 @@ sig
     (* Get the type of this body. *)
     val get_type : body -> body_type
 
-    (* Should this body be treated like a bullet for continuous collision detection? *)
+    (* Should this body be treated like a bullet for continuous collision
+detection? *)
     val set_bullet : body * bool -> unit
     val get_bullet : body -> bool
 
@@ -346,7 +362,8 @@ sig
 
     val create_body : world *
       { (* The body type: static, kinematic, or dynamic.
-           Note: if a dynamic body would have zero mass, the mass is set to one. *)
+           Note: if a dynamic body would have zero mass, the mass is
+           set to one. *)
         typ : Body.body_type,
 
         (* The initial world position of the body. Avoid creating bodies at
@@ -383,13 +400,16 @@ sig
         (* Is this body initially awake or sleeping? *)
         awake : bool,
 
-        (* Should this body be prevented from rotating? Useful for characters. *)
+        (* Should this body be prevented from rotating? Useful for
+           characters. *)
         fixed_rotation : bool,
 
-        (* Is this a fast moving body that should be prevented from tunneling through
-           other moving bodies? Note that all bodies are prevented from tunneling through
-           kinematic and static bodies. This setting is only considered on dynamic bodies.
-           You should use this flag sparingly since it increases processing time. *)
+        (* Is this a fast moving body that should be prevented from 
+           tunneling through other moving bodies? Note that all bodies
+           are prevented from tunneling through kinematic and static
+           bodies. This setting is only considered on dynamic bodies.
+           You should use this flag sparingly since it increases
+           processing time. *)
         bullet : bool,
 
         (* Does this body start out active? *)
