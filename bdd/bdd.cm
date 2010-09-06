@@ -40,5 +40,13 @@ group is
   time-of-impact-sig.sml
   time-of-impact.sml
 
+  dynamics.sml
+  body-sig.sml
+  body.sml
+  fixture-sig.sml
+  fixture.sml
+
+(*
   world-sig.sml
   world.sml
+*)
