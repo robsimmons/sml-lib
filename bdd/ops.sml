@@ -49,4 +49,7 @@ struct
       if lo > hi then ()
       else (ignore (f lo); for (lo + 1) hi f)
 
+  fun oapp next f NONE = ()
+    | oapp next f (SOME x) = (f x; oapp next f (next x))
+
 end

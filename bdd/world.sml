@@ -87,40 +87,20 @@ struct
         raise BDDWorld "unimplemented"
 
     fun clear_forces (world : world) : unit =
-        raise BDDWorld "unimplemented"
-(*
-{
-        for (b2Body* body = m_bodyList; body; body = body->GetNext())
-        {
-                body->m_force.SetZero();
-                body->m_torque = 0.0f;
-        }
-}
-*)
+        oapp Body.get_next (fn b =>
+                            let in
+                                D.B.set_force (b, vec2 (0.0, 0.0));
+                                D.B.set_torque (b, 0.0)
+                            end) (get_body_list world)
 
     fun query_aabb (world : world, callback : fixture -> bool, aabb : BDDTypes.aabb) : unit =
-        raise BDDWorld "unimplemented"
-(*
-struct b2WorldQueryWrapper
-{
-        bool QueryCallback(int32 proxyId)
-        {
-                b2Fixture* fixture = (b2Fixture* )broadPhase->GetUserData(proxyId);
-                return callback->ReportFixture(fixture);
-        }
+        BDDBroadPhase.query (get_broad_phase world,
+                             (fn proxy =>
+                              let val fixture = BDDBroadPhase.user_data proxy
+                              in callback fixture
+                              end), 
+                             aabb)
 
-        const b2BroadPhase* broadPhase;
-        b2QueryCallback* callback;
-};
-
-void b2World::QueryAABB(b2QueryCallback* callback, const b2AABB& aabb) const
-{
-        b2WorldQueryWrapper wrapper;
-        wrapper.broadPhase = &m_contactManager.m_broadPhase;
-        wrapper.callback = callback;
-        m_contactManager.m_broadPhase.Query(&wrapper, aabb);
-}
-*)
 
     fun ray_cast (world : world,
                   callback : { fixture : fixture, point : BDDMath.vec2,

@@ -54,8 +54,7 @@ sig
      Query an AABB for overlapping proxies. The callback
      is called on each proxy that overlaps the supplied AABB. If it returns
      false, then the query stops early. *)
-  val query : 'a broadphase * ('a BDDDynamicTree.aabb_proxy -> bool) * 
-              BDDTypes.aabb -> unit
+  val query : 'a broadphase * ('a proxy -> bool) * BDDTypes.aabb -> unit
 
   (* ray_cast broadphase callback { p1, p2, max_fraction }
 
@@ -70,7 +69,7 @@ sig
      The callback is called for each proxy that is hit by the ray. A return
      value of 0.0 means to stop. *)
   val ray_cast : 'a broadphase * 
-                 (BDDTypes.ray_cast_input * 'a BDDDynamicTree.aabb_proxy -> real) * 
+                 (BDDTypes.ray_cast_input * 'a proxy -> real) * 
                  BDDTypes.ray_cast_input -> unit
 
   (* Compute the height of the embedded tree. *)

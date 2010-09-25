@@ -124,9 +124,7 @@ struct
      in a contact graph where each body is a node and each contact
      is an edge. A contact edge belongs to a doubly linked list
      maintained in each attached body. Each contact has two contact
-     nodes, one for each attached body.
-
-     *)
+     nodes, one for each attached body. *)
   and ('b, 'f, 'j) contactedgecell =
       E of { (* provides quick access to the other body attached. *)
              other : ('b, 'f, 'j) bodycell ref option,
@@ -159,9 +157,10 @@ struct
              warm_starting : bool,
              continuous_physics : bool,
 
-             (* from contact manager *)
-             (* XXX what type of data? *)
-             broad_phase : unit BDDBroadPhase.broadphase,
+             (* Port Note: Folded the "contact manager" object into the world
+                object. *)
+             (* The broad phase uses the userdata to point back to the fixture cell. *)
+             broad_phase : ('b, 'f, 'j) fixturecell ref BDDBroadPhase.broadphase,
              contact_list : ('b, 'f, 'j) contactcell ref option,
              contact_count : int,
              should_collide : (('b, 'f, 'j) fixturecell ref * ('b, 'f, 'j) fixturecell ref -> bool),
