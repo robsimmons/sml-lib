@@ -12,5 +12,10 @@ Replace mat22 with real^4.
 
 Replace initialize_manifold with create_manifold or something.
 
+The type manifold should probably be a datatype. It seems to be used
+that way, and it's annoying to allocate empty arrays and let them go unused.
+
+
+in dynamics, make contact fixture_{a,b} non-optional. I bet they are always SOME after initialization
 
 looks like I wrote common/*.cpp in a number of comments where I meant collision/*.cpp.

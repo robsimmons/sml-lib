@@ -36,4 +36,9 @@ sig
      The inertia tensor is computed about the local origin. *)
   val compute_mass : shape * real -> BDDTypes.mass_data
 
+  (* Returns the radius of the shape. 
+
+     Port note: This is implemented as a member access in Box2D. *)
+  val get_radius : shape -> real
+
 end

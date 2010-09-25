@@ -10,7 +10,8 @@ sig
   (* Evaluate the manifold with supplied transforms. This assumes
      modest motion from the original state. This does not change the
      point count, impulses, etc. The radii must come from the shapes
-     that generated the manifold. *)
+     that generated the manifold.
+     The world manifold is modified in place. *)
   val initialize_manifold : BDDTypes.world_manifold *
                             BDDTypes.manifold * 
                             BDDMath.transform * real * 

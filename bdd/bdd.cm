@@ -41,12 +41,17 @@ group is
   time-of-impact.sml
 
   dynamics.sml
+
+  contact-sig.sml
+  contact.sml
+
   body-sig.sml
   body.sml
+
   fixture-sig.sml
   fixture.sml
 
-(*
+
+
   world-sig.sml
   world.sml
-*)

@@ -18,7 +18,7 @@ sig
   (* Supplied by functor argument *)
   type fixture_data
   type body_data
-
+  type joint_data
 
   type body
   type fixture
@@ -31,8 +31,8 @@ sig
      understand the internals of BoxDiaDia. *)
   val get_manifold : contact -> BDDTypes.manifold
 
-  (* Get the world manifold. *)
-  val get_world_manifold : contact -> BDDTypes.world_manifold
+  (* Get the world manifold. World manifold is modified in place. *)
+  val get_world_manifold : BDDTypes.world_manifold * contact -> unit
 
   (* Is this contact touching? *)
   val is_touching : contact -> bool
@@ -51,7 +51,8 @@ sig
   val get_fixture_a : contact -> fixture
   val get_fixture_b : contact -> fixture
 
-  (* Evaluate this contact with your own manifold and transforms. *)
-  val evaluate : BDDTypes.manifold * BDDMath.transform * BDDMath.transform -> void
-
+  (* Evaluate this contact with your transforms to compute a manifold. *)
+  val evaluate : contact * BDDMath.transform * BDDMath.transform ->
+      BDDTypes.manifold
+      
 end

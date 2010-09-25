@@ -3,11 +3,12 @@
 (* Implementation of contacts.
 
    Corresponding to parts of dynamics/contacts/b2contact.cpp. *)
-functor BDDBody(Arg : 
-                sig
-                  type fixture_data
-                  type body_data
-                end) : BDDBODY =
+functor BDDContact(Arg : 
+                   sig
+                     type fixture_data
+                     type body_data
+                     type joint_data
+                   end) : BDDCONTACT =
 struct
   open Arg
   open BDDSettings
@@ -23,29 +24,28 @@ struct
   structure D = BDDDynamics
   datatype bodycell = datatype D.bodycell
   datatype body_type = datatype D.body_type
-
-  type body = (body_data, fixture_data) D.bodycell ref
-  type fixture = (body_data, fixture_data) D.fixturecell ref
-  type contact = (body_data, fixture_data) D.contactcell ref
-  type joint = unit
-  type world = unit
+  structure DT = BDDDynamicsTypes(Arg)
+  open DT
   type filter = D.filter
 
+  open D.C
 
-  fun get_world_manifold (c : contact) =
+  fun get_world_manifold (world_manifold, c : contact) =
       let
           val fix_a = D.C.get_fixture_a c
           val fix_b = D.C.get_fixture_b c
-          val body_a = D.B.get_body fix_a
-          val body_b = D.B.get_body fix_b
-          val shape_a = D.B.get_shape fix_a
-          val shape_b = D.B.get_shape fix_b
+          val body_a = D.F.get_body fix_a
+          val body_b = D.F.get_body fix_b
+          val shape_a = D.F.get_shape fix_a
+          val shape_b = D.F.get_shape fix_b
+              
+          val manifold = D.C.get_manifold c
       in
-            val initialize_manifold : BDDTypes.world_manifold *
-                            BDDTypes.manifold * 
-                            BDDMath.transform * real * 
-                            BDDMath.transform * real -> unit
-
+          BDDCollision.initialize_manifold
+          (world_manifold, manifold, 
+           D.B.get_xf body_a, BDDShape.get_radius shape_a,
+           D.B.get_xf body_b, BDDShape.get_radius shape_b)
       end
+
 
 end

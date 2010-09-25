@@ -1,0 +1,17 @@
+(* You probably don't want to build this target,
+   which is used to generate some of the BDD
+   code. See bdd.cm. *)
+
+group is
+
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+ ../port/nj.sml
+#else
+ ../port/mlton.sml
+#endif
+
+../util/stringutil-sig.sml
+../util/stringutil.sml
+
+metautil.sml

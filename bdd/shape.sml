@@ -33,4 +33,7 @@ struct
   fun compute_mass (Circle c, r) = C.compute_mass (c, r)
     | compute_mass (Polygon p, r) = P.compute_mass (p, r)
 
+  fun get_radius (Circle { radius, ... }) = radius
+    | get_radius (Polygon _) = BDDSettings.polygon_radius
+
 end

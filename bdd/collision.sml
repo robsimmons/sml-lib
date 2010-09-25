@@ -16,6 +16,7 @@ struct
 
   exception BDDCollision of string
 
+  (* TODO(twm): Replace with a version that constructs a new world manifold. *)
   fun initialize_manifold (world_manifold : world_manifold,
                            manifold : manifold,
                            xfa : transform, radiusa : real,
@@ -63,6 +64,7 @@ struct
                      Array.update(#points world_manifold, i, 0.5 *: (ca :+: cb))
                  end)
             end
+
       | E_FaceB =>
             let val () = vec2setfrom (#normal world_manifold,
                                       transformr xfb +*: #local_normal manifold)

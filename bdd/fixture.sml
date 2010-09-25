@@ -7,6 +7,7 @@ functor BDDFixture(Arg :
                    sig
                      type fixture_data
                      type body_data
+                     type joint_data
                    end) : BDDFIXTURE =
 struct
   open Arg
@@ -21,12 +22,8 @@ struct
 
   structure D = BDDDynamics
   datatype fixturecell = datatype D.fixturecell
-
-  type body = (body_data, fixture_data) D.bodycell ref
-  type fixture = (body_data, fixture_data) D.fixturecell ref
-  type contact = unit
-  type joint = unit
-  type world = unit
+  structure DT = BDDDynamicsTypes(Arg)
+  open DT
 
   type filter = D.filter
   open D.F
@@ -41,10 +38,12 @@ struct
                     group_index : int } : filter =
       raise BDDFixture "unimplemented"
 
-  fun fixture_transform f =
+  fun fixture_transform f = D.B.get_xf (get_body f)
+(*
       case get_body f of
           NONE => raise BDDFixture "fixture is not attached to a body."
         | SOME b => D.B.get_xf b
+*)
 
   fun test_point (f, p : vec2) : bool =
       BDDShape.test_point (get_shape f, fixture_transform f, p)

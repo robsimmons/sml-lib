@@ -17,7 +17,7 @@ sig
   (* Supplied by functor argument *)
   type fixture_data
   type body_data
-
+  type joint_data
 
   type body
   type fixture
@@ -25,6 +25,7 @@ sig
   type world
   type contact
   type filter
+  type contactedge
 
   (* The body type.
      static: zero mass, zero velocity, may be manually moved
@@ -225,12 +226,12 @@ detection? *)
 
   (* Get the list of all joints attached to this body.
      Use the next field of the joint to iterate over them. *)
-  val get_joints : body -> joint
+  val get_joints : body -> joint option
 
   (* Get the list of all contacts attached to this body. This list
      changes during the time step so you may miss some collisions if
      you don't use a contact listener. *)
-  val get_contact_list : body -> contact
+  val get_contact_list : body -> contactedge option
 
   (* Get the next body in the world's body list. *)
   val get_next : body -> body option

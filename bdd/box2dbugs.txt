@@ -91,3 +91,17 @@ In the fixture density section, this sentence was abandoned:
 "The mass of a body is automatically adjusted when you "
 
 
+b2Contact.cpp
+
+In b2Contact::AddType the argument is called "destoryFcn" instead of
+"destroyFcn".
+
+b2World.h
+
+
+The documentation for "DestroyBody" is kind of nonsensical because it
+is mostly a copy of CreateBody.
+
+Incomplete comment for GetContactList:
+	/// @warning contacts are 
+

@@ -14,7 +14,7 @@ sig
   (* Supplied by functor argument *)
   type fixture_data
   type body_data
-
+  type joint_data
 
   type body
   type fixture
@@ -63,9 +63,9 @@ sig
   val set_filter : fixture * filter -> unit
   val get_filter : fixture -> filter
 
-  (* Get the parent body of this fixture. This is NONE if the fixture is
-     not attached. *)
-  val get_body : fixture -> body option
+  (* Get the parent body of this fixture. Raises an exception if the
+     fixture is not attached. *)
+  val get_body : fixture -> body
 
   (* Get the next fixture in the parent body's fixture list. *)
   val get_next : fixture -> fixture option (* XXX I assume? *)
