@@ -162,6 +162,15 @@ sig
      we must interpolate the center of mass position. *)
   type sweep
       
+  val sweep : { (* local center of mass position *)
+                local_center : vec2, 
+                (* center world positions *)
+                c0 : vec2,
+                c : vec2,
+                (* world angles *)
+                a0 : real,
+                a : real } -> sweep
+
   (* world angle *)
   val sweepa : sweep -> real
   (* world center *)

@@ -727,6 +727,79 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
     fun set_flag (b, f) = set_flags (b, Word16.orb(get_flags b, f))
     fun clear_flag (b, f) = set_flags (b, Word16.andb(get_flags b, Word16.notb f))
 
+    fun new ({ typ : body_type,
+               position : BDDMath.vec2,
+               angle : real,
+               linear_velocity : BDDMath.vec2,
+               angular_velocity : real,
+               linear_damping : real,
+               angular_damping : real,
+               allow_sleep : bool,
+               awake : bool,
+               fixed_rotation : bool,
+               bullet : bool,
+               active : bool,
+               data : 'b,
+               inertia_scale : real }, 
+             world : ('b, 'f, 'j) world,
+             next : ('b, 'f, 'j) body option) : ('b, 'f, 'j) body =
+        let 
+            val xf = transform_pos_angle (position, angle)
+            val center = xf @*: vec2 (0.0, 0.0)
+            val (mass, inv_mass) =
+                case typ of
+                    Dynamic => (1.0, 1.0)
+                  | _ => (0.0, 0.0)
+            val b = 
+                ref (B { typ = typ,
+                         flags = 0w0,
+                         island_index = 0, (* ? *)
+                         xf = xf,
+                         sweep = sweep { local_center = vec2 (0.0, 0.0),
+                                         a0 = angle, a = angle,
+                                         c0 = center, c = center },
+                         linear_velocity = linear_velocity,
+                         angular_velocity = angular_velocity,
+                         force = vec2 (0.0, 0.0),
+                         torque = 0.0,
+                         world = world,
+                         prev = NONE,
+                         next = next,
+                         fixture_list = NONE,
+                         fixture_count = 0,
+                         joint_list = NONE,
+                         contact_list = NONE,
+                         mass = mass,
+                         inv_mass = inv_mass,
+                         i = 0.0,
+                         inv_i = 0.0,
+                         linear_damping = linear_damping,
+                         angular_damping = angular_damping,
+                         sleep_time = 0.0,
+                         data = data })
+
+        in
+            (* PERF asserts *)
+            if vec2is_valid position then () else raise BDDDynamics "invalid position";
+            if vec2is_valid linear_velocity then () else raise BDDDynamics "invalid linear_velocity";
+            if is_valid angle then () else raise BDDDynamics "invalid angle";
+            if is_valid angular_velocity then () else raise BDDDynamics "invalid angular_velocity";
+            if is_valid inertia_scale andalso inertia_scale >= 0.0 then ()
+            else raise BDDDynamics "invalid inertia_scale";
+            if is_valid angular_damping andalso angular_damping >= 0.0 then ()
+            else raise BDDDynamics "invalid angular_damping";
+            if is_valid linear_damping andalso linear_damping >= 0.0 then ()
+            else raise BDDDynamics "invalid linear_damping";
+
+            if bullet then set_flag (b, FLAG_BULLET) else ();
+            if fixed_rotation then set_flag (b, FLAG_FIXED_ROTATION) else ();
+            if allow_sleep then set_flag (b, FLAG_AUTO_SLEEP) else ();
+            if awake then set_flag (b, FLAG_AWAKE) else ();
+            if active then set_flag (b, FLAG_ACTIVE) else ();
+
+            b
+        end
+
   end
 
   (* Internal, contact edges *)

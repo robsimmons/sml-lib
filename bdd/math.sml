@@ -409,6 +409,8 @@ struct
                  a0 : real ref,
                  a : real ref
                }
+  fun sweep { local_center, c0, c, a0, a } : sweep =
+      { local_center = local_center, c0 = c0, c = c, a0 = ref a0, a = ref a }
 
   fun sweep_gettransform ({ local_center, c0, c, a0, a }, 
                           transform : transform, 

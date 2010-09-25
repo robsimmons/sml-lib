@@ -185,7 +185,7 @@ sig
   val get_type : body -> body_type
 
   (* Should this body be treated like a bullet for continuous collision
-detection? *)
+     detection? *)
   val set_bullet : body * bool -> unit
   val get_bullet : body -> bool
 

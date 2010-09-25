@@ -18,16 +18,6 @@ struct
 
   exception BDDWorld of string
 
-  (* 16 category bits, then 16 mask bits; group index *)
-(* XXXXXX
-  type filter = Word32.word * int
-  val default_filter = (0wx0001FFFF, 1)
-  datatype body_type =
-      Static
-    | Kinematic
-    | Dynamic
-*)
-
   structure D = BDDDynamics
   structure Body = BDDBody(Arg)
   structure Fixture = BDDFixture(Arg)
@@ -39,7 +29,6 @@ struct
   (* XXX implement! *)
   structure Joint = struct
     type joint_type = int
-  
   end
 
 
@@ -56,25 +45,40 @@ struct
     val set_should_collide_filter = set_should_collide
 
     fun create_body (world : world,
-        { typ : Body.body_type,
-          position : BDDMath.vec2,
-          angle : real,
-          linear_velocity : BDDMath.vec2,
-          angular_velocity : real,
-          linear_damping : real,
-          angular_damping : real,
-          allow_sleep : bool,
-          awake : bool,
-          fixed_rotation : bool,
-          bullet : bool,
-          active : bool,
-          data : body_data,
-          inertia_scale : real }) : body =
-        raise BDDWorld "unimplemented"
+                     def as { typ : Body.body_type,
+                              position : BDDMath.vec2,
+                              angle : real,
+                              linear_velocity : BDDMath.vec2,
+                              angular_velocity : real,
+                              linear_damping : real,
+                              angular_damping : real,
+                              allow_sleep : bool,
+                              awake : bool,
+                              fixed_rotation : bool,
+                              bullet : bool,
+                              active : bool,
+                              data : body_data,
+                              inertia_scale : real }) : body =
+      if is_locked world
+      then raise BDDWorld "Can't call create_body from callbacks."
+      else
+      let
+          val body = D.B.new (def, world, get_body_list world)
+          (* Add to doubly linked list as the new head. *)
+          val () = case get_body_list world of
+              NONE => ()
+            | SOME b => D.B.set_prev (b, SOME body)
+          val () = set_body_list (world, SOME body)
+          val () = set_body_count (world, get_body_count world + 1)
+      in
+          body
+      end
+            
 
     fun destroy_body (body : body) : unit =
         raise BDDWorld "unimplemented"
 
+    (* Joints are unimplemented for now. *)
     fun create_joint (world : world,
                       { typ : Joint.joint_type,
                         user_data : joint_data,
