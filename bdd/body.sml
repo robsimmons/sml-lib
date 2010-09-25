@@ -28,49 +28,6 @@ struct
   open DT
   type filter = D.filter
 
- (*
-void b2Fixture::CreateProxy(b2BroadPhase* broadPhase, const b2Transform& xf)
-{
-        b2Assert(m_proxyId == b2BroadPhase::e_nullProxy);
-
-        // Create proxy in the broad-phase.
-        m_shape->ComputeAABB(&m_aabb, xf);
-        m_proxyId = broadPhase->CreateProxy(m_aabb, this);
-}
-
-void b2Fixture::DestroyProxy(b2BroadPhase* broadPhase)
-{
-        if (m_proxyId == b2BroadPhase::e_nullProxy)
-        {
-                return;
-        }
-
-        // Destroy proxy in the broad-phase.
-        broadPhase->DestroyProxy(m_proxyId);
-        m_proxyId = b2BroadPhase::e_nullProxy;
-}
-
-void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transform1, const b2Transform& transform2)
-{
-        if (m_proxyId == b2BroadPhase::e_nullProxy)
-        {       
-                return;
-        }
-
-        // Compute an AABB that covers the swept shape (may miss some rotation effect).
-        b2AABB aabb1, aabb2;
-        m_shape->ComputeAABB(&aabb1, transform1);
-        m_shape->ComputeAABB(&aabb2, transform2);
-        
-        m_aabb.Combine(aabb1, aabb2);
-
-        b2Vec2 displacement = transform2.position - transform1.position;
-
-        broadPhase->MoveProxy(m_proxyId, m_aabb, displacement);
-}
-
- *)
-
   open D.B
   val get_type = get_typ
   val set_type = set_typ

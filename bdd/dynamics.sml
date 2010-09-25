@@ -129,7 +129,8 @@ struct
       E of { (* provides quick access to the other body attached. *)
              other : ('b, 'f, 'j) bodycell ref option,
              contact : ('b, 'f, 'j) contactcell ref option,
-             (* the previous and next contact edge in the body's contact list *)
+             (* the previous and next contact edge in the 
+                body's contact list *)
              prev : ('b, 'f, 'j) contactedgecell ref option,
              next : ('b, 'f, 'j) contactedgecell ref option }
 
@@ -163,7 +164,8 @@ struct
              broad_phase : ('b, 'f, 'j) fixturecell ref BDDBroadPhase.broadphase,
              contact_list : ('b, 'f, 'j) contactcell ref option,
              contact_count : int,
-             should_collide : (('b, 'f, 'j) fixturecell ref * ('b, 'f, 'j) fixturecell ref -> bool),
+             should_collide : (('b, 'f, 'j) fixturecell ref * 
+                               ('b, 'f, 'j) fixturecell ref -> bool),
              begin_contact : ('b, 'f, 'j) contactcell ref -> unit,
              end_contact : ('b, 'f, 'j) contactcell ref -> unit,
              pre_solve : ('b, 'f, 'j) contactcell ref * BDDTypes.manifold -> unit,
@@ -191,6 +193,7 @@ struct
     fun get_filter (ref (F{ filter, ... })) = filter
     fun get_sensor (ref (F{ sensor, ... })) = sensor
     fun get_data (ref (F{ data, ... })) = data
+    fun get_proxy (ref (F{ proxy, ... })) = proxy
 
     (* This is annoying, but the least error prone way to simulate what's
        happening in the C++ code. *)
@@ -273,6 +276,10 @@ struct
                  shape = shape, friction = friction, restitution = restitution,
                  proxy = proxy, filter = filter, sensor = sensor, data = data }
 
+    fun create_proxy (fixture : ('b, 'f, 'j) fixture, 
+                      broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase, 
+                      xf : BDDMath.transform) =
+        raise BDDDynamics "unimplemented" (* maybe should be part of 'new' *)
 
  (*
 void b2Fixture::CreateProxy(b2BroadPhase* broadPhase, const b2Transform& xf)
@@ -283,18 +290,17 @@ void b2Fixture::CreateProxy(b2BroadPhase* broadPhase, const b2Transform& xf)
         m_shape->ComputeAABB(&m_aabb, xf);
         m_proxyId = broadPhase->CreateProxy(m_aabb, this);
 }
+*)
 
-void b2Fixture::DestroyProxy(b2BroadPhase* broadPhase)
-{
-        if (m_proxyId == b2BroadPhase::e_nullProxy)
-        {
-                return;
-        }
+    fun destroy_proxy (fixture : ('b, 'f, 'j) fixture, 
+                       broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase) =
+        (* Port note: There was a non-asserting check that the proxy id was
+           null here, which doesn't make sense to me; every fixture
+           should have a proxy if it was initialized. Anyway the proxy
+           is non-optional. *)
+        BDDBroadPhase.remove_proxy (broadphase, get_proxy fixture)
 
-        // Destroy proxy in the broad-phase.
-        broadPhase->DestroyProxy(m_proxyId);
-        m_proxyId = b2BroadPhase::e_nullProxy;
-}
+ (*
 
 void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transform1, const b2Transform& transform2)
 {
