@@ -101,49 +101,32 @@ struct
                               end), 
                              aabb)
 
-
     fun ray_cast (world : world,
                   callback : { fixture : fixture, point : BDDMath.vec2,
                                normal : BDDMath.vec2, fraction : real } -> raycast_action,
                   point1 : BDDMath.vec2,
                   point2 : BDDMath.vec2) : unit =
-        raise BDDWorld "unimplemented"
-(*
-struct b2WorldRayCastWrapper
-{
-        float32 RayCastCallback(const b2RayCastInput& input, int32 proxyId)
-        {
-                void* userData = broadPhase->GetUserData(proxyId);
-                b2Fixture* fixture = (b2Fixture* )userData;
-                b2RayCastOutput output;
-                bool hit = fixture->RayCast(&output, input);
-
-                if (hit)
-                {
-                        float32 fraction = output.fraction;
-                        b2Vec2 point = (1.0f - fraction) * input.p1 + fraction * input.p2;
-                        return callback->ReportFixture(fixture, point, output.normal, fraction);
-                }
-
-                return input.maxFraction;
-        }
-
-        const b2BroadPhase* broadPhase;
-        b2RayCastCallback* callback;
-};
-
-void b2World::RayCast(b2RayCastCallback* callback, const b2Vec2& point1, const b2Vec2& point2) const
-{
-        b2WorldRayCastWrapper wrapper;
-        wrapper.broadPhase = &m_contactManager.m_broadPhase;
-        wrapper.callback = callback;
-        b2RayCastInput input;
-        input.maxFraction = 1.0f;
-        input.p1 = point1;
-        input.p2 = point2;
-        m_contactManager.m_broadPhase.RayCast(&wrapper, input);
-}
-*)
+        let val bp = get_broad_phase world
+            fun cb (input as { p1 : BDDMath.vec2, p2 : BDDMath.vec2, max_fraction : real }, proxy) =
+                let val fixture = BDDBroadPhase.user_data proxy
+                    val hit = Fixture.ray_cast (fixture, input)
+                in
+                    case hit of
+                        NONE => max_fraction
+                      | SOME { normal, fraction } =>
+                            let val point : vec2 = (1.0 - fraction) *: p1 :+: fraction *: p2
+                            (* TODO: Might want to propagate this datatype deeper; it's better. *)
+                            in case callback { fixture = fixture, point = point, 
+                                               normal = normal, fraction = fraction } of
+                                IgnoreAndContinue => ~1.0
+                              | Terminate => 0.0
+                              | Clip r => r
+                              | Don'tClip => 1.0
+                            end
+                end
+        in
+            BDDBroadPhase.ray_cast (bp, cb, { max_fraction = 1.0, p1 = point1, p2 = point2 })
+        end
 
     fun step (world : world, time_step : real, 
               velocity_iterations : int, position_iterations : int) : unit =
