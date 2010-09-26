@@ -80,6 +80,12 @@ sig
   structure World :
   sig
 
+    (* world gravity do_sleep
+
+       Creates a new world with the given gravity vector. If do_sleep is true,
+       then bodies are allowed to sleep. *)
+    val world : BDDMath.vec2 * bool -> world
+
     val create_body : world *
       { (* The body type: static, kinematic, or dynamic.
            Note: if a dynamic body would have zero mass, the mass is

@@ -3,7 +3,7 @@
 (* Implementation of body fixtures.
 
    Corresponding to parts of dynamics/b2fixture.cpp. *)
-functor BDDFixture(Arg : 
+functor BDDFixture(Arg :
                    sig
                      type fixture_data
                      type body_data
@@ -28,15 +28,28 @@ struct
   type filter = D.filter
   open D.F
 
-  fun filter_list { categories : int list,
-                    mask : int list,
-                    group_index : int } : filter =
-      raise BDDFixture "unimplemented"
+  local fun mk16 nil = 0w0
+          | mk16 (n :: rest) = Word16.orb (Word16.<< (0w1, Word.fromInt n), mk16 rest)
+  in
+      fun filter { category_bits : Word16.word,
+                   mask_bits : Word16.word,
+                   group_index : int } : filter =
+          (Word32.orb (Word32.<< (Word32.fromInt (Word16.toInt category_bits), 0w16),
+                       Word32.fromInt (Word16.toInt mask_bits)),
+           group_index)
 
-  fun filter_mask { category_bits : Word16.word,
-                    mask_bits : Word16.word,
-                    group_index : int } : filter =
-      raise BDDFixture "unimplemented"
+      fun filter_list { categories : int list,
+                        mask : int list,
+                        group_index : int } : filter =
+          filter { category_bits = mk16 categories,
+                   mask_bits = mk16 mask,
+                   group_index = group_index }
+  end
+
+
+  fun filter_group_index (_, g) = g
+  fun filter_category_bits (w, _) = Word16.fromInt (Word32.toInt (Word32.andb(Word32.>>(w, 0w16), 0wxFFFF)))
+  fun filter_mask_bits (w, _) = Word16.fromInt (Word32.toInt (Word32.andb(w, 0wxFFFF)))
 
   fun fixture_transform f = D.B.get_xf (get_body f)
 (*

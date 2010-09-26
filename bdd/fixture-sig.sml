@@ -25,7 +25,7 @@ sig
   (* This holds contact filtering data. *)
   type filter
 
-  val filter_mask : 
+  val filter : 
     { (* The collision category bits. Normally you would just set one bit. *)
       category_bits : Word16.word,
 
@@ -45,6 +45,10 @@ sig
   val filter_list : { categories : int list,
                       mask : int list,
                       group_index : int } -> filter
+
+  val filter_group_index : filter -> int
+  val filter_mask_bits : filter -> Word16.word
+  val filter_category_bits : filter -> Word16.word
 
   (* Get the child shape. You can modify the child shape, however you
      should not change the number of vertices because this will
