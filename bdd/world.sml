@@ -610,15 +610,16 @@ void b2World::DestroyJoint(b2Joint* j)
 
         (* Build and simulate all awake islands. *)
         (* Port note: The Box2D original uses an explicit stack.
-           I rewrote it as a recursive function. The approach is
-           to look at every body in the world and find all
-           connected bodies using a depth-first graph traversal.
-           Once the island flag is set, it means it has already
-           been accounted for. The exception is static bodies:
-           These participate in islands but don't count as edges.
-           (This is okay because we know they never move.)
-           They're treated somewhat specially in the following;
-           for example, they can't be used as seeds. *)
+           I rewrote it as a recursive function. This can change
+           the order that bodies are added, but should result
+           in the same set. The approach is to look at every body
+           in the world and find all connected bodies using a
+           depth-first graph traversal. Once the island flag is 
+           set, it means it has already been accounted for. The
+           exception is static bodies: These participate in islands
+           but don't count as edges. (This is okay because we know
+           they never move.) They're treated somewhat specially in
+           the following; for example, they can't be used as seeds. *)
         
        fun one_seed (seed : body) =
          if D.B.get_flag (seed, D.B.FLAG_ISLAND)
@@ -630,18 +631,23 @@ void b2World::DestroyJoint(b2Joint* j)
          (* Must be dynamic or kinematic. *)
          then ()
          else
-         let val () = D.B.set_flag (seed, D.B.FLAG_ISLAND)
-             (* Arguments for island. *)
+         let 
+             (* Accumulates arguments for island solver. *)
              val bodies = ref nil
              val joints = ref nil
              val contacts = ref nil
              (* Perform a depth first search (DFS) on the constraint graph. *)
-             fun explore nil = ()
-               | explore (b :: rest) =
+             fun explore b =
                  if not (Body.get_active b)
                  then raise BDDWorld "expected body to be active in stack"
                  else
-                 let val () = bodies := b :: !bodies
+                 let 
+                     (* Port note: Added this here, since it has to be done
+                        before exploring a node in order to get termination;
+                        Box2D does it right before inserting into its stack. *)
+                     val () = D.B.set_flag (b, D.B.FLAG_ISLAND)
+                     (* Add to island. *)
+                     val () = bodies := b :: !bodies
                      (* Make sure body is awake. *)
                      val () = D.B.set_flag (b, D.B.FLAG_AWAKE)
                  in
@@ -652,12 +658,40 @@ void b2World::DestroyJoint(b2Joint* j)
                      else
                      let
                          fun one_cedge (ce : contactedge) =
-                             raise BDDWorld "unimplemented"
+                           let val contact = !! (D.E.get_contact ce)
+                               val fixture_a = D.C.get_fixture_a contact
+                               val fixture_b = D.C.get_fixture_b contact
+                           in 
+                               (* Has this contact already been added to an island?
+                                  Is it enabled and touching? Are both fixtures
+                                  non-sensors? *)
+                               if D.C.get_flag (contact, D.C.FLAG_ISLAND) orelse
+                                  not (D.C.get_flag (contact, D.C.FLAG_ENABLED)) orelse
+                                  not (D.C.get_flag (contact, D.C.FLAG_TOUCHING)) orelse
+                                  Fixture.is_sensor fixture_a orelse
+                                  Fixture.is_sensor fixture_b
+                               then ()
+                               else
+                                 let 
+                                     val other : body = !! (D.E.get_other ce)
+                                 in
+                                     D.C.set_flag (contact, D.C.FLAG_ISLAND);
+                                     contacts := contact :: !contacts;
+                                     (* Was the body already added to this island? 
+                                        Port note: Really we're testing to see if it
+                                        belongs to any island, but since all links are
+                                        symmetric, we would have been added as well if
+                                        it were inserted into a previous island. *)
+                                     if D.B.get_flag (other, D.B.FLAG_ISLAND)
+                                     then ()
+                                     else explore other
+                                 end
+                           end
                          val () = oapp D.E.get_next one_cedge (D.B.get_contact_list b)
                          fun one_jedge (je : jointedge) =
                              raise BDDWorld "unimplemented"
                          val () = oapp D.G.get_next one_jedge (D.B.get_joint_list b)
-
+                             
                          (* XXX HERE *)
 
                      in
@@ -666,7 +700,7 @@ void b2World::DestroyJoint(b2Joint* j)
                  end
                      
          in
-             explore [seed];
+             explore seed;
              (* XXX step, gravity, sleep *)
              (* BDDIsland.solve_island (!bodies, !contacts, !joints, world); *)
              
@@ -678,53 +712,10 @@ void b2World::DestroyJoint(b2Joint* j)
          end
        val () = oapp D.B.get_next one_seed (get_body_list world)
 (*
-
         for (b2Body* seed = m_bodyList; seed; seed = seed->m_next)
         {
-                // Perform a depth first search (DFS) on the constraint graph.
                 while (stackCount > 0)
                 {
-                        // Search all contacts connected to this body.
-                        for (b2ContactEdge* ce = b->m_contactList; ce; ce = ce->next)
-                        {
-                                b2Contact* contact = ce->contact;
-
-                                // Has this contact already been added to an island?
-                                if (contact->m_flags & b2Contact::e_islandFlag)
-                                {
-                                        continue;
-                                }
-
-                                // Is this contact solid and touching?
-                                if (contact->IsEnabled() == false ||
-                                        contact->IsTouching() == false)
-                                {
-                                        continue;
-                                }
-
-                                // Skip sensors.
-                                bool sensorA = contact->m_fixtureA->m_isSensor;
-                                bool sensorB = contact->m_fixtureB->m_isSensor;
-                                if (sensorA || sensorB)
-                                {
-                                        continue;
-                                }
-
-                                island.Add(contact);
-                                contact->m_flags |= b2Contact::e_islandFlag;
-
-                                b2Body* other = ce->other;
-
-                                // Was the other body already added to this island?
-                                if (other->m_flags & b2Body::e_islandFlag)
-                                {
-                                        continue;
-                                }
-
-                                b2Assert(stackCount < stackSize);
-                                stack[stackCount++] = other;
-                                other->m_flags |= b2Body::e_islandFlag;
-                        }
 
                         // Search all joints connect to this body.
                         for (b2JointEdge* je = b->m_jointList; je; je = je->next)

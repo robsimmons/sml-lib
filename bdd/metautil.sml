@@ -34,6 +34,23 @@ val jointedge = ("G",
                   "prev",
                   "next"])
 
+val joint = ("J",
+             ["flags",
+              "typ",
+              "prev",
+              "next",
+              "edge_a",
+              "edge_b",
+              "body_a",
+              "body_b",
+              "data",
+              "local_center_a",
+              "local_center_b",
+              "inv_mass_a",
+              "inv_i_a",
+              "inv_mass_b",
+              "inv_i_b"])
+
 fun printl s = (print s; print "\n")
 fun make_get (ctor, fields) =
     let 
@@ -66,6 +83,13 @@ fun make_set (ctor, fields) =
 val () = make_get world
 val () = make_set world
 
+val () = printl ""
 
 val () = make_get jointedge
 val () = make_set jointedge
+
+val () = printl ""
+
+val () = make_get joint
+val () = make_set joint
+
