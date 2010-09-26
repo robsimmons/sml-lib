@@ -54,5 +54,8 @@ group is
   toi-solver-sig.sml
   toi-solver.sml
 
+  island-sig.sml
+  island.sml
+
   world-sig.sml
   world.sml

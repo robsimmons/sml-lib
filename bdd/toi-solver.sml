@@ -8,6 +8,8 @@ struct
 
   type ('b, 'f, 'j) solver = unit
 
+  (* Port note: contacts arrive (in a list) in the reverse order that
+     they would appear in the array in Box2D. *)
   fun solver (contacts : ('b, 'f, 'j) BDDDynamics.contact list,
               body : ('b, 'f, 'j) BDDDynamics.body) : ('b, 'f, 'j) solver =
     raise BDDTOISolver "unimplemented"

@@ -3,7 +3,7 @@
 (* Main dynamics library. Ties together all the mutually-referential types
    like bodies, fixtures, contacts and joints.
    
-   Corresponding to dynamics/b2world.cpp. *)
+   Corresponding to dynamics/b2world.cpp and dynamics/contacts/b2contactmanager.cpp. *)
 functor BDDWorld(Arg : BDDWORLD_ARG) :>
   BDDWORLD where type fixture_data = Arg.fixture_data 
              and type body_data = Arg.body_data =
@@ -595,13 +595,11 @@ void b2World::DestroyJoint(b2Joint* j)
             BDDBroadPhase.ray_cast (bp, cb, { max_fraction = 1.0, p1 = point1, p2 = point2 })
         end
 
+    (* Find islands, integrate and solve constraints, solve position constraints. *)
     fun solve (world : world, step : D.time_step) =
-        raise BDDWorld "unimplemented"
+      raise BDDWorld "unimplemented"
+        (* Size the island for the worst case. *)
 (*
-// Find islands, integrate and solve constraints, solve position constraints
-void b2World::Solve(const b2TimeStep& step)
-{
-        // Size the island for the worst case.
         b2Island island(m_bodyCount,
                                         m_contactManager.m_contactCount,
                                         m_jointCount,
@@ -791,8 +789,8 @@ void b2World::Solve(const b2TimeStep& step)
         val bullet = Body.get_bullet body
 
         (* Iterate until all contacts agree on the minimum TOI. We have
-          to iterate because the TOI algorithm may skip some intermediate
-          collisions when objects rotate through each other. *)
+           to iterate because the TOI algorithm may skip some intermediate
+           collisions when objects rotate through each other. *)
         fun loop iter =
           let
               fun one_edge ce =
