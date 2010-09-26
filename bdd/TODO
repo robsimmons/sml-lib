@@ -19,3 +19,5 @@ that way, and it's annoying to allocate empty arrays and let them go unused.
 in dynamics, make contact fixture_{a,b} non-optional. I bet they are always SOME after initialization
 
 looks like I wrote common/*.cpp in a number of comments where I meant collision/*.cpp.
+
+be consistent about broadphase vs. broad_phase in identifiers

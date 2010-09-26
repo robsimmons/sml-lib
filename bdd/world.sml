@@ -193,8 +193,61 @@ struct
     fun find_new_contacts world =
       BDDBroadPhase.update_pairs (D.W.get_broad_phase world, add_pair world)
 
+  (* This is the top level collision call for the time step. Here
+     all the narrow phase collision is processed for the world
+     contact list. *)
     fun collide world =
-      raise BDDWorld "unimplemented"
+      let
+        (* Update awake contacts. *)
+        fun loop NONE = ()
+          | loop (SOME c) =
+          let
+            val fixture_a = D.C.get_fixture_a c
+            val fixture_b = D.C.get_fixture_b c
+            val body_a = D.F.get_body fixture_a
+            val body_b = D.F.get_body fixture_b
+
+            (* Port note: Two paths to this in the original. *)
+            fun common_case () =
+              let val proxy_a = D.F.get_proxy fixture_a
+                  val proxy_b = D.F.get_proxy fixture_b
+              in
+                  if not (BDDBroadPhase.test_overlap (proxy_a, proxy_b))
+                  (* Clear contacts that cease to overlap in the broad phase. *)
+                  then let val next = D.C.get_next c
+                       in destroy (world, c);
+                          loop next
+                       end
+                  (* It persists. *)
+                  else 
+                      let in
+                          D.C.update (c, world);
+                          loop (D.C.get_next c)
+                      end
+              end
+          in
+            if not (Body.get_awake body_a orelse Body.get_awake body_b)
+            then loop (D.C.get_next c)
+            else (* Is this contact flagged for filtering? *)
+                if D.C.get_flag (c, D.C.FLAG_FILTER)
+                then (* Should these bodies collide? 
+                        Port note: Both conditionals folded into one. *) 
+                    (if not (D.B.should_collide (body_b, body_a)) orelse
+                        not (D.W.get_should_collide world (fixture_a, fixture_b))
+                     then let val next = D.C.get_next c
+                          in destroy (world, c);
+                             loop next
+                          end
+                     else (* Clear the filtering flag. *)
+                         let in
+                             D.C.clear_flag (c, D.C.FLAG_FILTER);
+                             common_case ()
+                         end)
+                else common_case ()
+          end
+      in
+        loop (D.W.get_contact_list world)
+      end
 
   end (* ContactManager *)
 

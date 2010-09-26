@@ -1045,6 +1045,13 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
                  node_b = E.new (),
                  toi_count = 0 })
 
+    (* Update the contact manifold and touching status.
+       Note: do not assume the fixture AABBs are overlapping or are valid. *)
+    (* Port note: Passing world instead of contact listener, since those
+       fields are flattened into world. *)
+    fun update (c : ('b, 'f, 'j) contact, world : ('b, 'f, 'j) world) =
+        raise BDDDynamics "unimplemented (b2contact.cpp)"
+
   end
 
   (* Internal, worlds *)
