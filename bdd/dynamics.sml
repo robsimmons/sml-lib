@@ -49,6 +49,17 @@ struct
   type contact_impulse = { normal_impulses : real array,
                            tangent_impulses : real array }
 
+  (* Corresponding to Dynamics/b2TimeStep.h *)
+  type time_step = { (* time step *)
+                     dt : real,
+                     (* inverse time step (0 if dt == 0) *)
+                     inv_dt : real,
+                     (* dt * inv_dt0 *)
+                     dt_ratio : real,
+                     velocity_iterations : int,
+                     position_iterations : int,
+                     warm_starting : bool }
+
   (* Bodies and fixtures are refs to fuctional records
      ("cells" in local terminology). *)
   datatype ('b, 'f, 'j) bodycell =

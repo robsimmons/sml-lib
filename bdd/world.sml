@@ -34,13 +34,7 @@ struct
 
 
   (* Port note: ContactManager is only used in World, so its data
-     is flattened into that object.
-
-     // Broad-phase callback.
-     void AddPair(void* proxyUserDataA, void* proxyUserDataB);
-
-     *)
-
+     is flattened into that object. *)
   structure ContactManager :>
   sig
       val collide : world -> unit
@@ -601,6 +595,8 @@ void b2World::DestroyJoint(b2Joint* j)
             BDDBroadPhase.ray_cast (bp, cb, { max_fraction = 1.0, p1 = point1, p2 = point2 })
         end
 
+    fun solve (world : world, step : D.time_step) =
+        raise BDDWorld "unimplemented"
 (*
 // Find islands, integrate and solve constraints, solve position constraints
 void b2World::Solve(const b2TimeStep& step)
@@ -979,10 +975,12 @@ void b2World::SolveTOI(b2Body* body)
 }
 *)
 
+    (* Sequentially solve TOIs for each body. We bring each
+       body to the time of contact and perform some position correction.
+       Time is not conserved. *)
+    fun solve_toi (world : world) : unit =
+      raise BDDWorld "unimplemented"
 (*
-// Sequentially solve TOIs for each body. We bring each
-// body to the time of contact and perform some position correction.
-// Time is not conserved.
 void b2World::SolveTOI()
 {
         // Prepare all contacts.
@@ -1049,61 +1047,46 @@ void b2World::SolveTOI()
 *)
     fun step (world : world, dt : real, 
               velocity_iterations : int, position_iterations : int) : unit =
-        raise BDDWorld "unimplemented" (* b2world.cpp *)
-(*
-        // If new fixtures were added, we need to find the new contacts.
-        if (m_flags & e_newFixture)
-        {
-                m_contactManager.FindNewContacts();
-                m_flags &= ~e_newFixture;
-        }
+      let
+          (* If new fixtures were added, we need to find the new contacts. *)
+          val () = if get_flag (world, FLAG_NEW_FIXTURE)
+                   then (ContactManager.find_new_contacts world;
+                         clear_flag (world, FLAG_NEW_FIXTURE))
+                   else ()
+          val () = set_flag (world, FLAG_LOCKED)
 
-        m_flags |= e_locked;
+          val inv_dt = if dt > 0.0
+                       then 1.0 / dt
+                       else 0.0
+          val step = { dt = dt,
+                       velocity_iterations = velocity_iterations,
+                       position_iterations = position_iterations,
+                       inv_dt = inv_dt,
+                       dt_ratio = get_inv_dt0 world * dt,
+                       warm_starting = get_warm_starting world }
+          (* Update contacts. This is where some contacts are destroyed. *)
+          val () = ContactManager.collide world
 
-        b2TimeStep step;
-        step.dt = dt;
-        step.velocityIterations = velocityIterations;
-        step.positionIterations = positionIterations;
-        if (dt > 0.0f)
-        {
-                step.inv_dt = 1.0f / dt;
-        }
-        else
-        {
-                step.inv_dt = 0.0f;
-        }
+          (* Integrate velocities, solve velocity constraints, and integrate positions. *)
+          val () = if dt > 0.0
+                   then solve (world, step)
+                   else ()
 
-        step.dtRatio = m_inv_dt0 * dt;
+          (* Handle TOI events. *)
+          val () = if get_continuous_physics world andalso dt > 0.0
+                   then solve_toi world
+                   else ()
 
-        step.warmStarting = m_warmStarting;
+          val () = if dt > 0.0
+                   then set_inv_dt0 (world, inv_dt)
+                   else ()
 
-        // Update contacts. This is where some contacts are destroyed.
-        m_contactManager.Collide();
-
-        // Integrate velocities, solve velocity constraints, and integrate positions.
-        if (step.dt > 0.0f)
-        {
-                Solve(step);
-        }
-
-        // Handle TOI events.
-        if (m_continuousPhysics && step.dt > 0.0f)
-        {
-                SolveTOI();
-        }
-
-        if (step.dt > 0.0f)
-        {
-                m_inv_dt0 = step.inv_dt;
-        }
-
-        if (m_flags & e_clearForces)
-        {
-                ClearForces();
-        }
-
-        m_flags &= ~e_locked;
-*)
+          val () = if get_flag (world, FLAG_CLEAR_FORCES)
+                   then clear_forces world
+                   else ()
+      in
+        clear_flag (world, FLAG_LOCKED)
+      end
 
   end (* World *)
 
