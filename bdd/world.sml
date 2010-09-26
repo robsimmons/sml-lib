@@ -109,9 +109,86 @@ struct
           D.W.set_contact_count (world, D.W.get_contact_count world - 1)
       end
 
+    fun !! (SOME x) = x
+      | !! NONE = raise BDDWorld "Expected non-NONE value, like Box2D does"
+
     (* Callback used in find_new_contacts. *)
+    exception Return
     fun add_pair (world : world) (fixture_a : fixture, fixture_b : fixture) : unit =
-      raise BDDWorld "unimplemented"
+      let
+        val body_a = D.F.get_body fixture_a
+        val body_b = D.F.get_body fixture_b
+        (* No self-contact *)
+        val () = if body_a = body_b then raise Return
+                 else ()
+
+        (* Just raises Return if a contact already exists. *)
+        fun one_edge e =
+            if SOME body_a = D.E.get_other e
+            then
+                let val fa = D.C.get_fixture_a (!! (D.E.get_contact e))
+                    val fb = D.C.get_fixture_b (!! (D.E.get_contact e))
+                in
+                    if (fa = fixture_a andalso fb = fixture_b) orelse
+                       (fa = fixture_b andalso fb = fixture_a)
+                    (* Contact already exists. *)
+                    then raise Return
+                    else ()
+                end
+            else ()
+        val () = oapp D.E.get_next one_edge (D.B.get_contact_list body_b)
+
+        (* Does a joint override collision? Is at least one body dynamic? *)
+        val () = if D.B.should_collide (body_b, body_a)
+                 then ()
+                 else raise Return
+
+        (* Check user filtering. *)
+        val () = if D.W.get_should_collide world (fixture_a, fixture_b)
+                 then ()
+                 else raise Return
+
+        (* Call the factory. *)
+        val c = D.C.new (fixture_a, fixture_b)
+
+        (* Contact creation may swap fixtures.
+           XXX (it doesn't, currently.)
+           *)
+        val fixture_a = D.C.get_fixture_a c
+        val fixture_b = D.C.get_fixture_b c
+        val body_a = D.F.get_body fixture_a
+        val body_b = D.F.get_body fixture_b
+
+        (* Add to world DLL. *)
+        val () = D.C.set_next (c, D.W.get_contact_list world)
+        val () = case D.W.get_contact_list world of
+            NONE => ()
+          | SOME prev => D.C.set_prev (prev, SOME c)
+        val () = D.W.set_contact_list (world, SOME c)
+
+        (* Connect to island graph. *)
+        val node_a = D.C.get_node_a c
+        val () = D.E.set_contact (node_a, SOME c)
+        val () = D.E.set_other (node_a, SOME body_b)
+
+        val () = D.E.set_next (node_a, D.B.get_contact_list body_a)
+        val () = case D.B.get_contact_list body_a of
+            NONE => ()
+          | SOME prev => D.E.set_prev (prev, SOME node_a)
+        val () = D.B.set_contact_list (body_a, SOME node_a)
+
+        val node_b = D.C.get_node_b c
+        val () = D.E.set_contact (node_b, SOME c)
+        val () = D.E.set_other (node_b, SOME body_a)
+
+        val () = D.E.set_next (node_b, D.B.get_contact_list body_b)
+        val () = case D.B.get_contact_list body_b of
+            NONE => ()
+          | SOME prev => D.E.set_prev (prev, SOME node_b)
+        val () = D.B.set_contact_list (body_b, SOME node_b)
+      in
+        D.W.set_contact_count (world, D.W.get_contact_count world + 1)
+      end handle Return => ()
 
     fun find_new_contacts world =
       BDDBroadPhase.update_pairs (D.W.get_broad_phase world, add_pair world)

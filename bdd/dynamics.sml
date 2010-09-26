@@ -114,7 +114,8 @@ struct
              (* nodes for connecting bodies *)
              node_a : ('b, 'f, 'j) contactedgecell ref,
              node_b : ('b, 'f, 'j) contactedgecell ref,
-             (* PERF can probably make these non-optional *)
+             (* PERF can probably make these non-optional.
+                .new always creates them *)
              fixture_a : ('b, 'f, 'j) fixturecell ref option,
              fixture_b : ('b, 'f, 'j) fixturecell ref option,
              manifold : BDDTypes.manifold,
@@ -126,7 +127,10 @@ struct
      maintained in each attached body. Each contact has two contact
      nodes, one for each attached body. *)
   and ('b, 'f, 'j) contactedgecell =
-      E of { (* provides quick access to the other body attached. *)
+      E of { (* provides quick access to the other body attached. 
+                PERF: Do these really need to be optional? 
+                See World.ContactManager.add_pair. Could pass them
+                to 'new' or do initialization in that function. *)
              other : ('b, 'f, 'j) bodycell ref option,
              contact : ('b, 'f, 'j) contactcell ref option,
              (* the previous and next contact edge in the 
@@ -806,6 +810,33 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
             b
         end
 
+    (* This is used to prevent connected bodies from colliding.
+       It may lie, depending on the collideConnected flag.
+       Port note: Used in ContactManager. *)
+    fun should_collide (body : ('b, 'f, 'j) body, other : ('b, 'f, 'j) body) : bool =
+        raise BDDDynamics "unimplemented"
+        (*
+        // At least one body should be dynamic.
+        if (m_type != b2_dynamicBody && other->m_type != b2_dynamicBody)
+        {
+                return false;
+        }
+
+        // Does a joint prevent collision?
+        for (b2JointEdge* jn = m_jointList; jn; jn = jn->next)
+        {
+                if (jn->other == other)
+                {
+                        if (jn->joint->m_collideConnected == false)
+                        {
+                                return false;
+                        }
+                }
+        }
+
+        return true;
+        *)
+
   end
 
   (* Internal, contact edges *)
@@ -998,20 +1029,21 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
           | (BDDShape.Circle ca, BDDShape.Polygon pb) =>
                 BDDCollision.collide_polygon_and_circle (pb, xfb, ca, xfa)
 
-    fun new () = ref (C { flags = FLAG_ENABLED,
-                          fixture_a = NONE,
-                          fixture_b = NONE,
-                          manifold = { point_count = 0,
-                                       (* PERF uninitialized in Box2D. *)
-                                       typ = E_Circles,
-                                       points = Array.fromList nil,
-                                       local_normal = vec2 (0.0, 0.0),
-                                       local_point = vec2 (0.0, 0.0) },
-                          prev = NONE,
-                          next = NONE,
-                          node_a = E.new (),
-                          node_b = E.new (),
-                          toi_count = 0 })
+    fun new (fixture_a, fixture_b) =
+        ref (C { flags = FLAG_ENABLED,
+                 fixture_a = NONE,
+                 fixture_b = NONE,
+                 manifold = { point_count = 0,
+                              (* PERF uninitialized in Box2D. *)
+                              typ = E_Circles,
+                              points = Array.fromList nil,
+                              local_normal = vec2 (0.0, 0.0),
+                              local_point = vec2 (0.0, 0.0) },
+                 prev = NONE,
+                 next = NONE,
+                 node_a = E.new (),
+                 node_b = E.new (),
+                 toi_count = 0 })
 
   end
 

@@ -493,29 +493,7 @@ void b2Body::ResetMassData()
         m_linearVelocity += b2Cross(m_angularVelocity, m_sweep.c - oldCenter);
 }
 
-
-bool b2Body::ShouldCollide(const b2Body* other) const
-{
-        // At least one body should be dynamic.
-        if (m_type != b2_dynamicBody && other->m_type != b2_dynamicBody)
-        {
-                return false;
-        }
-
-        // Does a joint prevent collision?
-        for (b2JointEdge* jn = m_jointList; jn; jn = jn->next)
-        {
-                if (jn->other == other)
-                {
-                        if (jn->joint->m_collideConnected == false)
-                        {
-                                return false;
-                        }
-                }
-        }
-
-        return true;
-}
+( * ShouldCollide is in D.B * )
 
 void b2Body::SynchronizeFixtures()
 {
