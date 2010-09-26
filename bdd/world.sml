@@ -33,6 +33,95 @@ struct
   end
 
 
+  (* Port note: ContactManager is only used in World, so its data
+     is flattened into that object.
+
+     // Broad-phase callback.
+     void AddPair(void* proxyUserDataA, void* proxyUserDataB);
+
+     *)
+
+  structure ContactManager :>
+  sig
+      val collide : world -> unit
+      val find_new_contacts : world -> unit
+      val destroy : world * contact -> unit
+  end =
+  struct
+
+    fun destroy (world : world, c : contact) : unit =
+      let
+        val fixture_a = D.C.get_fixture_a c
+        val fixture_b = D.C.get_fixture_b c
+        val body_a = D.F.get_body fixture_a
+        val body_b = D.F.get_body fixture_b
+
+        val () = if D.C.is_touching c
+                 then D.W.get_end_contact world c
+                 else ()
+
+        (* remove from world DLL. *)
+        val prev = D.C.get_prev c
+        val next = D.C.get_next c
+        val () = case prev of
+            NONE => ()
+          | SOME prev => D.C.set_next (prev, next)
+        val () = case next of
+            NONE => ()
+          | SOME next => D.C.set_prev (next, prev)
+
+        val () = if SOME c = D.W.get_contact_list world
+                 then D.W.set_contact_list (world, next)
+                 else ()
+
+        (* Remove from body A *)
+        val nodea = D.C.get_node_a c
+        val prev = D.E.get_prev nodea
+        val next = D.E.get_next nodea
+        val () = case prev of
+            NONE => ()
+          | SOME prev => D.E.set_next (prev, next)
+        val () = case next of
+            NONE => ()
+          | SOME next => D.E.set_prev (next, prev)
+        (* Port note: The original code uses pointers to the interior of the
+           contact (&c->m_nodeA == ?); I've made these their own cells. I 
+           think this is right, but if something is going wrong here, this 
+           is a good thing to take a look at. *)
+        val () = if SOME nodea = D.B.get_contact_list body_a
+                 then D.B.set_contact_list (body_a, next)
+                 else ()
+
+        (* Remove from body B *)
+        val nodeb = D.C.get_node_b c
+        val prev = D.E.get_prev nodeb
+        val next = D.E.get_next nodeb
+        val () = case prev of
+            NONE => ()
+          | SOME prev => D.E.set_next (prev, next)
+        val () = case next of
+            NONE => ()
+          | SOME next => D.E.set_prev (next, prev)
+        val () = if SOME nodeb = D.B.get_contact_list body_b
+                 then D.B.set_contact_list (body_b, next)
+                 else ()
+      in
+          D.W.set_contact_count (world, D.W.get_contact_count world - 1)
+      end
+
+    (* Callback used in find_new_contacts. *)
+    fun add_pair (world : world) (fixture_a : fixture, fixture_b : fixture) : unit =
+      raise BDDWorld "unimplemented"
+
+    fun find_new_contacts world =
+      BDDBroadPhase.update_pairs (D.W.get_broad_phase world, add_pair world)
+
+    fun collide world =
+      raise BDDWorld "unimplemented"
+
+  end (* ContactManager *)
+
+
   structure World =
   struct
 
@@ -89,18 +178,6 @@ struct
 
     val set_should_collide_filter = set_should_collide
 
-    (* Port note: ContactManager is flattened into World.
-
-       // Broad-phase callback.
-       void AddPair(void* proxyUserDataA, void* proxyUserDataB);
-       
-       void FindNewContacts();
-            
-       void Collide();
-       *)
-
-    fun contact_destroy (world : world, c : contact) : unit =
-        raise BDDWorld "unimplemented (contactmanager.cpp)"
 
     fun create_body (world : world,
                      def as { typ : Body.body_type,
@@ -315,10 +392,11 @@ void b2World::DestroyJoint(b2Joint* j)
              val () = D.B.set_joint_list (body, NONE)
 
              (* Delete the attached contacts. *)
-             fun one_contactedge ce = contact_destroy (world, 
-                                                       case D.E.get_contact ce of
-                                                           NONE => raise BDDWorld "contact edge had no contact?"
-                                                         | SOME c => c)
+             fun one_contactedge ce = 
+                 ContactManager.destroy (world, 
+                                         case D.E.get_contact ce of
+                                             NONE => raise BDDWorld "contact edge had no contact?"
+                                           | SOME c => c)
              val () = oapp D.E.get_next one_contactedge (D.B.get_contact_list body)
              val () = D.B.set_contact_list (body, NONE)
 
@@ -897,6 +975,6 @@ void b2World::SolveTOI()
         m_flags &= ~e_locked;
 *)
 
-  end
+  end (* World *)
 
 end
