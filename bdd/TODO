@@ -26,3 +26,10 @@ be consistent about broadphase vs. broad_phase in identifiers
 
 
 export each module's exception.
+
+
+Potential bugs:
+
+check that FLAG_ISLAND (etc.) are fully qualified, since if a structure is open we might
+accidentally refer to the wrong one, which if it has a different value would be a very
+nightmarish thing to track down

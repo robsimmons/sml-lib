@@ -47,6 +47,7 @@ sig
   type contact
   type filter
   type contactedge
+  type jointedge
 
   structure Body : BDDBODY 
     where type body = body
@@ -56,6 +57,7 @@ sig
       and type contact = contact
       and type filter = filter
       and type contactedge = contactedge
+      and type jointedge = jointedge
       and type fixture_data = fixture_data
       and type body_data = body_data
       and type joint_data = joint_data

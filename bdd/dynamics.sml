@@ -60,6 +60,8 @@ struct
                      position_iterations : int,
                      warm_starting : bool }
 
+  (* TODO(twm): Explain what's going on with jointedge and contactedge. *)
+
   (* Bodies and fixtures are refs to fuctional records
      ("cells" in local terminology). *)
   datatype ('b, 'f, 'j) bodycell =
@@ -83,7 +85,7 @@ struct
              fixture_list : ('b, 'f, 'j) fixturecell ref option,
              fixture_count : int,
 
-             joint_list : ('b, 'f, 'j) jointcell ref option, (* XXX? *)
+             joint_list : ('b, 'f, 'j) jointedgecell ref option,
              (* Port note: a pointer in body.h,
                 but members in contact.h. Using refs everywhere. *)
              contact_list : ('b, 'f, 'j) contactedgecell ref option,
@@ -151,6 +153,21 @@ struct
 
   and ('b, 'f, 'j) jointcell = J of { }
 
+  (* A joint edge is used to connect bodies and joints together
+     in a joint graph where each body is a node and each joint
+     is an edge. A joint edge belongs to a doubly linked list
+     maintained in each attached body. Each joint has two joint
+     nodes, one for each attached body. *)
+  and ('b, 'f, 'j) jointedgecell = 
+      G of { (* The other body of the joint. *)
+             other : ('b, 'f, 'j) bodycell ref,
+             (* The joint. *)
+             joint : ('b, 'f, 'j) jointcell ref,
+             (* The previous and next joint edges in the body's
+                joint list. *)
+             prev : ('b, 'f, 'j) jointedgecell ref option,
+             next : ('b, 'f, 'j) jointedgecell ref option }
+
   and ('b, 'f, 'j) worldcell =
       W of { flags : Word32.word,
 
@@ -193,6 +210,7 @@ struct
   type ('b, 'f, 'j) contactedge = ('b, 'f, 'j) contactedgecell ref
   type ('b, 'f, 'j) world = ('b, 'f, 'j) worldcell ref
   type ('b, 'f, 'j) joint = ('b, 'f, 'j) jointcell ref
+  type ('b, 'f, 'j) jointedge = ('b, 'f, 'j) jointedgecell ref
 
   (* Internal, fixtures *)
   structure F =
@@ -1088,6 +1106,38 @@ inline void b2Body::SynchronizeTransform()
 
   end
 
+  (* Internal, joints *)
+  structure J =
+  struct
+    val FLAG_ISLAND = 0wx1 : Word16.word
+    val FLAG_COLLIDE_CONNECTED = 0wx2 : Word16.word
+
+    fun get_flags _ = raise BDDDynamics "unimplemented"
+    fun set_flags _ = raise BDDDynamics "unimplemented"
+
+    fun get_flag (j, f) = Word16.andb (f, get_flags j) <> 0w0
+    fun set_flag (j, f) = set_flags (j, Word16.orb(get_flags j, f))
+    fun clear_flag (j, f) = set_flags (j, Word16.andb(get_flags j, Word16.notb f))
+
+  end
+
+  (* Internal, joint edges *)
+  structure G =
+  struct
+    fun get_other (ref (G{ other, ... })) = other
+    fun get_joint (ref (G{ joint, ... })) = joint
+    fun get_prev (ref (G{ prev, ... })) = prev
+    fun get_next (ref (G{ next, ... })) = next
+    fun set_other (r as ref (G{ other = _, joint, prev, next }), other) = 
+        r := G { other = other, joint = joint, prev = prev, next = next}
+    fun set_joint (r as ref (G{ other, joint = _, prev, next }), joint) = 
+        r := G { other = other, joint = joint, prev = prev, next = next}
+    fun set_prev (r as ref (G{ other, joint, prev = _, next }), prev) = 
+        r := G { other = other, joint = joint, prev = prev, next = next}
+    fun set_next (r as ref (G{ other, joint, prev, next = _ }), next) = 
+        r := G { other = other, joint = joint, prev = prev, next = next}
+  end
+
   (* Internal, worlds *)
   structure W =
   struct
@@ -1172,6 +1222,8 @@ struct
       BDDDynamics.contactedgecell ref
   type joint = (Arg.body_data, Arg.fixture_data, Arg.joint_data)
       BDDDynamics.jointcell ref
+  type jointedge = (Arg.body_data, Arg.fixture_data, Arg.joint_data)
+      BDDDynamics.jointedgecell ref
   type world = (Arg.body_data, Arg.fixture_data, Arg.joint_data)
       BDDDynamics.worldcell ref
 end

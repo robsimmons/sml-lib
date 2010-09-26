@@ -32,7 +32,6 @@ struct
     fun get_next _ = raise Match (* XXX *)
   end
 
-
   fun !! (SOME x) = x
     | !! NONE = raise BDDWorld "Expected non-NONE value, like Box2D does"
 
@@ -509,10 +508,12 @@ void b2World::DestroyJoint(b2Joint* j)
          else
          let
              (* Delete the attached joints. *)
-             fun one_joint j =
-                 (get_goodbye_joint_hook world j;
-                  destroy_joint j)
-             val () = oapp Joint.get_next one_joint (D.B.get_joint_list body)
+             fun one_jointedge je =
+                 let val j = D.G.get_joint je
+                 in get_goodbye_joint_hook world j;
+                    destroy_joint j
+                 end
+             val () = oapp D.G.get_next one_jointedge (D.B.get_joint_list body)
              val () = D.B.set_joint_list (body, NONE)
 
              (* Delete the attached contacts. *)
@@ -597,74 +598,92 @@ void b2World::DestroyJoint(b2Joint* j)
 
     (* Find islands, integrate and solve constraints, solve position constraints. *)
     fun solve (world : world, step : D.time_step) =
-      raise BDDWorld "unimplemented"
-        (* Size the island for the worst case. *)
+      let
+        (* Port note: Box2D creates an island on the stack and keeps reusing it.
+           I made it just be a function, for simplicity. 
+           PERF: Did doing this make some of the counts dead? *)
+
+        (* Clear all the island flags. *)
+        val () = oapp D.B.get_next (fn b => D.B.clear_flag(b, D.B.FLAG_ISLAND)) (get_body_list world)
+        val () = oapp D.C.get_next (fn c => D.C.clear_flag(c, D.C.FLAG_ISLAND)) (get_contact_list world)
+        val () = oapp Joint.get_next (fn j => D.J.clear_flag(j, D.J.FLAG_ISLAND)) (get_joint_list world)
+
+        (* Build and simulate all awake islands. *)
+        (* Port note: The Box2D original uses an explicit stack.
+           I rewrote it as a recursive function. The approach is
+           to look at every body in the world and find all
+           connected bodies using a depth-first graph traversal.
+           Once the island flag is set, it means it has already
+           been accounted for. The exception is static bodies:
+           These participate in islands but don't count as edges.
+           (This is okay because we know they never move.)
+           They're treated somewhat specially in the following;
+           for example, they can't be used as seeds. *)
+        
+       fun one_seed (seed : body) =
+         if D.B.get_flag (seed, D.B.FLAG_ISLAND)
+         (* Already explored? *)
+         then ()
+         else if not (Body.get_awake seed) orelse not (Body.get_active seed)
+         then ()
+         else if D.B.get_typ seed = D.Static
+         (* Must be dynamic or kinematic. *)
+         then ()
+         else
+         let val () = D.B.set_flag (seed, D.B.FLAG_ISLAND)
+             (* Arguments for island. *)
+             val bodies = ref nil
+             val joints = ref nil
+             val contacts = ref nil
+             (* Perform a depth first search (DFS) on the constraint graph. *)
+             fun explore nil = ()
+               | explore (b :: rest) =
+                 if not (Body.get_active b)
+                 then raise BDDWorld "expected body to be active in stack"
+                 else
+                 let val () = bodies := b :: !bodies
+                     (* Make sure body is awake. *)
+                     val () = D.B.set_flag (b, D.B.FLAG_AWAKE)
+                 in
+                     (* To keep islands as small as possible, we don't
+                        propagate islands across static bodies. *)
+                     if D.B.get_typ b = D.Static
+                     then ()
+                     else
+                     let
+                         fun one_cedge (ce : contactedge) =
+                             raise BDDWorld "unimplemented"
+                         val () = oapp D.E.get_next one_cedge (D.B.get_contact_list b)
+                         fun one_jedge (je : jointedge) =
+                             raise BDDWorld "unimplemented"
+                         val () = oapp D.G.get_next one_jedge (D.B.get_joint_list b)
+
+                         (* XXX HERE *)
+
+                     in
+                         raise BDDWorld "unimplemented"
+                     end
+                 end
+                     
+         in
+             explore [seed];
+             (* XXX step, gravity, sleep *)
+             (* BDDIsland.solve_island (!bodies, !contacts, !joints, world); *)
+             
+             (* Post solve cleanup: Allow static bodies to participate in 
+                other islands. *)
+             app (fn b => if D.B.get_typ b = D.Static
+                          then D.B.clear_flag (b, D.B.FLAG_ISLAND)
+                          else ()) (!bodies)
+         end
+       val () = oapp D.B.get_next one_seed (get_body_list world)
 (*
-        b2Island island(m_bodyCount,
-                                        m_contactManager.m_contactCount,
-                                        m_jointCount,
-                                        &m_stackAllocator,
-                                        m_contactManager.m_contactListener);
 
-        // Clear all the island flags.
-        for (b2Body* b = m_bodyList; b; b = b->m_next)
-        {
-                b->m_flags &= ~b2Body::e_islandFlag;
-        }
-        for (b2Contact* c = m_contactManager.m_contactList; c; c = c->m_next)
-        {
-                c->m_flags &= ~b2Contact::e_islandFlag;
-        }
-        for (b2Joint* j = m_jointList; j; j = j->m_next)
-        {
-                j->m_islandFlag = false;
-        }
-
-        // Build and simulate all awake islands.
-        int32 stackSize = m_bodyCount;
-        b2Body** stack = (b2Body** )m_stackAllocator.Allocate(stackSize * sizeof(b2Body* ));
         for (b2Body* seed = m_bodyList; seed; seed = seed->m_next)
         {
-                if (seed->m_flags & b2Body::e_islandFlag)
-                {
-                        continue;
-                }
-
-                if (seed->IsAwake() == false || seed->IsActive() == false)
-                {
-                        continue;
-                }
-
-                // The seed can be dynamic or kinematic.
-                if (seed->GetType() == b2_staticBody)
-                {
-                        continue;
-                }
-
-                // Reset island and stack.
-                island.Clear();
-                int32 stackCount = 0;
-                stack[stackCount++] = seed;
-                seed->m_flags |= b2Body::e_islandFlag;
-
                 // Perform a depth first search (DFS) on the constraint graph.
                 while (stackCount > 0)
                 {
-                        // Grab the next body off the stack and add it to the island.
-                        b2Body* b = stack[--stackCount];
-                        b2Assert(b->IsActive() == true);
-                        island.Add(b);
-
-                        // Make sure the body is awake.
-                        b->SetAwake(true);
-
-                        // To keep islands as small as possible, we don't
-                        // propagate islands across static bodies.
-                        if (b->GetType() == b2_staticBody)
-                        {
-                                continue;
-                        }
-
                         // Search all contacts connected to this body.
                         for (b2ContactEdge* ce = b->m_contactList; ce; ce = ce->next)
                         {
@@ -739,6 +758,7 @@ void b2World::DestroyJoint(b2Joint* j)
 
                 island.Solve(step, m_gravity, m_allowSleep);
 
+                // TOM DONE:
                 // Post solve cleanup.
                 for (int32 i = 0; i < island.m_bodyCount; ++i)
                 {
@@ -775,6 +795,10 @@ void b2World::DestroyJoint(b2Joint* j)
         m_contactManager.FindNewContacts();
 }
 *)
+    in
+      raise BDDWorld "unimplemented"
+    end
+
     (* Advance a dynamic body to its first time of contact
        and adjust the position to ensure clearance. *)
     fun solve_toi_body (world : world, body : body) : unit =

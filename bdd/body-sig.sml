@@ -26,6 +26,7 @@ sig
   type contact
   type filter
   type contactedge
+  type jointedge
 
   (* The body type.
      static: zero mass, zero velocity, may be manually moved
@@ -225,8 +226,8 @@ sig
   val get_fixtures : body -> fixture option
 
   (* Get the list of all joints attached to this body.
-     Use the next field of the joint to iterate over them. *)
-  val get_joints : body -> joint option
+     Use the next field of the joint edge to iterate over them. *)
+  val get_joints : body -> jointedge option
 
   (* Get the list of all contacts attached to this body. This list
      changes during the time step so you may miss some collisions if

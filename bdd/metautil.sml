@@ -28,6 +28,12 @@ val world = ("W",
               "pre_solve",
               "post_solve"])
 
+val jointedge = ("G",
+                 ["other",
+                  "joint",
+                  "prev",
+                  "next"])
+
 fun printl s = (print s; print "\n")
 fun make_get (ctor, fields) =
     let 
@@ -59,3 +65,7 @@ fun make_set (ctor, fields) =
 
 val () = make_get world
 val () = make_set world
+
+
+val () = make_get jointedge
+val () = make_set jointedge
