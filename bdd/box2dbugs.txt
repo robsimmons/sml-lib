@@ -105,3 +105,9 @@ is mostly a copy of CreateBody.
 Incomplete comment for GetContactList:
 	/// @warning contacts are 
 
+
+b2World.cpp:
+
+In SolveTOI(b2Body *), the bool flag "solved" near the end is unused.
+Not sure if you meant to use it in the flag update that follows or if
+it's just dead.

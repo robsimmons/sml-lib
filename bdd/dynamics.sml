@@ -848,6 +848,29 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
         return true;
         *)
 
+(*
+
+inline void b2Body::SynchronizeTransform()
+{
+        m_xf.R.Set(m_sweep.a);
+        m_xf.position = m_sweep.c - b2Mul(m_xf.R, m_sweep.localCenter);
+}
+*)
+
+    (* Port note: Used in world. *)
+    fun advance (body : ('b, 'f, 'j) body, t : real) : unit =
+        raise BDDDynamics "unimplemented"
+(*
+{
+        // Advance to the new safe time.
+        m_sweep.Advance(t);
+        m_sweep.c = m_sweep.c0;
+        m_sweep.a = m_sweep.a0;
+        SynchronizeTransform();
+}
+*)
+
+
   end
 
   (* Internal, contact edges *)

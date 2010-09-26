@@ -171,6 +171,8 @@ sig
                 a0 : real,
                 a : real } -> sweep
 
+  val sweepcopy : sweep -> sweep
+
   (* world angle *)
   val sweepa : sweep -> real
   (* world center *)

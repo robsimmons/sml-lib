@@ -51,7 +51,8 @@ group is
   fixture-sig.sml
   fixture.sml
 
-
+  toi-solver-sig.sml
+  toi-solver.sml
 
   world-sig.sml
   world.sml

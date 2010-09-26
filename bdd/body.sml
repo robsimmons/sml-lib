@@ -307,6 +307,9 @@ b2Fixture* b2Body::CreateFixture(const b2FixtureDef* def)
         ResetMassData();
 *)
 
+(* PSSt. lots of this stuff will have to move to dynamics, probably.
+   check to make sure it's not already there! *)
+
     fun set_mass_data (body : body, mass_data : mass_data) : unit =
         raise BDDBody "unimplemented"
 (*
@@ -350,23 +353,7 @@ b2Fixture* b2Body::CreateFixture(const b2FixtureDef* def)
 }
 *)
 
-(*
-
-inline void b2Body::SynchronizeTransform()
-{
-        m_xf.R.Set(m_sweep.a);
-        m_xf.position = m_sweep.c - b2Mul(m_xf.R, m_sweep.localCenter);
-}
-
-inline void b2Body::Advance(float32 t)
-{
-        // Advance to the new safe time.
-        m_sweep.Advance(t);
-        m_sweep.c = m_sweep.c0;
-        m_sweep.a = m_sweep.a0;
-        SynchronizeTransform();
-}
-*)
+(* Advance, synchronizetransform are in dynamics *)
 
     fun set_transform (b, position : vec2, angle : real) : unit =
         raise BDDBody "unimplemented"
