@@ -777,10 +777,11 @@ void b2World::Solve(const b2TimeStep& step)
         m_contactManager.FindNewContacts();
 }
 *)
-
+    (* Advance a dynamic body to its first time of contact
+       and adjust the position to ensure clearance. *)
+    fun solve_toi_body (world : world, body : body) : unit =
+        raise BDDWorld "unimplemented"
 (*
-// Advance a dynamic body to its first time of contact
-// and adjust the position to ensure clearance.
 void b2World::SolveTOI(b2Body* body)
 {
         // Find the minimum contact.
@@ -979,72 +980,53 @@ void b2World::SolveTOI(b2Body* body)
        body to the time of contact and perform some position correction.
        Time is not conserved. *)
     fun solve_toi (world : world) : unit =
-      raise BDDWorld "unimplemented"
-(*
-void b2World::SolveTOI()
-{
-        // Prepare all contacts.
-        for (b2Contact* c = m_contactManager.m_contactList; c; c = c->m_next)
-        {
-                // Enable the contact
-                c->m_flags |= b2Contact::e_enabledFlag;
+      let
+        (* Prepare all contacts. *)
+          fun onecontact c =
+            let in
+                (* Enable the contact *)
+                D.C.set_flag (c, D.C.FLAG_ENABLED);
+                (* Set the number of TOI events for this contact to zero. *)
+                D.C.set_toi_count (c, 0)
+            end
+          val () = oapp D.C.get_next onecontact (get_contact_list world)
 
-                // Set the number of TOI events for this contact to zero.
-                c->m_toiCount = 0;
-        }
+          (* Initialize the TOI flag. *)
+          fun onebody_toi b =
+            (* Kinematic and static bodies will not be affected by the TOI event.
+               If a body was not in an island then it did not move. *)
+            if not (D.B.get_flag (b, D.B.FLAG_ISLAND)) orelse
+               (case D.B.get_typ b of
+                    Kinematic => true
+                  | Static => true
+                  | Dynamic => false) 
+            then D.B.set_flag (b, D.B.FLAG_TOI)
+            else D.B.clear_flag (b, D.B.FLAG_TOI)
+          val () = oapp D.B.get_next onebody_toi (get_body_list world)
 
-        // Initialize the TOI flag.
-        for (b2Body* body = m_bodyList; body; body = body->m_next)
-        {
-                // Kinematic, and static bodies will not be affected by the TOI event.
-                // If a body was not in an island then it did not move.
-                if ((body->m_flags & b2Body::e_islandFlag) == 0 || body->GetType() == b2_kinematicBody || body->GetType() == b2_staticBody)
-                {
-                        body->m_flags |= b2Body::e_toiFlag;
-                }
-                else
-                {
-                        body->m_flags &= ~b2Body::e_toiFlag;
-                }
-        }
+          (* Collide non-bullets. *)
+          fun onebody_nonbullet b =
+            if D.B.get_flag (b, D.B.FLAG_TOI)
+            then ()
+            else if Body.get_bullet b
+                 then ()
+                 else (solve_toi_body (world, b);
+                       D.B.set_flag (b, D.B.FLAG_TOI))
+          val () = oapp D.B.get_next onebody_nonbullet (get_body_list world)
 
-        // Collide non-bullets.
-        for (b2Body* body = m_bodyList; body; body = body->m_next)
-        {
-                if (body->m_flags & b2Body::e_toiFlag)
-                {
-                        continue;
-                }
+          (* Collide bullets. *)
+          fun onebody_bullet b =
+            if D.B.get_flag (b, D.B.FLAG_TOI)
+            then ()
+            else if not (Body.get_bullet b)
+                 then ()
+                 else (solve_toi_body (world, b);
+                       D.B.set_flag (b, D.B.FLAG_TOI))
+          val () = oapp D.B.get_next onebody_bullet (get_body_list world)
+      in
+          ()
+      end
 
-                if (body->IsBullet() == true)
-                {
-                        continue;
-                }
-
-                SolveTOI(body);
-
-                body->m_flags |= b2Body::e_toiFlag;
-        }
-
-        // Collide bullets.
-        for (b2Body* body = m_bodyList; body; body = body->m_next)
-        {
-                if (body->m_flags & b2Body::e_toiFlag)
-                {
-                        continue;
-                }
-
-                if (body->IsBullet() == false)
-                {
-                        continue;
-                }
-
-                SolveTOI(body);
-
-                body->m_flags |= b2Body::e_toiFlag;
-        }
-}
-*)
     fun step (world : world, dt : real, 
               velocity_iterations : int, position_iterations : int) : unit =
       let
