@@ -13,7 +13,10 @@ struct
   fun solve_island (bodies : ('b, 'f, 'j) BDDDynamics.body list,
                     contacts : ('b, 'f, 'j) BDDDynamics.contact list,
                     joints : ('b, 'f, 'j) BDDDynamics.joint list,
-                    world : ('b, 'f, 'j) BDDDynamics.world) : unit =
+                    world : ('b, 'f, 'j) BDDDynamics.world,
+                    step : BDDDynamics.time_step,
+                    gravity : BDDMath.vec2,
+                    allow_sleep : bool) : unit =
       raise BDDIsland "unimplemented"
 
   (* XXX: In World I assume that solve_island does not modify the

@@ -481,19 +481,7 @@ void b2Body::ResetMassData()
 }
 
 ( * ShouldCollide is in D.B * )
-
-void b2Body::SynchronizeFixtures()
-{
-        b2Transform xf1;
-        xf1.R.Set(m_sweep.a0);
-        xf1.position = m_sweep.c0 - b2Mul(xf1.R, m_sweep.localCenter);
-
-        b2BroadPhase* broadPhase = &m_world->m_contactManager.m_broadPhase;
-        for (b2Fixture* f = m_fixtureList; f; f = f->m_next)
-        {
-                f->Synchronize(broadPhase, xf1, m_xf);
-        }
-}
+    and synchronizefixtures
 
 void b2Body::SetActive(bool flag)
 {

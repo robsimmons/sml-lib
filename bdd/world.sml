@@ -657,6 +657,8 @@ void b2World::DestroyJoint(b2Joint* j)
                      then ()
                      else
                      let
+                         (* For each body we add, we look at its contacts and
+                            joints, which might include other bodies in the island. *)
                          fun one_cedge (ce : contactedge) =
                            let val contact = !! (D.E.get_contact ce)
                                val fixture_a = D.C.get_fixture_a contact
@@ -687,22 +689,39 @@ void b2World::DestroyJoint(b2Joint* j)
                                      else explore other
                                  end
                            end
-                         val () = oapp D.E.get_next one_cedge (D.B.get_contact_list b)
+
                          fun one_jedge (je : jointedge) =
-                             raise BDDWorld "unimplemented"
-                         val () = oapp D.G.get_next one_jedge (D.B.get_joint_list b)
-                             
-                         (* XXX HERE *)
+                           let val other = D.G.get_other je
+                               val joint = D.G.get_joint je
+                           in
+                               (* If we've already visited this joint, or the
+                                  attached body is inactive, then skip *)
+                               if D.J.get_flag (joint, D.J.FLAG_ISLAND) orelse
+                                  not (D.B.get_flag (other, D.B.FLAG_ACTIVE))
+                               then ()
+                               else
+                               let in
+                                  joints := joint :: !joints;
+                                  D.J.set_flag (joint, D.J.FLAG_ISLAND);
+                                  (* If we haven't already visited it, explore the other
+                                     body in the joint. *)
+                                  if D.B.get_flag (other, D.B.FLAG_ISLAND)
+                                  then ()
+                                  else explore other
+                               end
+                           end
 
                      in
-                         raise BDDWorld "unimplemented"
+                         oapp D.E.get_next one_cedge (D.B.get_contact_list b);
+                         oapp D.G.get_next one_jedge (D.B.get_joint_list b)
                      end
                  end
-                     
+
          in
              explore seed;
-             (* XXX step, gravity, sleep *)
-             (* BDDIsland.solve_island (!bodies, !contacts, !joints, world); *)
+             BDDIsland.solve_island (!bodies, !contacts, !joints, world,
+                                     step,
+                                     get_gravity world, get_allow_sleep world);
              
              (* Post solve cleanup: Allow static bodies to participate in 
                 other islands. *)
@@ -711,83 +730,17 @@ void b2World::DestroyJoint(b2Joint* j)
                           else ()) (!bodies)
          end
        val () = oapp D.B.get_next one_seed (get_body_list world)
-(*
-        for (b2Body* seed = m_bodyList; seed; seed = seed->m_next)
-        {
-                while (stackCount > 0)
-                {
 
-                        // Search all joints connect to this body.
-                        for (b2JointEdge* je = b->m_jointList; je; je = je->next)
-                        {
-                                if (je->joint->m_islandFlag == true)
-                                {
-                                        continue;
-                                }
-
-                                b2Body* other = je->other;
-
-                                // Don't simulate joints connected to inactive bodies.
-                                if (other->IsActive() == false)
-                                {
-                                        continue;
-                                }
-
-                                island.Add(je->joint);
-                                je->joint->m_islandFlag = true;
-
-                                if (other->m_flags & b2Body::e_islandFlag)
-                                {
-                                        continue;
-                                }
-
-                                b2Assert(stackCount < stackSize);
-                                stack[stackCount++] = other;
-                                other->m_flags |= b2Body::e_islandFlag;
-                        }
-                }
-
-                island.Solve(step, m_gravity, m_allowSleep);
-
-                // TOM DONE:
-                // Post solve cleanup.
-                for (int32 i = 0; i < island.m_bodyCount; ++i)
-                {
-                        // Allow static bodies to participate in other islands.
-                        b2Body* b = island.m_bodies[i];
-                        if (b->GetType() == b2_staticBody)
-                        {
-                                b->m_flags &= ~b2Body::e_islandFlag;
-                        }
-                }
-        }
-
-        m_stackAllocator.Free(stack);
-
-        // Synchronize fixtures, check for out of range bodies.
-        for (b2Body* b = m_bodyList; b; b = b->GetNext())
-        {
-                // If a body was not in an island then it did not move.
-                if ((b->m_flags & b2Body::e_islandFlag) == 0)
-                {
-                        continue;
-                }
-
-                if (b->GetType() == b2_staticBody)
-                {
-                        continue;
-                }
-
-                // Update fixtures (for broad-phase).
-                b->SynchronizeFixtures();
-        }
-
-        // Look for new contacts.
-        m_contactManager.FindNewContacts();
-}
-*)
+       fun one_sync (b : body) =
+           (* If the body was not in an island, then it didn't move. *)
+           if not (D.B.get_flag (b, D.B.FLAG_ISLAND)) orelse
+              D.B.get_typ b = D.Static
+           then ()
+           (* Otherwise update its fixtures for the broad phase. *)
+           else D.B.synchronize_fixtures b
+       val () = oapp D.B.get_next one_sync (get_body_list world)
     in
-      raise BDDWorld "unimplemented"
+      ContactManager.find_new_contacts world
     end
 
     (* Advance a dynamic body to its first time of contact

@@ -8,12 +8,18 @@
 signature BDDISLAND =
 sig
 
+  (* solve_island bodies contacts joints world time_step gravity allow_sleep 
+     Modifies the inputs in place. *)
   (* Port note: Box2D uses stateful initialization (three different Add methods)
      and reserved capacities. All that the client code does is Clear, Add in a loop,
      and call Solve once. This can just be a function. *)
   val solve_island : ('b, 'f, 'j) BDDDynamics.body list *
                      ('b, 'f, 'j) BDDDynamics.contact list *
                      ('b, 'f, 'j) BDDDynamics.joint list *
-                     ('b, 'f, 'j) BDDDynamics.world -> unit
+                     ('b, 'f, 'j) BDDDynamics.world *
+                     BDDDynamics.time_step *
+                     BDDMath.vec2 *
+                     bool ->
+                     unit
 
 end
