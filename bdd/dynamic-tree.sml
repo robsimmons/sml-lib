@@ -126,7 +126,8 @@ struct
       in ch (!root)
       end
 
-  fun dynamic_tree () = ref { node_count = 0, root = ref Empty, path = 0w0 }
+  fun dynamic_tree () : 'a dynamic_tree = 
+      ref { node_count = 0, root = ref Empty, path = 0w0 }
 
   (* Derive the AABB for an interior node, based on its children
      (which must have accurate AABBs. Set it and return it. *)

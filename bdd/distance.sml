@@ -140,7 +140,7 @@ struct
 
   fun write_cache (simplex, cache : simplex_cache) : unit =
       let 
-          fun write i v =
+          fun write i (v : simplex_vertex) =
               (Array.update(#indexa cache, i, #indexa v);
                Array.update(#indexb cache, i, #indexb v))
       in

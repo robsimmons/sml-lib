@@ -82,28 +82,25 @@ struct
      This structure is stored across time steps, so we keep it small. *)
   datatype manifold_type = E_Circles | E_FaceA | E_FaceB
   type manifold =
-      {
-        typ : manifold_type,
+      { typ : manifold_type,
         (* the points of contact.
            up to BDDSettings.max_manifold_points *)
         points : manifold_point array,
-        (* not used for Type::e_points (? is this an out of date comment? -tom7) *)
+        (* not used for Type::e_points (? is this an out of date 
+           comment? -tom7) *)
         local_normal : BDDMath.vec2,
         (* usage depends on manifold type *)
         local_point : BDDMath.vec2,
         (* the number of manifold points *)
-        point_count : int
-      }
+        point_count : int }
 
   (* This is used to compute the current state of a contact manifold. *)
   type world_manifold =
-      {
-        (* world vector pointing from A to B *)
+      { (* world vector pointing from A to B *)
         normal : BDDMath.vec2,
         (* world contact point (point of intersection)
            Up to BDDSettings.max_manifold_points *)
-        points : BDDMath.vec2 array
-      }
+        points : BDDMath.vec2 array }
 
   (* This is used for determining the state of contact points. *)
   datatype point_state =
@@ -129,17 +126,15 @@ struct
 
   (* Abstract proxy for GJK distance algorithm. *)
   type distance_proxy = 
-      {
-       (* Get the supporting vertex index in the given direction. *)
-       support : BDDMath.vec2 -> int,
-       (* Get the supporting vertex in the given direction. *)
-       support_vertex : BDDMath.vec2 -> BDDMath.vec2,
-       (* Number of total vertices. *)
-       vertex_count : int,
-       (* Get a vertex by index. *)
-       vertex : int -> BDDMath.vec2,
-       radius : real
-      }
+      { (* Get the supporting vertex index in the given direction. *)
+        support : BDDMath.vec2 -> int,
+        (* Get the supporting vertex in the given direction. *)
+        support_vertex : BDDMath.vec2 -> BDDMath.vec2,
+        (* Number of total vertices. *)
+        vertex_count : int,
+        (* Get a vertex by index. *)
+        vertex : int -> BDDMath.vec2,
+        radius : real }
 
   (* Used to "warm start" the distance function. This is
      used by the GJK algorithm as it refines its approximation. 

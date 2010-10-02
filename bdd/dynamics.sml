@@ -83,7 +83,7 @@ struct
      ("cells" in local terminology). *)
   datatype ('b, 'f, 'j) bodycell =
       B of { typ : body_type,
-             flags : Word16.word,
+             flags : Word8.word,
              island_index : int,
              (* Body origin transform *)
              xf : transform,
@@ -171,7 +171,7 @@ struct
   and ('b, 'f, 'j) jointcell = 
       J of { (* Port note: These were individual boolean fields
                 in Box2D. *)
-             flags : Word16.word,
+             flags : Word8.word,
              typ : joint_type,
              (* the previous and next joints in the world joint list. 
                 the body joint lists are stored in joint edges. *)
@@ -403,14 +403,15 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
   (* Internal, bodies *)
   structure B =
   struct
-
-    val FLAG_ISLAND = 0wx1 : Word16.word
-    val FLAG_AWAKE  = 0wx2 : Word16.word
-    val FLAG_AUTO_SLEEP = 0wx4 : Word16.word
-    val FLAG_BULLET = 0wx8 : Word16.word
-    val FLAG_FIXED_ROTATION = 0wx10 : Word16.word
-    val FLAG_ACTIVE = 0wx20 : Word16.word
-    val FLAG_TOI = 0wx40 : Word16.word
+    (* Port note: Using Word8, not Word16, since it is more portable
+       and probably faster. *)
+    val FLAG_ISLAND = 0wx1 : Word8.word
+    val FLAG_AWAKE  = 0wx2 : Word8.word
+    val FLAG_AUTO_SLEEP = 0wx4 : Word8.word
+    val FLAG_BULLET = 0wx8 : Word8.word
+    val FLAG_FIXED_ROTATION = 0wx10 : Word8.word
+    val FLAG_ACTIVE = 0wx20 : Word8.word
+    val FLAG_TOI = 0wx40 : Word8.word
 
     fun get_typ (ref (B{ typ, ... })) = typ
     fun get_flags (ref (B{ flags, ... })) = flags
@@ -805,9 +806,9 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
           i = i, inv_i = inv_i, linear_damping = linear_damping,
           angular_damping = angular_damping, sleep_time = sleep_time }
 
-    fun get_flag (b, f) = Word16.andb (f, get_flags b) <> 0w0
-    fun set_flag (b, f) = set_flags (b, Word16.orb(get_flags b, f))
-    fun clear_flag (b, f) = set_flags (b, Word16.andb(get_flags b, Word16.notb f))
+    fun get_flag (b, f) = Word8.andb (f, get_flags b) <> 0w0
+    fun set_flag (b, f) = set_flags (b, Word8.orb(get_flags b, f))
+    fun clear_flag (b, f) = set_flags (b, Word8.andb(get_flags b, Word8.notb f))
 
     fun new ({ typ : body_type,
                position : BDDMath.vec2,
@@ -1168,8 +1169,8 @@ inline void b2Body::SynchronizeTransform()
   (* Internal, joints *)
   structure J =
   struct
-    val FLAG_ISLAND = 0wx1 : Word16.word
-    val FLAG_COLLIDE_CONNECTED = 0wx2 : Word16.word
+    val FLAG_ISLAND = 0wx1 : Word8.word
+    val FLAG_COLLIDE_CONNECTED = 0wx2 : Word8.word
 
     fun get_flags (ref (J{ flags, ... })) = flags
     fun get_typ (ref (J{ typ, ... })) = typ
@@ -1203,9 +1204,19 @@ inline void b2Body::SynchronizeTransform()
     fun set_inv_mass_b (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b = _, inv_i_b }), inv_mass_b) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
     fun set_inv_i_b (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b = _ }), inv_i_b) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
 
-    fun get_flag (j, f) = Word16.andb (f, get_flags j) <> 0w0
-    fun set_flag (j, f) = set_flags (j, Word16.orb(get_flags j, f))
-    fun clear_flag (j, f) = set_flags (j, Word16.andb(get_flags j, Word16.notb f))
+    fun get_flag (j, f) = Word8.andb (f, get_flags j) <> 0w0
+    fun set_flag (j, f) = set_flags (j, Word8.orb(get_flags j, f))
+    fun clear_flag (j, f) = set_flags (j, Word8.andb(get_flags j, Word8.notb f))
+
+    (* Used in island solver *)
+    fun init_velocity_constraints (j : ('b, 'f, 'j) joint,
+                                   step : time_step) : unit =
+        raise BDDDynamics "unimplemented"
+
+    (* Used in island solver *)
+    fun solve_velocity_constraints (j : ('b, 'f, 'j) joint,
+                                    step : time_step) : unit =
+        raise BDDDynamics "unimplemented"
 
   end
 
