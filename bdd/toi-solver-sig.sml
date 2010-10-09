@@ -8,6 +8,9 @@ signature BDDTOI_SOLVER =
 sig
 
   type ('b, 'f, 'j) solver
+  (* solver (contacts, body)
+     Port note: This combines the constructor and Initialize
+     function in Box2D. *)
   val solver : ('b, 'f, 'j) BDDDynamics.contact list *
       ('b, 'f, 'j) BDDDynamics.body -> ('b, 'f, 'j) solver
     

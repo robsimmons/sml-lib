@@ -910,14 +910,15 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
         return true;
         *)
 
-(*
-
-inline void b2Body::SynchronizeTransform()
-{
-        m_xf.R.Set(m_sweep.a);
-        m_xf.position = m_sweep.c - b2Mul(m_xf.R, m_sweep.localCenter);
-}
-*)
+   (* Port note: used in TOISolver. *)
+   fun synchronize_transform b : unit =
+       let 
+           val sweep : sweep = get_sweep b
+           val r : mat22 = mat22angle (sweepa sweep)
+           val pos : vec2 = sweepc sweep :-: (r +*: sweeplocalcenter sweep)
+       in
+           set_xf (b, transform (pos, r))
+       end
 
     (* Port note: Used in world. *)
     fun advance (body : ('b, 'f, 'j) body, t : real) : unit =

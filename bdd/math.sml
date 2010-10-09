@@ -138,9 +138,11 @@ struct
       (* PERF compute sin and cos together *)
       let val c = Math.cos angle
           val s = Math.sin angle
-      in { col1 = vec2(c, ~s),
-           col2 = vec2(s, c) }
+      in
+          mat22with ( c, s,
+                     ~s, c)
       end
+
 
   fun mat22set ({ col1, col2 }, c1, c2) =
       (vec2setfrom (col1, c1);
@@ -154,13 +156,6 @@ struct
           vec2set(col2, s, c)
       end
 
-  fun mat22rotation angle =
-      let val c = Math.cos angle
-          val s = Math.sin angle
-      in
-          mat22with ( c, s,
-                     ~s, c)
-      end
 
   fun mat22setidentity ({ col1, col2 } : mat22) =
       (vec2set(col1, 1.0, 
@@ -261,7 +256,7 @@ struct
   fun transform (pp, rr) = { position = vec2copy pp, r = mat22copy rr }
   fun transform_pos_angle (pp, angle : real) =
       { position = vec2copy pp,
-        r = mat22rotation angle }
+        r = mat22angle angle }
   fun transformposition { position, r } = position
   fun transformr ({ position, r } : transform) = r
   fun transform_setidentity ({ position, r } : transform) =
