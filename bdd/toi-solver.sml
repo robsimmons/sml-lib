@@ -71,7 +71,10 @@ struct
      end
 
   (* Port note: A class in Box2D; it's just a function that
-     returns multiple values. *)
+     returns multiple values. 
+
+     Note, this is almost the same function as in contact-solver.
+     (Redundancy is present in Box2D too.) *) 
   fun toi_solver_manifold (cc : ('b, 'f, 'j) constraint, index : int) :
       { normal : vec2, point : vec2, separation : real } =
     case #typ cc of
@@ -128,7 +131,12 @@ struct
           end
 
   (* Push out the TOI body to provide clearance for further 
-     simulation. *)
+     simulation. 
+
+     Port note: This is nearly identical to the code in
+     contact-solver, so if you change something here, it probably
+     should be changed there too. The duplication comes from Box2D.
+     Obviously it would be better to factor out this common routine. *)
   fun solve (solver : ('b, 'f, 'j) solver, baumgarte : real) : bool =
     let
       val min_separation = ref 0.0
@@ -177,7 +185,7 @@ struct
                      inv_i_b * rn_b * rn_b
 
                  (* Compute normal impulse. *)
-                 val impulse : real = if k > 0.0 then capital_c / k else 0.0
+                 val impulse : real = if k > 0.0 then ~ capital_c / k else 0.0
                  val p : vec2 = impulse *: normal
 
                  fun update_sweep (body, inv_mass, inv_i, r) =
