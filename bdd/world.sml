@@ -29,7 +29,7 @@ struct
   (* XXX implement! *)
   structure Joint = struct
     datatype joint_type = JointsUnimplemented
-    fun get_next _ = raise BDDWOrld "joints are unimplemented"
+    fun get_next _ = raise BDDWorld "joints are unimplemented"
   end
 
   fun !! (SOME x) = x

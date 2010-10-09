@@ -75,8 +75,7 @@ sig
 
   (* XXX *)
   structure Joint : sig
-    type joint_type = int
-  
+    type joint_type
   end
 
   structure World :

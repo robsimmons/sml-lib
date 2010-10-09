@@ -24,9 +24,19 @@ looks like I wrote common/*.cpp in a number of comments where I meant collision/
 
 be consistent about broadphase vs. broad_phase in identifiers
 
+Will want to compare the performance of the metautil strategies.
+References for each individual field is likely to perform better?
+
+Should probably use metautil for some other structures, like in the
+dynamic tree, and for BDDMath.sweep.
 
 export each module's exception.
 
+for dynamics.sml, I think it should probably just be
+defining the types (opaquely!) with get_ and set_ functions.
+Then we can have e.g. body-internal.sml that writes the
+utilities in terms of bodycell, then we can seal to World.Body.body later.
+Better to do this after all the code is in place, though.
 
 Potential bugs:
 
