@@ -177,6 +177,13 @@ sig
   val sweepa : sweep -> real
   (* world center *)
   val sweepc : sweep -> vec2
+
+  val sweep_set_a : sweep * real -> unit
+  val sweep_set_c : sweep * vec2 -> unit
+
+  val sweepa0 : sweep -> real
+  val sweepc0 : sweep -> vec2
+
   (* local center *)
   val sweeplocalcenter : sweep -> vec2
 

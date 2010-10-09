@@ -433,6 +433,12 @@ struct
   fun sweepc ({ c, ... } : sweep) = c
   fun sweeplocalcenter ({ local_center, ... } : sweep) = local_center
 
+  fun sweepa0 ({ a0, ... } : sweep) = !a0
+  fun sweepc0 ({ c0, ... } : sweep) = c0
+
+  fun sweep_set_a ({a, ... } : sweep, aa) = a := aa
+  fun sweep_set_c ({c, ... } : sweep, cc) = vec2setfrom (c, cc)
+
   (* PERF *)
   fun sweep_transform (arg, alpha : real) =
       let val transform = identity_transform ()

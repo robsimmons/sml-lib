@@ -74,7 +74,58 @@ struct
      returns multiple values. *)
   fun toi_solver_manifold (cc : ('b, 'f, 'j) constraint, index : int) :
       { normal : vec2, point : vec2, separation : real } =
-      raise BDDTOISolver "unimplemented"
+    case #typ cc of
+        E_Circles =>
+          let
+              val point_a : vec2 = 
+                  D.B.get_world_point (#body_a cc,
+                                       #local_point cc)
+              val point_b : vec2 = 
+                  D.B.get_world_point (#body_b cc,
+                                       Array.sub (#local_points cc, 0))
+
+              val normal =
+                if distance_squared (point_a, point_b) > epsilon * epsilon
+                then vec2normalized (point_b :-: point_a)
+                else vec2 (1.0, 0.0)
+          in
+              { normal = normal,
+                point = 0.5 *: (point_a :+: point_b),
+                separation = dot2(point_b :-: point_a, normal) - #radius cc }
+          end
+    | E_FaceA =>
+          let
+              val normal = D.B.get_world_vector (#body_a cc,
+                                                 #local_normal cc)
+              val plane_point : vec2 =
+                  D.B.get_world_point(#body_a cc, #local_point cc)
+              val clip_point : vec2 =
+                  D.B.get_world_point(#body_b cc, Array.sub(#local_points cc,
+                                                            index))
+              val separation : real =
+                  dot2(clip_point :-: plane_point, normal) - #radius cc
+          in
+              { normal = normal,
+                separation = separation,
+                point = clip_point }
+          end
+    | E_FaceB =>
+          let
+              val normal = D.B.get_world_vector (#body_b cc,
+                                                 #local_normal cc)
+              val plane_point : vec2 =
+                  D.B.get_world_point(#body_b cc, #local_point cc)
+              val clip_point : vec2 =
+                  D.B.get_world_point(#body_a cc, Array.sub(#local_points cc,
+                                                            index))
+              val separation : real =
+                  dot2(clip_point :-: plane_point, normal) - #radius cc
+          in
+              (* Ensure normal points from A to B. *)
+              { normal = vec2neg normal,
+                separation = separation,
+                point = clip_point }
+          end
 
   (* Push out the TOI body to provide clearance for further 
      simulation. *)
@@ -114,9 +165,10 @@ struct
                           else ()
 
                  (* Prevent large corrections and allow slop. *)
-                 val capital_c : real = clampr (baumgarte * (separation + linear_slop),
-                                                ~max_linear_correction,
-                                                0.0)
+                 val capital_c : real = 
+                     clampr (baumgarte * (separation + linear_slop),
+                             ~max_linear_correction,
+                             0.0)
                  (* Compute the effective mass. *)
                  val rn_a : real = cross2vv (r_a, normal)
                  val rn_b : real = cross2vv (r_b, normal)
@@ -128,28 +180,18 @@ struct
                  val impulse : real = if k > 0.0 then capital_c / k else 0.0
                  val p : vec2 = impulse *: normal
 
-                 val sweep_a : sweep = D.B.get_sweep body_a
-(*
-                 val () = D.B.set_sweep
-                     (body_a,
-                      sweep
-                      { local_center = sweeplocalcenter _a,
-                        c0 = sweepc0 sweep_a,
-                        c = sweepc sweep_a - (inv_mass_a * p),
-                        a0 = sweepa0 sweep_a,
-                        a = sweepa sweep_a - (inv_i_a * cross2vv (r_a, p)) })
-*)
-                 (* XXX HERE  8 Oct 2010 *)                     
-             (*
-                  where? tom
-                 val () = D.B.synchronize_transform body_a
-
-                    bodyB->m_sweep.c += invMassB * P;
-                    bodyB->m_sweep.a += invIB * b2Cross(rB, P);
-                    bodyB->SynchronizeTransform();
-              *)
+                 fun update_sweep (body, inv_mass, inv_i, r) =
+                   let
+                     val sweep : sweep = D.B.get_sweep body
+                   in
+                     sweep_set_a (sweep, sweepa sweep - 
+                                  (inv_i * cross2vv (r, p)));
+                     sweep_set_c (sweep, sweepc sweep :-: (inv_mass *: p));
+                     D.B.synchronize_transform body
+                   end
              in
-                 raise BDDTOISolver "unimplemented"
+                 update_sweep (body_a, inv_mass_a, inv_i_a, r_a);
+                 update_sweep (body_b, inv_mass_b, inv_i_b, r_b)
              end)
         end
     in

@@ -949,6 +949,19 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
 }
 *)
 
+    fun get_world_point (b, p) = get_xf b @*: p
+    fun get_world_vector (b, v) = transformr (get_xf b) +*: v
+    fun get_local_point (b, p) = mul_ttransformv (get_xf b, p)
+    fun get_local_vector (b, v) = mul_t22mv (transformr (get_xf b), v)
+
+    fun get_linear_velocity_from_world_point (b, world_point : vec2) =
+        get_linear_velocity b :+: 
+        cross2sv (get_angular_velocity b,
+                  world_point :-: sweepc (get_sweep b))
+
+    fun get_linear_velocity_from_local_point (b, local_point : vec2) =
+        get_linear_velocity_from_world_point(b, get_world_point(b, 
+                                                                local_point))
 
   end
 
