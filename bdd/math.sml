@@ -439,6 +439,9 @@ struct
   fun sweep_set_a ({a, ... } : sweep, aa) = a := aa
   fun sweep_set_c ({c, ... } : sweep, cc) = vec2setfrom (c, cc)
 
+  fun sweep_set_a0 ({a0, ... } : sweep, aa0) = a0 := aa0
+  fun sweep_set_c0 ({c0, ... } : sweep, cc0) = vec2setfrom (c0, cc0)
+
   (* PERF *)
   fun sweep_transform (arg, alpha : real) =
       let val transform = identity_transform ()

@@ -136,65 +136,75 @@ struct
           (* Post-solve (store impulses for warm starting). *)
           val () = CS.store_impulses solver
 
-(*
-        // Integrate positions.
-        for (int32 i = 0; i < m_bodyCount; ++i)
-        {
-                b2Body* b = m_bodies[i];
+          (* Integrate positions. *)
+          fun onebody b =
+            case D.B.get_typ b of
+               D.Static => ()
+             | _ =>
+               let 
+                 (* Check for large velocities. *)
+                 val translation : vec2 = 
+                     #dt step *: D.B.get_linear_velocity b
+                 val () = if dot2 (translation, translation) > 
+                             max_translation_squared
+                          then
+                              D.B.set_linear_velocity 
+                              (b,
+                               (max_translation / vec2length translation) *:
+                               D.B.get_linear_velocity b)
+                          else ()
+                 val rotation : real = 
+                     #dt step * D.B.get_angular_velocity b
+                 val () = if rotation * rotation > max_rotation_squared
+                          then
+                              D.B.set_angular_velocity
+                              (b,
+                               D.B.get_angular_velocity b *
+                               (max_rotation / Real.abs rotation))
+                          else ()
 
-                if (b->GetType() == b2_staticBody)
-                {
-                        continue;
-                }
+                 val sweep = D.B.get_sweep b
+               in
+                 (* Store positions for continuous collision. *)
+                 sweep_set_c0 (sweep, sweepc sweep);
+                 sweep_set_a0 (sweep, sweepa sweep);
 
-                // Check for large velocities.
-                b2Vec2 translation = step.dt * b->m_linearVelocity;
-                if (b2Dot(translation, translation) > b2_maxTranslationSquared)
-                {
-                        float32 ratio = b2_maxTranslation / translation.Length();
-                        b->m_linearVelocity *= ratio;
-                }
+                 (* Integrate. *)
+                 sweep_set_c (sweep, sweepc sweep :+:
+                              #dt step *: D.B.get_linear_velocity b);
+                 sweep_set_a (sweep, sweepa sweep +
+                              #dt step * D.B.get_angular_velocity b);
 
-                float32 rotation = step.dt * b->m_angularVelocity;
-                if (rotation * rotation > b2_maxRotationSquared)
-                {
-                        float32 ratio = b2_maxRotation / b2Abs(rotation);
-                        b->m_angularVelocity *= ratio;
-                }
+                 (* Compute new transform. *)
+                 D.B.synchronize_transform b
 
-                // Store positions for continuous collision.
-                b->m_sweep.c0 = b->m_sweep.c;
-                b->m_sweep.a0 = b->m_sweep.a;
+                 (* Note: shapes are synchronized later. *)
+               end
+          val () = Vector.app onebody bodies
 
-                // Integrate
-                b->m_sweep.c += step.dt * b->m_linearVelocity;
-                b->m_sweep.a += step.dt * b->m_angularVelocity;
+          (* Iterate over constraints. *)
+          fun iterate n = 
+            if n = #position_iterations step
+            then ()
+            else
+            let val contacts_okay = 
+                  CS.solve_position_constraints (solver, contact_baumgarte)
+                val joints_okay = ref true
+                val () = Vector.app 
+                    (fn j =>
+                     let val joint_okay =
+                           D.J.solve_position_constraints 
+                           (j, contact_baumgarte)
+                     in
+                         joints_okay := (!joints_okay andalso joint_okay)
+                     end) joints
+            in
+              (* Exit early if the position errors are small. *)
+              if contacts_okay andalso !joints_okay
+              then ()
+              else iterate (n + 1)
+            end
 
-                // Compute new transform
-                b->SynchronizeTransform();
-
-                // Note: shapes are synchronized later.
-        }
-
-        // Iterate over constraints.
-        for (int32 i = 0; i < step.positionIterations; ++i)
-        {
-                bool contactsOkay = contactSolver.SolvePositionConstraints(b2_contactBaumgarte);
-
-                bool jointsOkay = true;
-                for (int32 i = 0; i < m_jointCount; ++i)
-                {
-                        bool jointOkay = m_joints[i]->SolvePositionConstraints(b2_contactBaumgarte);
-                        jointsOkay = jointsOkay && jointOkay;
-                }
-
-                if (contactsOkay && jointsOkay)
-                {
-                        // Exit early if the position errors are small.
-                        break;
-                }
-        }
-*)
           val () = report (world, solver)
 
       in

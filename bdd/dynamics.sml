@@ -1232,6 +1232,11 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
                                     step : time_step) : unit =
         raise BDDDynamics "unimplemented"
 
+    (* Used in island solver *)
+    fun solve_position_constraints (j : ('b, 'f, 'j) joint,
+                                    baumgarte : real) : bool =
+        raise BDDDynamics "unimplemented"
+
   end
 
   (* Internal, joint edges *)
