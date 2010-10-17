@@ -25,7 +25,7 @@ struct
         local_normal : BDDMath.vec2,
         local_point : BDDMath.vec2,
         normal : BDDMath.vec2,
-        normal_mass : real,
+        normal_mass : BDDMath.mat22,
         k : BDDMath.mat22,
         body_a : ('b, 'f, 'j) BDDDynamics.body,
         body_b : ('b, 'f, 'j) BDDDynamics.body,
@@ -134,7 +134,7 @@ struct
 		  r_b = r_b,
 		  normal_mass = 1.0 / k_normal,
 		  tangent_mass = 1.0 / k_tangent,
-		  velocity_bias = velocity_bias }
+		  velocity_bias = velocity_bias } : constraint_point
 
 	      end
 
@@ -142,51 +142,56 @@ struct
 					one_point)
 
 	    val (k, normal_mass, points) =
+		(* If we have two points, then prepare the block solver. *)
 		if Array.length points = 2
-		then raise BDDContactSolver "unimplemented"
+		then 
+		  let
+		      val ccp1 = Array.sub(points, 0)
+		      val ccp2 = Array.sub(points, 1)
 
-(*
-		// If we have two points, then prepare the block solver.
-		if (cc->pointCount == 2)
-		{
-			b2ContactConstraintPoint* ccp1 = cc->points + 0;
-			b2ContactConstraintPoint* ccp2 = cc->points + 1;
-			
-			float32 invMassA = bodyA->m_invMass;
-			float32 invIA = bodyA->m_invI;
-			float32 invMassB = bodyB->m_invMass;
-			float32 invIB = bodyB->m_invI;
+		      val inv_mass_a = D.B.get_inv_mass body_a
+		      val inv_i_a = D.B.get_inv_i body_a
+		      val inv_mass_b = D.B.get_inv_mass body_b
+		      val inv_i_b = D.B.get_inv_i body_b
 
-			float32 rn1A = b2Cross(ccp1->rA, cc->normal);
-			float32 rn1B = b2Cross(ccp1->rB, cc->normal);
-			float32 rn2A = b2Cross(ccp2->rA, cc->normal);
-			float32 rn2B = b2Cross(ccp2->rB, cc->normal);
+		      val rn1_a = cross2vv(#r_a ccp1, normal)
+		      val rn1_b = cross2vv(#r_b ccp1, normal)
+		      val rn2_a = cross2vv(#r_a ccp2, normal)
+		      val rn2_b = cross2vv(#r_b ccp2, normal)
 
-			float32 k11 = invMassA + invMassB + invIA * rn1A * rn1A + invIB * rn1B * rn1B;
-			float32 k22 = invMassA + invMassB + invIA * rn2A * rn2A + invIB * rn2B * rn2B;
-			float32 k12 = invMassA + invMassB + invIA * rn1A * rn2A + invIB * rn1B * rn2B;
+		      val k11 = inv_mass_a + inv_mass_b + 
+			  inv_i_a * rn1_a * rn1_a +
+			  inv_i_b * rn1_b * rn1_b
+		      val k22 = inv_mass_a + inv_mass_b +
+			  inv_i_a * rn2_a * rn2_a + 
+			  inv_i_b * rn2_b * rn2_b
+		      val k12 = inv_mass_a + inv_mass_b +
+			  inv_i_a * rn1_a * rn2_a +
+			  inv_i_b * rn1_b * rn2_b
 
-			// Ensure a reasonable condition number.
-			const float32 k_maxConditionNumber = 100.0f;
-			if (k11 * k11 < k_maxConditionNumber * (k11 * k22 - k12 * k12))
-			{
-				// K is safe to invert.
-				cc->K.col1.Set(k11, k12);
-				cc->K.col2.Set(k12, k22);
-				cc->normalMass = cc->K.GetInverse();
-			}
-			else
-			{
-				// The constraints are redundant, just use one.
-				// TODO_ERIN use deepest?
-				cc->pointCount = 1;
-			}
-		}
-	}
-*)
+		      (* Ensure a reasonable condition number. *)
+		      val MAX_CONDITION_NUMBER = 100.0
+		  in
+		      if k11 * k11 < MAX_CONDITION_NUMBER * (k11 * k22 - k12 * k12)
+		      then (* K is safe to invert. *)
+			  let
+			      val k = mat22cols (vec2(k11, k12), vec2(k12, k22))
+			      val norm = mat22inverse k
+			  in
+			      (k, norm, points)
+			  end
+		      else
+			  (* The constraints are redundant; just use one.
+			     TODO_ERIN: use deepest? *)
+			  (mat22with (0.0, 0.0, 0.0, 0.0),
+			   mat22with (0.0, 0.0, 0.0, 0.0),
+			   Array.tabulate(1, fn _ => Array.sub(points, 0)))
 
-		    (* PERF uninitialized *)
-		else (mat22with (0.0, 0.0, 0.0, 0.0), 0.0, points)
+		  end
+		      (* PERF uninitialized *)
+		else (mat22with (0.0, 0.0, 0.0, 0.0), 
+		      mat22with (0.0, 0.0, 0.0, 0.0), 
+		      points)
 		
 	  in
 	      { body_a = body_a,
@@ -206,40 +211,45 @@ struct
 	val constraints = 
 	    Array.tabulate (Vector.length contacts,
 			    fn x => onecontact (Vector.sub(contacts, x)))
+
+	fun warm_start_one (c as { body_a, body_b,
+				   normal, points, ... } 
+			    : ('b, 'f, 'j) constraint) : unit =
+	  let
+	    val tangent = cross2vs(normal, 1.0)
+	    val inv_mass_a = D.B.get_inv_mass body_a
+	    val inv_i_a = D.B.get_inv_i body_a
+	    val inv_mass_b = D.B.get_inv_mass body_b
+	    val inv_i_b = D.B.get_inv_i body_b
+
+	    fun warm_point (ccp as { normal_impulse, 
+				     tangent_impulse, 
+				     r_a, r_b, ... } : constraint_point) : unit =
+	      let
+		val p : vec2 = normal_impulse *: normal :+: tangent_impulse *: tangent
+	      in
+		D.B.set_angular_velocity (body_a,
+					  D.B.get_angular_velocity body_a -
+					  inv_i_a * cross2vv(r_a, p));
+		D.B.set_linear_velocity (body_a,
+					 D.B.get_linear_velocity body_a :-:
+					 inv_mass_a *: p);
+		D.B.set_angular_velocity (body_b,
+					  D.B.get_angular_velocity body_b -
+					  inv_i_b * cross2vv(r_b, p));
+		D.B.set_linear_velocity (body_b,
+					 D.B.get_linear_velocity body_b :-:
+					 inv_mass_b *: p)
+	      end
+	  in
+	    Array.app warm_point points
+	  end
     in
+	(* Port note: Rolled the warm start function, which is always
+	   called immediately after initialization, into this. *)
+	Array.app warm_start_one constraints;
 	{ constraints = constraints }
     end
-      (* (don't forget to also warm-start):
-
-
-{
-	// Warm start.
-	for (int32 i = 0; i < m_constraintCount; ++i)
-	{
-		b2ContactConstraint* c = m_constraints + i;
-
-		b2Body* bodyA = c->bodyA;
-		b2Body* bodyB = c->bodyB;
-		float32 invMassA = bodyA->m_invMass;
-		float32 invIA = bodyA->m_invI;
-		float32 invMassB = bodyB->m_invMass;
-		float32 invIB = bodyB->m_invI;
-		b2Vec2 normal = c->normal;
-		b2Vec2 tangent = b2Cross(normal, 1.0f);
-
-		for (int32 j = 0; j < c->pointCount; ++j)
-		{
-			b2ContactConstraintPoint* ccp = c->points + j;
-			b2Vec2 P = ccp->normalImpulse * normal + ccp->tangentImpulse * tangent;
-			bodyA->m_angularVelocity -= invIA * b2Cross(ccp->rA, P);
-			bodyA->m_linearVelocity -= invMassA * P;
-			bodyB->m_angularVelocity += invIB * b2Cross(ccp->rB, P);
-			bodyB->m_linearVelocity += invMassB * P;
-		}
-	}
-}
-
- *)
 
 
   fun solve_velocity_constraints 
@@ -402,7 +412,10 @@ struct
     end
 
 
-  fun app_contacts (cs, f) : unit =
+  fun app_contacts ({ contacts, ... } : ('b, 'f, 'j) contact_solver, 
+		    f : ('b, 'f, 'j) BDDDynamics.contact * 
+		        { normal_impulses : real array,
+			  tangent_impulses : real array } -> unit) : unit =
       raise BDDContactSolver "unimplemented"
 (* (from b2island.cpp)
 	for (int32 i = 0; i < m_contactCount; ++i)
