@@ -45,7 +45,170 @@ struct
   fun contact_solver 
       (contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector,
        impulse_ratio : real) : ('b, 'f, 'j) contact_solver =
-      raise BDDContactSolver "unimplemented"     
+    let
+	(* Convert a contact into a constraint. *)
+	fun onecontact (contact : ('b, 'f, 'j) BDDDynamics.contact) =
+	  let
+	    val fixture_a = D.C.get_fixture_a contact
+	    val fixture_b = D.C.get_fixture_b contact
+	    val shape_a = D.F.get_shape fixture_a
+	    val shape_b = D.F.get_shape fixture_b
+	    val radius_a = BDDShape.get_radius shape_a
+	    val radius_b = BDDShape.get_radius shape_b
+	    val body_a = D.F.get_body fixture_a
+	    val body_b = D.F.get_body fixture_b
+	    val manifold = D.C.get_manifold contact
+
+	    val friction = mix_friction(D.F.get_friction fixture_a,
+					D.F.get_friction fixture_b)
+	    val restitution = mix_restitution(D.F.get_restitution fixture_a,
+					      D.F.get_restitution fixture_b)
+	    val v_a : vec2 = D.B.get_linear_velocity body_a
+	    val v_b : vec2 = D.B.get_linear_velocity body_b
+	    val w_a : real = D.B.get_angular_velocity body_a
+	    val w_b : real = D.B.get_angular_velocity body_b
+
+	    (* PERF assert *)
+	    val () = if #point_count manifold > 0
+		     then ()
+		     else raise BDDContactSolver "pointcount assertion"
+
+	    val world_manifold = 
+		BDDCollision.create_world_manifold (manifold,
+						    D.B.get_xf body_a, radius_a,
+						    D.B.get_xf body_b, radius_b)
+
+	    val normal = #normal world_manifold
+
+	    fun one_point (j : int) : constraint_point =
+	      let
+		val cp : manifold_point = Array.sub (#points manifold, j)
+		val wmpj = Array.sub(#points world_manifold, j)
+		val r_a = wmpj :-: sweepc (D.B.get_sweep body_a)
+		val r_b = wmpj :-: sweepc (D.B.get_sweep body_b)
+		val rn_a = cross2vv(r_a, normal)
+		val rn_b = cross2vv(r_b, normal)
+		val rn_a = rn_a * rn_a
+		val rn_b = rn_b * rn_b
+		val k_normal : real = 
+		    D.B.get_inv_mass body_a +
+		    D.B.get_inv_mass body_b +
+		    D.B.get_inv_i body_a * rn_a +
+		    D.B.get_inv_i body_b * rn_b
+
+		(* PERF assert *)
+		val () = if k_normal > epsilon
+			 then ()
+			 else raise BDDContactSolver "knormal assertion"
+
+		val tangent : vec2 = cross2vs(normal, 1.0)
+		val rt_a = cross2vv(r_a, tangent)
+		val rt_b = cross2vv(r_b, tangent)
+		val rt_a = rt_a * rt_a
+		val rt_b = rt_b * rt_b
+
+		val k_tangent = 
+		    D.B.get_inv_mass body_a +
+		    D.B.get_inv_mass body_b +
+		    D.B.get_inv_i body_a * rt_a +
+		    D.B.get_inv_i body_b * rt_b
+
+		(* PERF assert *)
+		val () = if k_tangent > epsilon
+			 then ()
+			 else raise BDDContactSolver "ktangent assertion"
+
+	        (* Set up a velocity bias for restitution. *)
+		val v_rel : real = dot2(normal, 
+					v_b :+: cross2sv(w_b, r_b) :-:
+					v_a :-: cross2sv(w_a, r_a))
+		val velocity_bias =
+		  if v_rel < ~ velocity_threshold
+		  then ~restitution * v_rel
+		  else 0.0
+	      in
+		{ normal_impulse = impulse_ratio * #normal_impulse cp,
+		  tangent_impulse = impulse_ratio * #tangent_impulse cp,
+		  local_point = #local_point cp,
+		  r_a = r_a,
+		  r_b = r_b,
+		  normal_mass = 1.0 / k_normal,
+		  tangent_mass = 1.0 / k_tangent,
+		  velocity_bias = velocity_bias }
+
+	      end
+
+	    val points = Array.tabulate(Array.length (#points manifold),
+					one_point)
+
+	    val (k, normal_mass, points) =
+		if Array.length points = 2
+		then raise BDDContactSolver "unimplemented"
+
+(*
+		// If we have two points, then prepare the block solver.
+		if (cc->pointCount == 2)
+		{
+			b2ContactConstraintPoint* ccp1 = cc->points + 0;
+			b2ContactConstraintPoint* ccp2 = cc->points + 1;
+			
+			float32 invMassA = bodyA->m_invMass;
+			float32 invIA = bodyA->m_invI;
+			float32 invMassB = bodyB->m_invMass;
+			float32 invIB = bodyB->m_invI;
+
+			float32 rn1A = b2Cross(ccp1->rA, cc->normal);
+			float32 rn1B = b2Cross(ccp1->rB, cc->normal);
+			float32 rn2A = b2Cross(ccp2->rA, cc->normal);
+			float32 rn2B = b2Cross(ccp2->rB, cc->normal);
+
+			float32 k11 = invMassA + invMassB + invIA * rn1A * rn1A + invIB * rn1B * rn1B;
+			float32 k22 = invMassA + invMassB + invIA * rn2A * rn2A + invIB * rn2B * rn2B;
+			float32 k12 = invMassA + invMassB + invIA * rn1A * rn2A + invIB * rn1B * rn2B;
+
+			// Ensure a reasonable condition number.
+			const float32 k_maxConditionNumber = 100.0f;
+			if (k11 * k11 < k_maxConditionNumber * (k11 * k22 - k12 * k12))
+			{
+				// K is safe to invert.
+				cc->K.col1.Set(k11, k12);
+				cc->K.col2.Set(k12, k22);
+				cc->normalMass = cc->K.GetInverse();
+			}
+			else
+			{
+				// The constraints are redundant, just use one.
+				// TODO_ERIN use deepest?
+				cc->pointCount = 1;
+			}
+		}
+	}
+*)
+
+		    (* PERF uninitialized *)
+		else (mat22with (0.0, 0.0, 0.0, 0.0), 0.0, points)
+		
+	  in
+	      { body_a = body_a,
+		body_b = body_b,
+		manifold = manifold,
+		normal = #normal world_manifold,
+		point_count = Array.length points,
+		friction = friction,
+		local_normal = #local_normal manifold,
+		local_point = #local_point manifold,
+		radius = radius_a + radius_b,
+		typ = #typ manifold,
+		points = points,
+		k = k,
+		normal_mass = normal_mass }
+	  end
+	val constraints = 
+	    Array.tabulate (Vector.length contacts,
+			    fn x => onecontact (Vector.sub(contacts, x)))
+    in
+	{ constraints = constraints }
+    end
       (* (don't forget to also warm-start):
 
 

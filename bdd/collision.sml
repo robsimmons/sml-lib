@@ -16,7 +16,8 @@ struct
 
   exception BDDCollision of string
 
-  (* TODO(twm): Replace with a version that constructs a new world manifold. *)
+  (* TODO(twm): Replace with the version below, that creates
+     a new manifold? *)
   fun initialize_manifold (world_manifold : world_manifold,
                            manifold : manifold,
                            xfa : transform, radiusa : real,
@@ -86,6 +87,22 @@ struct
                 (* Ensure normal points from A to B. *)
                 vec2setfrom (#normal world_manifold, vec2neg (#normal world_manifold))
             end
+
+  fun create_world_manifold (manifold : manifold,
+                             xfa : transform, radiusa : real,
+                             xfb, radiusb) : world_manifold =
+      let
+          val world_manifold = 
+              { normal = vec2 (0.0, 0.0),
+                points = Array.tabulate(max_manifold_points, 
+                                        fn _ => vec2 (0.0, 0.0)) }
+      in
+          initialize_manifold (world_manifold, manifold, 
+                               xfa, radiusa,
+                               xfb, radiusb);
+          world_manifold
+      end
+
 
   fun get_point_states (manifold1 : manifold, manifold2 : manifold) =
       let

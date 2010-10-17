@@ -13,16 +13,22 @@ sig
      that generated the manifold.
      The world manifold is modified in place. *)
   val initialize_manifold : BDDTypes.world_manifold *
-                            BDDTypes.manifold * 
-                            BDDMath.transform * real * 
+                            BDDTypes.manifold *
+                            BDDMath.transform * real *
                             BDDMath.transform * real -> unit
+
+  (* Same as above, but returns a new manifold. *)
+  val create_world_manifold : BDDTypes.manifold *
+                              BDDMath.transform * real *
+                              BDDMath.transform * real -> 
+                              BDDTypes.world_manifold
 
 
   (* Compute the point states given two manifolds, based on whether they
      share mutual points. The states pertain to the transition from
      manifold1 to manifold2. So state1 is either persist or remove
      while state2 is either add or persist. *)
-  val get_point_states : BDDTypes.manifold * BDDTypes.manifold -> 
+  val get_point_states : BDDTypes.manifold * BDDTypes.manifold ->
                          BDDTypes.point_state array * BDDTypes.point_state array
 
 
@@ -45,12 +51,12 @@ sig
 
   val aabb_overlap : BDDTypes.aabb * BDDTypes.aabb -> bool
 
-  val aabb_ray_cast : BDDTypes.aabb * BDDTypes.ray_cast_input -> 
+  val aabb_ray_cast : BDDTypes.aabb * BDDTypes.ray_cast_input ->
                       BDDTypes.ray_cast_output option
 
   (* Compute the collision manifold between two circles. *)
   val collide_circles : BDDCircle.circle * BDDMath.transform *
-                        BDDCircle.circle * BDDMath.transform -> 
+                        BDDCircle.circle * BDDMath.transform ->
                         BDDTypes.manifold
 
   (* Pack contact_id from components (all ints must be in [0, 255]). *)
@@ -67,7 +73,7 @@ sig
      Clipping for contact manifolds. Returns either no points (entire segment
      is clipped out) or two points (possibly modified). *)
   val clip_segment_to_line : BDDTypes.clip_vertex * BDDTypes.clip_vertex *
-                             BDDMath.vec2 * real -> 
+                             BDDMath.vec2 * real ->
                              (BDDTypes.clip_vertex * BDDTypes.clip_vertex) option
 
   (* Compute the collision manifold between a polygon and a circle. *)
@@ -81,7 +87,7 @@ sig
                          BDDTypes.manifold
 
   (* Determine if two generic shapes overlap. *)
-  val test_overlap : BDDShape.shape * BDDShape.shape * 
+  val test_overlap : BDDShape.shape * BDDShape.shape *
                      BDDMath.transform * BDDMath.transform ->
                      bool
 end

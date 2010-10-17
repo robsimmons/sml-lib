@@ -10,7 +10,8 @@ Replace with functional ones.
 Replace vec2 with real * real.
 Replace mat22 with real^4.
 
-Replace initialize_manifold with create_manifold or something.
+Replace initialize_manifold everywhere with create_world_manifold.
+Make create_world_manifold more direct.
 
 The type manifold should probably be a datatype. It seems to be used
 that way, and it's annoying to allocate empty arrays and let them go unused.
