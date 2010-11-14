@@ -39,6 +39,16 @@ Then we can have e.g. body-internal.sml that writes the
 utilities in terms of bodycell, then we can seal to World.Body.body later.
 Better to do this after all the code is in place, though.
 
+I believe it's actually better, performance-wise, to use ref fields
+instead of functional record update, as I have. Once done, slot in
+two implementations and compare. Since I also use refs for identity
+in a non-trivial way, might want to make a second 'a mutable type
+that's a copy of ref to avoid confusion in the code. (e.g. sometimes
+you will NEED to do make_mutable (!r) for correctness.)
+
+
+make actual assert macros
+
 Potential bugs:
 
 check that FLAG_ISLAND (etc.) are fully qualified, since if a structure is open we might
@@ -55,6 +65,8 @@ nightmarish thing to track down
 +-------------------------------------------------+
 
 b2ContactSolver - big, mathy.
+
+dynamics - missing some guts
 
 body - missing some guts
 

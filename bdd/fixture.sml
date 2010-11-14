@@ -20,6 +20,13 @@ struct
 
   exception BDDFixture of string
 
+  fun !! (SOME r) = r
+    | !! NONE = raise BDDFixture
+      ("Expected non-NONE reference; corresponds to an unchecked NULL " ^
+       "dereference in Box2D. This is probably because an element " ^
+       "(e.g. fixture, joint) was used after being detached, " ^
+       "or before being initialized.")
+
   structure D = BDDDynamics
   datatype fixturecell = datatype D.fixturecell
   structure DT = BDDDynamicsTypes(Arg)
@@ -27,6 +34,7 @@ struct
 
   type filter = D.filter
   open D.F
+  val set_filter = () (* overridden *)
 
   local fun mk16 nil = 0w0
           | mk16 (n :: rest) = Word16.orb (Word16.<< (0w1, Word.fromInt n), mk16 rest)
@@ -70,33 +78,24 @@ struct
   val is_sensor = get_sensor
   val shape = get_shape
 
-  fun set_filter _ =
-      raise BDDFixture "unimplemented"
-(*
-void b2Fixture::SetFilterData(const b2Filter& filter)
-{
-      m_filter = filter;
-
-      if (m_body == NULL)
-      {
-              return;
-      }
-
-      // Flag associated contacts for filtering.
-      b2ContactEdge* edge = m_body->GetContactList();
-      while (edge)
-      {
-              b2Contact* contact = edge->contact;
-              b2Fixture* fixtureA = contact->GetFixtureA();
-              b2Fixture* fixtureB = contact->GetFixtureB();
-              if (fixtureA == this || fixtureB == this)
-              {
-                      contact->FlagForFiltering();
-              }
-
-              edge = edge->next;
-      }
-}
-*)
+  fun set_filter (f : fixture, filter : D.filter) =
+      let in
+          D.F.set_filter (f, filter);
+          (case !f of
+               (* Flag associated contacts for filtering. *)
+               F { body = SOME body, ... } =>
+                   (oapp D.E.get_next 
+                    (fn edge =>
+                     let
+                         val contact = !!(D.E.get_contact edge)
+                         val fixture_a = D.C.get_fixture_a contact
+                         val fixture_b = D.C.get_fixture_b contact
+                     in
+                         if fixture_a = f orelse fixture_b = f
+                         then D.C.flag_for_filtering contact
+                         else ()
+                     end) (D.B.get_contact_list body))
+             | _ => ())
+      end
 
 end

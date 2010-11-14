@@ -330,7 +330,7 @@ struct
                  shape = shape, friction = friction, restitution = restitution,
                  proxy = proxy, filter = filter, sensor = sensor, data = data }
 
-    (* XXX exposed function needs to do SetFilterData below. *)
+    (* n.b. don't call directly; call through Fixture.set_filter. *)
     fun set_filter (r as ref (F { aabb, density, next, body, shape, friction,
                                 restitution, proxy, filter = _, sensor, data }),
                   filter) =
@@ -922,16 +922,16 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
 
     (* Port note: Used in world. *)
     fun advance (body : ('b, 'f, 'j) body, t : real) : unit =
-        raise BDDDynamics "unimplemented"
-(*
-{
-        // Advance to the new safe time.
-        m_sweep.Advance(t);
-        m_sweep.c = m_sweep.c0;
-        m_sweep.a = m_sweep.a0;
-        SynchronizeTransform();
-}
-*)
+        (* Advance to the new safe time. *)
+        let
+            val sweep = get_sweep body
+        in
+            sweep_advance (sweep, t);
+            sweep_set_c (sweep, sweepc0 sweep);
+            sweep_set_a (sweep, sweepa0 sweep);
+            synchronize_transform body
+        end
+
     (* Used in world. *)
     fun synchronize_fixtures (b : ('b, 'f, 'j) body) : unit =
         raise BDDDynamics "unimplemented"
@@ -1151,7 +1151,11 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
           (* XXX: Not sure this is right. A consequence of the create
              dispatch above is that a Contact in Box2D is always in
              normalized order (polygon, circle), so the "A" fixture actually
-             changes meaning. *)
+             changes meaning. 
+
+             Some other code actually mentions this fact (but does not
+             appear to rely on it). We should probably reproduce the
+             behavior here though. *)
           | (BDDShape.Circle ca, BDDShape.Polygon pb) =>
                 BDDCollision.collide_polygon_and_circle (pb, xfb, ca, xfa)
 
