@@ -77,6 +77,9 @@ sig
      than computing the inverse in one-shot cases. *)
   val mat22solve : mat22 * vec2 -> vec2
 
+  val mat22col1 : mat22 -> vec2
+  val mat22col2 : mat22 -> vec2
+
   (* 3x3 matrix; column-major order. Mutable. *)
   type mat33
   val mat33 : vec3 * vec3 * vec3 -> mat33

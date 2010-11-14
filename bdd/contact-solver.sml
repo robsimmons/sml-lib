@@ -14,8 +14,8 @@ struct
       { local_point : BDDMath.vec2,
         r_a : BDDMath.vec2,
         r_b : BDDMath.vec2,
-        normal_impulse : real,
-        tangent_impulse : real,
+        normal_impulse : real ref,
+        tangent_impulse : real ref,
         normal_mass : real,
         tangent_mass : real,
         velocity_bias : real }
@@ -131,8 +131,8 @@ struct
                   then ~restitution * v_rel
                   else 0.0
               in
-                { normal_impulse = impulse_ratio * #normal_impulse cp,
-                  tangent_impulse = impulse_ratio * #tangent_impulse cp,
+                { normal_impulse = ref (impulse_ratio * #normal_impulse cp),
+                  tangent_impulse = ref (impulse_ratio * #tangent_impulse cp),
                   local_point = #local_point cp,
                   r_a = r_a,
                   r_b = r_b,
@@ -233,7 +233,7 @@ struct
                               r_a, r_b, ... } : constraint_point) : unit =
               let
                 val p : vec2 = 
-                    normal_impulse *: normal :+: tangent_impulse *: tangent
+                    !normal_impulse *: normal :+: !tangent_impulse *: tangent
               in
                 D.B.set_angular_velocity (body_a,
                                           D.B.get_angular_velocity body_a -
@@ -259,10 +259,303 @@ struct
           constraints = constraints }
     end
 
+  (* Port note: Inner case analysis in solve_one_velocity_constraints,
+     for two points. The Box2D code has a for(;;) loop, but this just
+     appears to be so that the code can 'break' early. Here we just
+     return. *)
+  fun solve_loop (b : vec2, 
+                  c : ('b, 'f, 'j) constraint, 
+                  a : vec2, 
+                  normal : vec2, 
+                  v_a, inv_mass_a, w_a, inv_i_a,
+                  v_b, inv_mass_b, w_b, inv_i_b,
+                  cp1 : constraint_point, 
+                  cp2 : constraint_point) : unit =
+  let
+    (* Only used in assertions. *)
+    val ERROR_TOL : real = 1e~3
+
+    (* Case 1: vn = 0
+       0 = A * x' + b'
+       Solve for x':
+       x' = - inv(A) * b' 
+    *)
+    val x : vec2 = vec2neg (#normal_mass c +*: b)
+
+    (* Body of each case *)
+(*
+    fun resubstitute_and_apply (x, p1, p2) =
+      let 
+        (* Resubstitute for the incremental impulse *)
+        val d : vec2 = x :-: a
+        (* Apply incremental update *)
+        val p1 : vec2 = vec2x d *: normal
+        val p2 : vec2 = vec2y d *: normal
+      in
+        v_a := !v_a :-: (inv_mass_a *: (p1 :+: p2));
+        w_a := !w_a - (inv_i_a * (cross2vv (#r_a cp1, p1) +
+                                  cross2vv (#r_a cp2, p2)));
+        v_b := !v_b :+: (inv_mass_b *: (p1 :+: p2));
+        w_b := !w_b + (inv_i_b * (cross2vv (#r_b cp1, p1) +
+                                  cross2vv (#r_b cp2, p2)));
+        (* Accumulate *)
+        #normal_impulse cp1 := vec2x x;
+        #normal_impulse cp2 := vec2y x
+      end
+*)
+  in
+    if vec2x x >= 0.0 andalso vec2y x >= 0.0
+    then
+    let
+        (* Resubstitute for the incremental impulse *)
+        val d : vec2 = x :-: a
+        (* Apply incremental update *)
+        val p1 : vec2 = vec2x d *: normal
+        val p2 : vec2 = vec2y d *: normal
+    in
+        v_a := !v_a :-: (inv_mass_a *: (p1 :+: p2));
+        w_a := !w_a - (inv_i_a * (cross2vv (#r_a cp1, p1) +
+                                  cross2vv (#r_a cp2, p2)));
+        v_b := !v_b :+: (inv_mass_b *: (p1 :+: p2));
+        w_b := !w_b + (inv_i_b * (cross2vv (#r_b cp1, p1) +
+                                  cross2vv (#r_b cp2, p2)));
+        (* Accumulate *)
+        #normal_impulse cp1 := vec2x x;
+        #normal_impulse cp2 := vec2y x;
+
+        (* Postconditions *)
+        (* PERF all this is just assertion when B2_DEBUG_SOLVER *)
+        let val dv1 = !v_b :+: cross2sv(!w_b, #r_b cp1) :-: !v_a :-:
+                cross2sv(!w_a, #r_a cp1)
+            val dv2 = !v_b :+: cross2sv(!w_b, #r_b cp2) :-: !v_a :-:
+                cross2sv(!w_a, #r_a cp2)
+            (* Compute normal activity *)
+            val vn1 = dot2(dv1, normal)
+            val vn2 = dot2(dv2, normal)
+        in
+            if Real.abs(vn1 - #velocity_bias cp1) < ERROR_TOL andalso
+               Real.abs(vn2 - #velocity_bias cp2) < ERROR_TOL
+            then ()
+            else raise BDDContactSolver "assertion failure"
+        end
+    end
+    else
+    let
+        (* Case 2: vn1 = 0 and x2 = 0
+             0 = a11 * x1' + a12 * 0 + b1'
+           vn2 = a21 * x1' + a22 * 0 + b2'
+           *)
+        val x = vec2 (~ (#normal_mass cp1) * vec2x b, 0.0)
+        val vn1 = 0.0
+        val vn2 = vec2y (mat22col1 (#k c)) * vec2x x + vec2y b
+    in
+        if vec2x x >= 0.0 andalso vn2 >= 0.0
+        then
+        let
+          (* Resubstitute for the incremental impulse *)
+          val d : vec2 = x :-: a
+          (* Apply incremental impulse *)
+          val p1 : vec2 = vec2x d *: normal
+          val p2 : vec2 = vec2y d *: normal
+        in
+          v_a := !v_a :-: inv_mass_a *: (p1 :+: p2);
+          w_a := !w_a - inv_i_a * (cross2vv(#r_a cp1, p1) +
+                                   cross2vv(#r_a cp2, p2));
+          v_b := !v_b :+: inv_mass_b *: (p1 :+: p2);
+          w_b := !w_b + inv_i_b * (cross2vv(#r_b cp1, p1) +
+                                   cross2vv(#r_b cp2, p2));
+          #normal_impulse cp1 := vec2x x;
+          #normal_impulse cp2 := vec2y x;
+          (* Postcondtions *)
+          (* PERF all assertion *)
+          let
+            val dv1 : vec2 = !v_b :+: cross2sv(!w_b, #r_b cp1) :-:
+                !v_a :-: cross2sv(!w_a, #r_a cp1)
+            (* Compute normal velocity *)
+            val vn1 = dot2(dv1, normal)
+          in
+            if Real.abs(vn1 - #velocity_bias cp1) < ERROR_TOL
+            then ()
+            else raise BDDContactSolver "assertion failure"
+          end
+        end
+        else
+        let
+            (* Case 3: vn2 = 0 and x1 = 0
+               vn1 = a11 * 0 + a12 * x2' + b1' 
+                 0 = a21 * 0 + a22 * x2' + b2'
+            *)
+            val x : vec2 = vec2 (0.0, ~ (#normal_mass cp2) * vec2y b)
+            val vn1 = vec2x(mat22col2(#k c)) * vec2y x + vec2x b
+            val vn2 = 0.0
+        in
+            if vec2y x >= 0.0 andalso vn1 >= 0.0
+            then
+            let
+              (* Resubstitute for the incremental impulse *)
+              val d : vec2 = x :-: a
+              (* Apply incremental update *)
+              val p1 : vec2 = vec2x d *: normal
+              val p2 : vec2 = vec2y d *: normal
+            in
+                
+            end
+            else
+            raise BDDContactSolver "unimplemented case 4"
+        end
+    end
+  end
+
+  (* Port note: Body of loop in SolveVelocityConstraints. *)
+  fun solve_one_velocity_constraint 
+      (c as { body_a, body_b, normal, friction, point_count, ... } 
+       : ('b, 'f, 'j) constraint) : unit =
+  let
+      val w_a : real ref = ref (D.B.get_angular_velocity body_a)
+      val w_b : real ref = ref (D.B.get_angular_velocity body_b)
+      val v_a : vec2 ref = ref (D.B.get_linear_velocity body_a)
+      val v_b : vec2 ref = ref (D.B.get_linear_velocity body_b)
+      val inv_mass_a : real = D.B.get_inv_mass body_a
+      val inv_mass_b : real = D.B.get_inv_mass body_b
+      val inv_i_a : real = D.B.get_inv_i body_a
+      val inv_i_b : real = D.B.get_inv_i body_b
+      val tangent : vec2 = cross2vs (normal, 1.0)
+
+      (* PERF assert *)
+      val () = if point_count = 1 orelse point_count = 2
+               then ()
+               else raise BDDContactSolver "assertion failed"
+
+      (* Solve tangent constraints. *)
+      fun one_tangent_constraint (ccp : constraint_point) : unit =
+        let
+            (* Relative velocity at contact. *)
+            val dv : vec2 = !v_b :+: cross2sv(!w_b, #r_b ccp) :-: !v_a :-:
+                cross2sv(!w_a, #r_a ccp)
+            (* Compute tangent force *)
+            val vt : real = dot2(dv, tangent)
+            val lambda : real = #tangent_mass ccp * ~vt
+            (* Clamp the accumulated force *)
+            val max_friction : real = friction * !(#normal_impulse ccp)
+            val new_impulse : real = clampr(!(#tangent_impulse ccp) + lambda,
+                                            ~max_friction,
+                                            max_friction)
+            val lambda = new_impulse - !(#tangent_impulse ccp)
+        
+            (* Apply contact impulse *)
+            val p : vec2 = lambda *: tangent
+        in
+            v_a := !v_a :-: (inv_mass_a *: p);
+            w_a := !w_a - (inv_i_a * cross2vv(#r_a ccp, p));
+            v_b := !v_b :+: (inv_mass_b *: p);
+            w_b := !w_b + (inv_i_b * cross2vv(#r_b ccp, p));
+            #tangent_impulse ccp := new_impulse
+        end
+  in
+      Array.app one_tangent_constraint (#points c);
+      (* Solve normal constraints. *)
+      (case point_count of
+        1 =>
+          let
+            val ccp = Array.sub(#points c, 0)
+            (* Relative velocity at contact *)
+            val dv : vec2 = !v_b :+: cross2sv(!w_b, #r_b ccp) :-:
+                !v_a :-: cross2sv(!w_a, #r_a ccp)
+            (* Compute normal impulse *)
+            val vn : real = dot2(dv, normal)
+            val lambda : real = ~(#normal_mass ccp) * (vn - #velocity_bias ccp)
+            (* Clamp the accumulated impulse *)
+            val new_impulse : real = 
+                Real.max(!(#normal_impulse ccp) + lambda, 0.0)
+            val lambda = new_impulse - !(#normal_impulse ccp)
+
+            (* Apply contact impulse. *)
+            val p : vec2 = lambda *: normal
+          in
+            v_a := !v_a :-: (inv_mass_a *: p);
+            w_a := !w_a - (inv_i_a * cross2vv (#r_a ccp, p));
+            v_b := !v_b :+: (inv_mass_b *: p);
+            w_b := !w_b + (inv_i_b * cross2vv (#r_b ccp, p));
+            #normal_impulse ccp := new_impulse
+          end
+      | 2 =>
+          (* Block solver developed in collaboration with Dirk Gregorius 
+             (back in 01/07 on Box2D_Lite).
+             
+             Build the mini LCP for this contact patch
+             
+             vn = A * x + b, vn >= 0, , vn >= 0, x >= 0 
+             and vn_i * x_i = 0 with i = 1..2
+             
+             A = J * W * JT and J = ( -n, -r1 x n, n, r2 x n )
+             b = vn_0 - velocityBias
+             
+             The system is solved using the "Total enumeration method" 
+             (s. Murty). The complementary constraint vn_i * x_i
+             implies that we must have in any solution either 
+             vn_i = 0 or x_i = 0. So for the 2D contact problem the cases
+             vn1 = 0 and vn2 = 0, x1 = 0 and x2 = 0, x1 = 0 
+             and vn2 = 0, x2 = 0 and vn1 = 0 need to be tested. 
+             The first valid solution that satisfies the problem is chosen.
+             
+             In order to account of the accumulated impulse 'a' 
+             (because of the iterative nature of the solver which only
+             requires that the accumulated impulse is clamped and not 
+             the incremental impulse) we change the impulse variable (x_i).
+             
+             Substitute:
+             
+             x = x' - a
+             
+             Plug into above equation:
+             
+             vn = A * x + b
+                = A * (x' - a) + b
+                = A * x' + b - A * a
+                = A * x' + b'
+             b' = b - A * a
+          *)
+          let
+            val cp1 = Array.sub(#points c, 0)
+            val cp2 = Array.sub(#points c, 1)
+            val a : vec2 = vec2(!(#normal_impulse cp1),
+                                !(#normal_impulse cp2))
+
+            (* PERF assert *)
+            val () = if vec2x a >= 0.0 andalso vec2y a >= 0.0
+                     then ()
+                     else raise BDDContactSolver "assertion failure"
+                      
+            (* Relative velocity at contact *)
+            val dv1 : vec2 = !v_b :+: cross2sv(!w_b, #r_b cp1) :-:
+                !v_a :-: cross2sv(!w_a, #r_a cp1)
+            val dv2 : vec2 = !v_b :+: cross2sv(!w_b, #r_b cp2) :-:
+                !v_a :-: cross2sv(!w_a, #r_a cp2)
+
+            (* Compute normal velocity *)
+            val vn1 : real = dot2(dv1, normal)
+            val vn2 : real = dot2(dv2, normal)
+
+            val b : vec2 = vec2(vn1 - #velocity_bias cp1,
+                                vn2 - #velocity_bias cp2)
+            val b : vec2 = b :-: (#k c +*: a)
+          in
+            solve_loop (b, c, a, normal, 
+                        v_a, inv_mass_a, w_a, inv_i_a,
+                        v_b, inv_mass_b, w_b, inv_i_b,
+                        cp1, cp2)
+          end
+      | _ => raise BDDContactSolver "can only solve 1 or 2-point contacts");
+
+      D.B.set_linear_velocity (body_a, !v_a);
+      D.B.set_angular_velocity (body_a, !w_a);
+      D.B.set_linear_velocity (body_b, !v_b);
+      D.B.set_angular_velocity (body_b, !w_b)
+  end
 
   fun solve_velocity_constraints 
-      (solver : ('b, 'f, 'j) contact_solver) : unit =
-      raise BDDContactSolver "unimplemented"
+      ({ constraints, ... } : ('b, 'f, 'j) contact_solver) : unit =
+      Array.app solve_one_velocity_constraint constraints
 
   fun store_impulses (solver : ('b, 'f, 'j) contact_solver) : unit =
     Array.appi 
@@ -277,9 +570,9 @@ struct
                         { local_point = local_point,
                           id = id,
                           normal_impulse =
-                            #normal_impulse (Array.sub (points, j)),
+                            !(#normal_impulse (Array.sub (points, j))),
                           tangent_impulse =
-                            #tangent_impulse (Array.sub (points, j)) })
+                            !(#tangent_impulse (Array.sub (points, j))) })
       end)) (#constraints solver)
 
   (* Port note: A class in Box2D; it's just a function that
@@ -435,11 +728,11 @@ struct
            val normal_impulses = 
                Array.tabulate (#point_count cc,
                                fn j =>
-                               #normal_impulse (Array.sub(#points cc, j)))
+                               !(#normal_impulse (Array.sub(#points cc, j))))
            val tangent_impulses = 
                Array.tabulate (#point_count cc,
                                fn j =>
-                               #tangent_impulse (Array.sub(#points cc, j)))
+                               !(#tangent_impulse (Array.sub(#points cc, j))))
        in
            f (c, { normal_impulses = normal_impulses,
                    tangent_impulses = tangent_impulses })

@@ -46,6 +46,16 @@ in a non-trivial way, might want to make a second 'a mutable type
 that's a copy of ref to avoid confusion in the code. (e.g. sometimes
 you will NEED to do make_mutable (!r) for correctness.)
 
+Lots of places in the code use arrays that can only hold 0, 1, or 2 values,
+or sometimes just 1 or 2 (contacts). These should be replaced with
+efficient implementations (e.g. datatype 'a tiny_array = One of 'a 
+| Two of 'a * 'a) to reduce bounds checking and storage overhead,
+and to improve inlining and specialization.
+
+For that matter, there are a bunch of other places where a struct is
+essentially a disjoint union, and we store more data than we need to,
+and pay the cost of initializing fields we'll never use, etc.
+
 
 make actual assert macros
 

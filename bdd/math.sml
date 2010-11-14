@@ -132,6 +132,9 @@ struct
                             col2 = vec2(a12, 
                                         a22) }
 
+  fun mat22col1 { col1, col2 } = col1
+  fun mat22col2 { col1, col2 } = col2
+
   (* Construct this matrix using an angle. This matrix becomes
      an orthonormal rotation matrix. *)
   fun mat22angle angle =
