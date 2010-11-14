@@ -36,13 +36,16 @@ struct
   open D.F
   val set_filter = () (* overridden *)
 
-  local fun mk16 nil = 0w0
-          | mk16 (n :: rest) = Word16.orb (Word16.<< (0w1, Word.fromInt n), mk16 rest)
+  local 
+      fun mk16 nil = 0w0
+        | mk16 (n :: rest) = 
+          Word16.orb (Word16.<< (0w1, Word.fromInt n), mk16 rest)
   in
       fun filter { category_bits : Word16.word,
                    mask_bits : Word16.word,
                    group_index : int } : filter =
-          (Word32.orb (Word32.<< (Word32.fromInt (Word16.toInt category_bits), 0w16),
+          (Word32.orb (Word32.<< (Word32.fromInt (Word16.toInt category_bits),
+                                  0w16),
                        Word32.fromInt (Word16.toInt mask_bits)),
            group_index)
 
@@ -56,8 +59,10 @@ struct
 
 
   fun filter_group_index (_, g) = g
-  fun filter_category_bits (w, _) = Word16.fromInt (Word32.toInt (Word32.andb(Word32.>>(w, 0w16), 0wxFFFF)))
-  fun filter_mask_bits (w, _) = Word16.fromInt (Word32.toInt (Word32.andb(w, 0wxFFFF)))
+  fun filter_category_bits (w, _) = 
+      Word16.fromInt (Word32.toInt (Word32.andb(Word32.>>(w, 0w16), 0wxFFFF)))
+  fun filter_mask_bits (w, _) = 
+      Word16.fromInt (Word32.toInt (Word32.andb(w, 0wxFFFF)))
 
   fun fixture_transform f = D.B.get_xf (get_body f)
 (*

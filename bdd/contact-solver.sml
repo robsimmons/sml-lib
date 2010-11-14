@@ -38,7 +38,11 @@ struct
   (* Parameterized by user data, since it uses the internal
      polymorpic types. *)
   type ('b, 'f, 'j) contact_solver =
-      { constraints : ('b, 'f, 'j) constraint array
+      (* Representation invariant: These two have the
+         same length. *)
+      { constraints : ('b, 'f, 'j) constraint array,
+        (* Kept for 'report'; just a copy of island's contacts. *)
+        contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector
         (* XXX ... *) }
         
 
@@ -172,7 +176,8 @@ struct
                       (* Ensure a reasonable condition number. *)
                       val MAX_CONDITION_NUMBER = 100.0
                   in
-                      if k11 * k11 < MAX_CONDITION_NUMBER * (k11 * k22 - k12 * k12)
+                      if k11 * k11 < 
+                         MAX_CONDITION_NUMBER * (k11 * k22 - k12 * k12)
                       then (* K is safe to invert. *)
                           let
                               val k = mat22cols (vec2(k11, k12), vec2(k12, k22))
@@ -222,11 +227,13 @@ struct
             val inv_mass_b = D.B.get_inv_mass body_b
             val inv_i_b = D.B.get_inv_i body_b
 
-            fun warm_point (ccp as { normal_impulse, 
-                                     tangent_impulse, 
-                                     r_a, r_b, ... } : constraint_point) : unit =
+            fun warm_point (ccp as 
+                            { normal_impulse, 
+                              tangent_impulse, 
+                              r_a, r_b, ... } : constraint_point) : unit =
               let
-                val p : vec2 = normal_impulse *: normal :+: tangent_impulse *: tangent
+                val p : vec2 = 
+                    normal_impulse *: normal :+: tangent_impulse *: tangent
               in
                 D.B.set_angular_velocity (body_a,
                                           D.B.get_angular_velocity body_a -
@@ -248,7 +255,8 @@ struct
         (* Port note: Rolled the warm start function, which is always
            called immediately after initialization, into this. *)
         Array.app warm_start_one constraints;
-        { constraints = constraints }
+        { contacts = contacts,
+          constraints = constraints }
     end
 
 
@@ -257,22 +265,22 @@ struct
       raise BDDContactSolver "unimplemented"
 
   fun store_impulses (solver : ('b, 'f, 'j) contact_solver) : unit =
-      raise BDDContactSolver "unimplemented"
-(*
-{
-        for (int32 i = 0; i < m_constraintCount; ++i)
-        {
-                b2ContactConstraint* c = m_constraints + i;
-                b2Manifold* m = c->manifold;
-
-                for (int32 j = 0; j < c->pointCount; ++j)
-                {
-                        m->points[j].normalImpulse = c->points[j].normalImpulse;
-                        m->points[j].tangentImpulse = c->points[j].tangentImpulse;
-                }
-        }
-}
-*)
+    Array.appi 
+    (fn (i, {manifold, point_count, points, ... } : ('b, 'f, 'j) constraint) =>
+     for 0 (point_count - 1)
+     (fn j =>
+      let
+          val { local_point, id, ... } =
+              Array.sub(#points manifold, j)
+      in
+          Array.update (#points manifold, j,
+                        { local_point = local_point,
+                          id = id,
+                          normal_impulse =
+                            #normal_impulse (Array.sub (points, j)),
+                          tangent_impulse =
+                            #tangent_impulse (Array.sub (points, j)) })
+      end)) (#constraints solver)
 
   (* Port note: A class in Box2D; it's just a function that
      returns multiple values.
@@ -412,27 +420,29 @@ struct
     end
 
 
-  fun app_contacts ({ constraints, ... } : ('b, 'f, 'j) contact_solver, 
+  (* Apply the function to every contact, paired with all of its
+     impulses. *)
+  fun app_contacts ({ contacts, 
+                      constraints, 
+                      ... } : ('b, 'f, 'j) contact_solver, 
                     f : ('b, 'f, 'j) BDDDynamics.contact * 
                         { normal_impulses : real array,
                           tangent_impulses : real array } -> unit) : unit =
-      raise BDDContactSolver "unimplemented"
-(* (from b2island.cpp)
-        for (int32 i = 0; i < m_contactCount; ++i)
-        {
-                b2Contact* c = m_contacts[i];
-
-                const b2ContactConstraint* cc = constraints + i;
-                
-                b2ContactImpulse impulse;
-                for (int32 j = 0; j < cc->pointCount; ++j)
-                {
-                        impulse.normalImpulses[j] = cc->points[j].normalImpulse;
-                        impulse.tangentImpulses[j] = cc->points[j].tangentImpulse;
-                }
-
-                m_listener->PostSolve(c, &impulse);
-        }
-*)
+      Vector.appi 
+      (fn (i, c : ('b, 'f, 'j) BDDDynamics.contact) =>
+       let
+           val cc : ('b, 'f, 'j) constraint = Array.sub(constraints, i)
+           val normal_impulses = 
+               Array.tabulate (#point_count cc,
+                               fn j =>
+                               #normal_impulse (Array.sub(#points cc, j)))
+           val tangent_impulses = 
+               Array.tabulate (#point_count cc,
+                               fn j =>
+                               #tangent_impulse (Array.sub(#points cc, j)))
+       in
+           f (c, { normal_impulses = normal_impulses,
+                   tangent_impulses = tangent_impulses })
+       end) contacts
 
 end
