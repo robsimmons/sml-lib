@@ -42,8 +42,7 @@ struct
          same length. *)
       { constraints : ('b, 'f, 'j) constraint array,
         (* Kept for 'report'; just a copy of island's contacts. *)
-        contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector
-        (* XXX ... *) }
+        contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector }
         
 
   fun contact_solver 
@@ -282,9 +281,9 @@ struct
     *)
     val x : vec2 = vec2neg (#normal_mass c +*: b)
 
-    (* Body of each case *)
-(*
-    fun resubstitute_and_apply (x, p1, p2) =
+    (* Port note: The body of each case is the same, and
+       only depends on x. *)
+    fun resubstitute_and_apply x =
       let 
         (* Resubstitute for the incremental impulse *)
         val d : vec2 = x :-: a
@@ -302,26 +301,13 @@ struct
         #normal_impulse cp1 := vec2x x;
         #normal_impulse cp2 := vec2y x
       end
-*)
+
   in
     if vec2x x >= 0.0 andalso vec2y x >= 0.0
     then
     let
-        (* Resubstitute for the incremental impulse *)
-        val d : vec2 = x :-: a
-        (* Apply incremental update *)
-        val p1 : vec2 = vec2x d *: normal
-        val p2 : vec2 = vec2y d *: normal
     in
-        v_a := !v_a :-: (inv_mass_a *: (p1 :+: p2));
-        w_a := !w_a - (inv_i_a * (cross2vv (#r_a cp1, p1) +
-                                  cross2vv (#r_a cp2, p2)));
-        v_b := !v_b :+: (inv_mass_b *: (p1 :+: p2));
-        w_b := !w_b + (inv_i_b * (cross2vv (#r_b cp1, p1) +
-                                  cross2vv (#r_b cp2, p2)));
-        (* Accumulate *)
-        #normal_impulse cp1 := vec2x x;
-        #normal_impulse cp2 := vec2y x;
+        resubstitute_and_apply x;
 
         (* Postconditions *)
         (* PERF all this is just assertion when B2_DEBUG_SOLVER *)
@@ -344,28 +330,16 @@ struct
         (* Case 2: vn1 = 0 and x2 = 0
              0 = a11 * x1' + a12 * 0 + b1'
            vn2 = a21 * x1' + a22 * 0 + b2'
-           *)
+        *)
         val x = vec2 (~ (#normal_mass cp1) * vec2x b, 0.0)
         val vn1 = 0.0
         val vn2 = vec2y (mat22col1 (#k c)) * vec2x x + vec2y b
     in
         if vec2x x >= 0.0 andalso vn2 >= 0.0
         then
-        let
-          (* Resubstitute for the incremental impulse *)
-          val d : vec2 = x :-: a
-          (* Apply incremental impulse *)
-          val p1 : vec2 = vec2x d *: normal
-          val p2 : vec2 = vec2y d *: normal
-        in
-          v_a := !v_a :-: inv_mass_a *: (p1 :+: p2);
-          w_a := !w_a - inv_i_a * (cross2vv(#r_a cp1, p1) +
-                                   cross2vv(#r_a cp2, p2));
-          v_b := !v_b :+: inv_mass_b *: (p1 :+: p2);
-          w_b := !w_b + inv_i_b * (cross2vv(#r_b cp1, p1) +
-                                   cross2vv(#r_b cp2, p2));
-          #normal_impulse cp1 := vec2x x;
-          #normal_impulse cp2 := vec2y x;
+        let in
+          resubstitute_and_apply x;
+
           (* Postcondtions *)
           (* PERF all assertion *)
           let
@@ -391,17 +365,37 @@ struct
         in
             if vec2y x >= 0.0 andalso vn1 >= 0.0
             then
-            let
-              (* Resubstitute for the incremental impulse *)
-              val d : vec2 = x :-: a
-              (* Apply incremental update *)
-              val p1 : vec2 = vec2x d *: normal
-              val p2 : vec2 = vec2y d *: normal
-            in
+            let in
+                resubstitute_and_apply x;
                 
+                (* Postconditions *)
+                (* PERF all assertion *)
+                let
+                  val dv2 = !v_b :+: cross2sv(!w_b, #r_b cp2) :-:
+                      !v_a :-: cross2sv(!w_a, #r_a cp2)
+                  val vn2 = dot2(dv2, normal)
+                in
+                  if Real.abs(vn2 - #velocity_bias cp2) < ERROR_TOL
+                  then ()
+                  else raise BDDContactSolver "assertion failure"
+                end
             end
             else
-            raise BDDContactSolver "unimplemented case 4"
+            let
+              (* Case 4: x1 = 0 and x2 = 0
+                 vn1 = b1
+                 vn2 = b2 *)
+              val x = vec2 (0.0, 0.0)
+              val vn1 = vec2x b
+              val vn2 = vec2y b
+            in
+              if vn1 >= 0.0 andalso vn2 >= 0.0
+              then resubstitute_and_apply x
+              else 
+                  (* No solution; give up. This is hit sometimes,
+                     but it doesn't seem to matter. *)
+                  ()
+            end
         end
     end
   end
