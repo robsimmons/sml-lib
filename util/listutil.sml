@@ -498,6 +498,8 @@ struct
                     (elt :: lis) :: sets) sofar sofar
              ) [nil] l
 
+    (* PERF: This can be more efficient. We don't need
+       to sort the list, just do something like quickselect. *)
     fun median cmp l =
         let val l = stablesort cmp l
             val pos = length l div 2
