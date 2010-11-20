@@ -21,7 +21,8 @@ sig
   val graphicsize : svggraphic -> real * real
 
 
-  (* Give viewport. Generator is a freeform html-safe string; ignored if blank. *)
+  (* Give viewport. Generator is a freeform html-safe string; 
+     ignored if blank. *)
   val svgheader : { x : int, y : int, 
                     width : int, height : int, 
                     generator : string } -> string

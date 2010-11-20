@@ -12,7 +12,7 @@ sig
     (* Fast, good quality square wave.
        
        This uses an integer-only algorithm for efficiency,
-       but attempts to avoid alasing by
+       but attempts to avoid aliasing by
          - Accumulating error like in Bresnham's line drawing algorithm
          - Faking anti-aliasing on edge samples, based on that error.
 

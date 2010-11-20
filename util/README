@@ -27,7 +27,7 @@ simplestream -  Some libraries use (unit -> 'a option) functions as a
 
 script       -  Utilities for simple scripting tasks.
 
-reutil       -  Utilities for using the SML/NJ regular expression library.
+re           -  Utilities for using the SML/NJ regular expression library.
                 Its stream-based design requires some contortions to use,
                 even for simple stuff. re.cm gets you everything you need
                 to call these functions, which only use base types.

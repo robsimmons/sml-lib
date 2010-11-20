@@ -226,11 +226,12 @@ struct
 
     fun initial () =
       let
-        val d = { nextcode = ref 0, roots = Array.array(C.radix, 
-                                                        (* XX dummy, will be
-                                                           overwritten. *)
-                                                        N { code = 0, 
-                                                            children = c_empty ()}) }
+        val d = { nextcode = ref 0, 
+                  roots = Array.array(C.radix, 
+                                      (* XX dummy, will be
+                                         overwritten. *)
+                                      N { code = 0, 
+                                          children = c_empty ()}) }
       in
         reset d;
         d
