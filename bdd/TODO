@@ -56,6 +56,11 @@ For that matter, there are a bunch of other places where a struct is
 essentially a disjoint union, and we store more data than we need to,
 and pay the cost of initializing fields we'll never use, etc.
 
+There are several conceptual staging problems, like where we have to
+define one function in dynamics.sml for ContactManager in world.sml so
+that it can be referred to by body.sml, which world.sml also depends
+on. Come up with an idea here and explain it, rather than just moving
+things into dynamics when they need to be there.
 
 make actual assert macros
 
@@ -65,7 +70,10 @@ check that FLAG_ISLAND (etc.) are fully qualified, since if a structure is open 
 accidentally refer to the wrong one, which if it has a different value would be a very
 nightmarish thing to track down
 
-
+make sure everywhere that calls functions that are defined as pure get/set in dynamics
+but overridden in thing.sml are calling the right version.
+  - body - set_active
+  - body - reset_mass_data
 
 
 +-------------------------------------------------+

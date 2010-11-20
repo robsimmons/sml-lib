@@ -20,6 +20,12 @@ struct
 
   exception BDDBody of string
   
+  fun !! (SOME r) = r
+    | !! NONE = raise BDDBody
+      ("Expected non-NONE reference; corresponds to an unchecked NULL " ^
+       "dereference in Box2D. This is probably because an element " ^
+       "(e.g. fixture, joint) was used after being detached, " ^
+       "or before being initialized.")
 
   structure D = BDDDynamics
   datatype bodycell = datatype D.bodycell
@@ -92,8 +98,43 @@ struct
   fun get_bullet b = get_flag (b, FLAG_BULLET)
 
   fun get_active b = get_flag (b, FLAG_ACTIVE)
-  fun set_active (b, f) =
-      raise BDDBody "unimplemented (cpp)"
+  fun set_active (b, flag) =
+      if flag = get_flag (b, FLAG_ACTIVE)
+      then ()
+      else 
+          if flag
+          then
+              let 
+                  val bp = D.W.get_broad_phase (get_world b)
+                  val xf = D.B.get_xf b
+              in
+                  set_flag (b, FLAG_ACTIVE);
+                  (* Create all proxies *)
+                  oapp D.F.get_next 
+                  (fn fixture =>
+                   D.F.create_proxy(fixture, bp, xf)) 
+                  (D.B.get_fixture_list b)
+                  (* Contacts are created the next time step. *)
+              end
+          else
+              let 
+                  val w = get_world b
+                  val bp = D.W.get_broad_phase w
+              in
+                  clear_flag (b, FLAG_ACTIVE);
+                  (* Destroy all proxies. *)
+                  oapp D.F.get_next
+                  (fn fixture =>
+                   D.F.destroy_proxy (fixture, bp))
+                  (D.B.get_fixture_list b);
+                  (* Destroy the attached contacts. *)
+                  oapp D.E.get_next
+                  (fn ce0 => D.W.CM.destroy (w, !!(D.E.get_contact ce0)))
+                  (D.B.get_contact_list b);
+                  (* Clear them. *)
+                  D.B.set_contact_list (b, NONE)
+              end
+
 
   fun reset_mass_data b =
       raise BDDBody "unimplemented (cpp)"

@@ -356,6 +356,7 @@ struct
                       broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase, 
                       xf : BDDMath.transform) =
         raise BDDDynamics "unimplemented" (* maybe should be part of 'new' *)
+            (* XXX called from body.setactive too *)
 
  (*
 void b2Fixture::CreateProxy(b2BroadPhase* broadPhase, const b2Transform& xf)
@@ -1321,6 +1322,74 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
     fun set_auto_clear_forces (w, b) = if b then set_flag (w, FLAG_CLEAR_FORCES)
                                        else clear_flag (w, FLAG_CLEAR_FORCES)
     fun get_auto_clear_forces w = get_flag (w, FLAG_CLEAR_FORCES)
+
+    structure CM =
+    struct
+      (* Regrettably, used by body.sml when setting a body inactive. 
+         XXX figure out the right place for this. *)
+         
+      fun destroy (world : ('b, 'f, 'j) world, 
+                   c : ('b, 'f, 'j) contact) : unit =
+        let
+          val fixture_a = C.get_fixture_a c
+          val fixture_b = C.get_fixture_b c
+          val body_a = F.get_body fixture_a
+          val body_b = F.get_body fixture_b
+
+          val () = if C.is_touching c
+                   then get_end_contact world c
+                   else ()
+
+          (* remove from world DLL. *)
+          val prev = C.get_prev c
+          val next = C.get_next c
+          val () = case prev of
+              NONE => ()
+            | SOME prev => C.set_next (prev, next)
+          val () = case next of
+              NONE => ()
+            | SOME next => C.set_prev (next, prev)
+
+          val () = if SOME c = get_contact_list world
+                   then set_contact_list (world, next)
+                   else ()
+
+          (* Remove from body A *)
+          val nodea = C.get_node_a c
+          val prev = E.get_prev nodea
+          val next = E.get_next nodea
+          val () = case prev of
+              NONE => ()
+            | SOME prev => E.set_next (prev, next)
+          val () = case next of
+              NONE => ()
+            | SOME next => E.set_prev (next, prev)
+          (* Port note: The original code uses pointers to the interior of the
+             contact (&c->m_nodeA == ?); I've made these their own cells. I 
+             think this is right, but if something is going wrong here, this 
+             is a good thing to take a look at. *)
+          val () = if SOME nodea = B.get_contact_list body_a
+                   then B.set_contact_list (body_a, next)
+                   else ()
+
+          (* Remove from body B *)
+          val nodeb = C.get_node_b c
+          val prev = E.get_prev nodeb
+          val next = E.get_next nodeb
+          val () = case prev of
+              NONE => ()
+            | SOME prev => E.set_next (prev, next)
+          val () = case next of
+              NONE => ()
+            | SOME next => E.set_prev (next, prev)
+          val () = if SOME nodeb = B.get_contact_list body_b
+                   then B.set_contact_list (body_b, next)
+                   else ()
+        in
+            set_contact_count (world, get_contact_count world - 1)
+        end
+
+    end
 
   end
 
