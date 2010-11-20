@@ -630,7 +630,7 @@ void b2World::DestroyJoint(b2Joint* j)
               D.B.get_typ b = D.Static
            then ()
            (* Otherwise update its fixtures for the broad phase. *)
-           else D.B.synchronize_fixtures b
+           else D.B.synchronize_fixtures (b, get_broad_phase world)
        val () = oapp D.B.get_next one_sync (get_body_list world)
     in
       ContactManager.find_new_contacts world

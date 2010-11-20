@@ -86,9 +86,6 @@ in dynamics but overridden in thing.sml are calling the right version.
 |                                                 |
 +-------------------------------------------------+
 
-dynamics - other than joints, just:
-  B.synchronize_fixtures
-
 body - deleting fixtures; can test without, of course
 
 joints - everything. I just stubbed it out so that

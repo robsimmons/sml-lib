@@ -1046,21 +1046,22 @@ struct
         end
 
     (* Used in world. *)
-    fun synchronize_fixtures (b : ('b, 'f, 'j) body) : unit =
-        raise BDDDynamics "unimplemented"
-(*
-{
-        b2Transform xf1;
-        xf1.R.Set(m_sweep.a0);
-        xf1.position = m_sweep.c0 - b2Mul(xf1.R, m_sweep.localCenter);
-
-        b2BroadPhase* broadPhase = &m_world->m_contactManager.m_broadPhase;
-        for (b2Fixture* f = m_fixtureList; f; f = f->m_next)
-        {
-                f->Synchronize(broadPhase, xf1, m_xf);
-        }
-}
-*)
+    (* Port note: Passing broadphase instead of whole world value,
+       to reduce dependencies. *)
+    fun synchronize_fixtures 
+        (b : ('b, 'f, 'j) body,
+         broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase) : unit =
+      let
+          val sweep : sweep = get_sweep b
+          val r = mat22angle (sweepa0 sweep)
+          val xf1 = transform (sweepc0 sweep :-: 
+                               (r +*: sweeplocalcenter sweep),
+                               r)
+      in
+          oapp F.get_next
+          (fn f => F.synchronize (f, broadphase, xf1, get_xf b))
+          (get_fixture_list b)
+      end
 
     fun get_world_point (b, p) = get_xf b @*: p
     fun get_world_vector (b, v) = transformr (get_xf b) +*: v
