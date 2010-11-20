@@ -69,12 +69,13 @@ it to be non-null in most places
 
 Potential bugs:
 
-check that FLAG_ISLAND (etc.) are fully qualified, since if a structure is open we might
-accidentally refer to the wrong one, which if it has a different value would be a very
-nightmarish thing to track down
+check that FLAG_ISLAND (etc.) are fully qualified, since if a
+structure is open we might accidentally refer to the wrong one, which
+if it has a different value would be a very nightmarish thing to track
+down
 
-make sure everywhere that calls functions that are defined as pure get/set in dynamics
-but overridden in thing.sml are calling the right version.
+make sure everywhere that calls functions that are defined as pure get/set 
+in dynamics but overridden in thing.sml are calling the right version.
   - body - set_active
   - body - reset_mass_data
 
@@ -85,10 +86,7 @@ but overridden in thing.sml are calling the right version.
 |                                                 |
 +-------------------------------------------------+
 
-dynamics - missing some guts
-  F.create_proxy
-  F.synchronize
-  B.should_collide
+dynamics - other than joints, just:
   B.synchronize_fixtures
 
 body - deleting fixtures; can test without, of course

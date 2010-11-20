@@ -32,7 +32,8 @@ sig
   (* move_proxy (broadphase, proxy, aabb, displacement)
      Call MoveProxy as many times as you like, then when you are done
      call UpdatePairs to finalize the proxy pairs (for your time step). *)
-  val move_proxy : 'a broadphase * 'a proxy * BDDTypes.aabb * BDDMath.vec2 -> unit
+  val move_proxy : 'a broadphase * 'a proxy * BDDTypes.aabb * BDDMath.vec2 -> 
+                   unit
 
   (* Get the fat AABB for a proxy. *)
   val fat_aabb : 'a proxy -> BDDTypes.aabb

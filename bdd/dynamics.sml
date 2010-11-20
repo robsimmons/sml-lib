@@ -235,16 +235,20 @@ struct
 
              (* Port Note: Folded the "contact manager" object into the world
                 object. *)
-             (* The broad phase uses the userdata to point back to the fixture cell. *)
-             broad_phase : ('b, 'f, 'j) fixturecell ref BDDBroadPhase.broadphase,
+             (* The broad phase uses the userdata to point back to the 
+                fixture cell. *)
+             broad_phase : 
+               ('b, 'f, 'j) fixturecell ref BDDBroadPhase.broadphase,
              contact_list : ('b, 'f, 'j) contactcell ref option,
              contact_count : int,
              should_collide : (('b, 'f, 'j) fixturecell ref * 
                                ('b, 'f, 'j) fixturecell ref -> bool),
              begin_contact : ('b, 'f, 'j) contactcell ref -> unit,
              end_contact : ('b, 'f, 'j) contactcell ref -> unit,
-             pre_solve : ('b, 'f, 'j) contactcell ref * BDDTypes.manifold -> unit,
-             post_solve : ('b, 'f, 'j) contactcell ref * contact_impulse -> unit }
+             pre_solve : ('b, 'f, 'j) contactcell ref * BDDTypes.manifold -> 
+                         unit,
+             post_solve : ('b, 'f, 'j) contactcell ref * contact_impulse -> 
+                          unit }
 
 
   type ('b, 'f, 'j) fixture = ('b, 'f, 'j) fixturecell ref
@@ -376,26 +380,28 @@ struct
 
     (* Create a proxy for the fixture in the broad phase, and store it in
        fixture. *)
-    fun create_proxy (fixture : ('b, 'f, 'j) fixture, 
-                      broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase, 
-                      xf : BDDMath.transform) =
-        raise BDDDynamics "unimplemented" (* maybe should be part of 'new' --
-        probably not because I call it elsewhere too *)
-            (* XXX called from body.setactive too *)
+    fun create_proxy 
+        (fixture : ('b, 'f, 'j) fixture, 
+         broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase, 
+         xf : BDDMath.transform) : unit =
+        case get_proxy fixture of
+            NONE =>
+                (* Create proxy in the broad-phase. *)
+                let 
+                    val aabb = BDDShape.compute_aabb (get_shape fixture, xf)
+                in
+                    set_aabb (fixture, aabb);
+                    set_proxy (fixture,
+                               SOME (BDDBroadPhase.create_proxy (broadphase, 
+                                                                 aabb, 
+                                                                 fixture)))
+                end
+          | SOME _ =>
+                raise BDDDynamics "fixture already had a proxy in create_proxy"
 
- (*
-void b2Fixture::CreateProxy(b2BroadPhase* broadPhase, const b2Transform& xf)
-{
-        b2Assert(m_proxyId == b2BroadPhase::e_nullProxy);
-
-        // Create proxy in the broad-phase.
-        m_shape->ComputeAABB(&m_aabb, xf);
-        m_proxyId = broadPhase->CreateProxy(m_aabb, this);
-}
-*)
-
-    fun destroy_proxy (fixture : ('b, 'f, 'j) fixture, 
-                       broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase) =
+    fun destroy_proxy 
+        (fixture : ('b, 'f, 'j) fixture, 
+         broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase) =
         (* Proxy can be missing if the body is not active. *)
         case get_proxy fixture of
             NONE => ()
@@ -409,29 +415,102 @@ void b2Fixture::CreateProxy(b2BroadPhase* broadPhase, const b2Transform& xf)
                      broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase,
                      transform1 : transform,
                      transform2 : transform) =
+        case get_proxy fixture of
+            NONE => ()
+          | SOME proxy =>
+          (* Compute an AABB that covers the swept shape (may miss some
+             rotation effect). *)
+          let val shape = get_shape fixture
+              val aabb1 = BDDShape.compute_aabb (shape, transform1)
+              val aabb2 = BDDShape.compute_aabb (shape, transform2)
+              val aabb = BDDCollision.aabb_combine (aabb1, aabb2)
+
+              val displacement : vec2 = 
+                  transformposition transform2 :-:
+                  transformposition transform1
+          in
+              set_aabb (fixture, aabb);
+              BDDBroadPhase.move_proxy (broadphase, proxy, aabb, displacement)
+          end
+
+  end
+
+  (* Internal, joint edges *)
+  structure G =
+  struct
+    fun get_other (ref (G{ other, ... })) = other
+    fun get_joint (ref (G{ joint, ... })) = joint
+    fun get_prev (ref (G{ prev, ... })) = prev
+    fun get_next (ref (G{ next, ... })) = next
+    fun set_other (r as ref (G{ other = _, joint, prev, next }), other) = 
+        r := G { other = other, joint = joint, prev = prev, next = next}
+    fun set_joint (r as ref (G{ other, joint = _, prev, next }), joint) = 
+        r := G { other = other, joint = joint, prev = prev, next = next}
+    fun set_prev (r as ref (G{ other, joint, prev = _, next }), prev) = 
+        r := G { other = other, joint = joint, prev = prev, next = next}
+    fun set_next (r as ref (G{ other, joint, prev, next = _ }), next) = 
+        r := G { other = other, joint = joint, prev = prev, next = next}
+  end
+
+  (* Internal, joints *)
+  structure J =
+  struct
+    val FLAG_ISLAND = 0wx1 : Word8.word
+    val FLAG_COLLIDE_CONNECTED = 0wx2 : Word8.word
+
+    fun get_flags (ref (J{ flags, ... })) = flags
+    fun get_typ (ref (J{ typ, ... })) = typ
+    fun get_prev (ref (J{ prev, ... })) = prev
+    fun get_next (ref (J{ next, ... })) = next
+    fun get_edge_a (ref (J{ edge_a, ... })) = edge_a
+    fun get_edge_b (ref (J{ edge_b, ... })) = edge_b
+    fun get_body_a (ref (J{ body_a, ... })) = body_a
+    fun get_body_b (ref (J{ body_b, ... })) = body_b
+    fun get_data (ref (J{ data, ... })) = data
+    fun get_local_center_a (ref (J{ local_center_a, ... })) = local_center_a
+    fun get_local_center_b (ref (J{ local_center_b, ... })) = local_center_b
+    fun get_inv_mass_a (ref (J{ inv_mass_a, ... })) = inv_mass_a
+    fun get_inv_i_a (ref (J{ inv_i_a, ... })) = inv_i_a
+    fun get_inv_mass_b (ref (J{ inv_mass_b, ... })) = inv_mass_b
+    fun get_inv_i_b (ref (J{ inv_i_b, ... })) = inv_i_b
+
+    fun set_flags (r as ref (J{ flags = _, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), flags) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+    fun set_typ (r as ref (J{ flags, typ = _, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), typ) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+    fun set_prev (r as ref (J{ flags, typ, prev = _, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), prev) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+    fun set_next (r as ref (J{ flags, typ, prev, next = _, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), next) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+    fun set_edge_a (r as ref (J{ flags, typ, prev, next, edge_a = _, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), edge_a) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+    fun set_edge_b (r as ref (J{ flags, typ, prev, next, edge_a, edge_b = _, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), edge_b) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+    fun set_body_a (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a = _, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), body_a) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+    fun set_body_b (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b = _, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), body_b) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+    fun set_data (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data = _, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), data) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+    fun set_local_center_a (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a = _, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), local_center_a) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+    fun set_local_center_b (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b = _, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), local_center_b) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+    fun set_inv_mass_a (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a = _, inv_i_a, inv_mass_b, inv_i_b }), inv_mass_a) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+    fun set_inv_i_a (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a = _, inv_mass_b, inv_i_b }), inv_i_a) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+    fun set_inv_mass_b (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b = _, inv_i_b }), inv_mass_b) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+    fun set_inv_i_b (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b = _ }), inv_i_b) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
+
+    fun get_flag (j, f) = Word8.andb (f, get_flags j) <> 0w0
+    fun set_flag (j, f) = set_flags (j, Word8.orb(get_flags j, f))
+    fun clear_flag (j, f) = set_flags (j, Word8.andb(get_flags j, Word8.notb f))
+
+    fun get_collide_connected j = get_flag(j, FLAG_COLLIDE_CONNECTED)
+
+    (* Used in island solver *)
+    fun init_velocity_constraints (j : ('b, 'f, 'j) joint,
+                                   step : time_step) : unit =
         raise BDDDynamics "unimplemented"
- (*
 
-void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transform1, const b2Transform& transform2)
-{
-        if (m_proxyId == b2BroadPhase::e_nullProxy)
-        {
-                return;
-        }
+    (* Used in island solver *)
+    fun solve_velocity_constraints (j : ('b, 'f, 'j) joint,
+                                    step : time_step) : unit =
+        raise BDDDynamics "unimplemented"
 
-        // Compute an AABB that covers the swept shape (may miss some rotation effect).
-        b2AABB aabb1, aabb2;
-        m_shape->ComputeAABB(&aabb1, transform1);
-        m_shape->ComputeAABB(&aabb2, transform2);
+    (* Used in island solver *)
+    fun solve_position_constraints (j : ('b, 'f, 'j) joint,
+                                    baumgarte : real) : bool =
+        raise BDDDynamics "unimplemented"
 
-        m_aabb.Combine(aabb1, aabb2);
-
-        b2Vec2 displacement = transform2.position - transform1.position;
-
-        broadPhase->MoveProxy(m_proxyId, m_aabb, displacement);
-}
-
- *)
   end
 
   (* Internal, bodies *)
@@ -897,10 +976,14 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
 
         in
             (* PERF asserts *)
-            if vec2is_valid position then () else raise BDDDynamics "invalid position";
-            if vec2is_valid linear_velocity then () else raise BDDDynamics "invalid linear_velocity";
-            if is_valid angle then () else raise BDDDynamics "invalid angle";
-            if is_valid angular_velocity then () else raise BDDDynamics "invalid angular_velocity";
+            if vec2is_valid position then () 
+            else raise BDDDynamics "invalid position";
+            if vec2is_valid linear_velocity then () 
+            else raise BDDDynamics "invalid linear_velocity";
+            if is_valid angle then () 
+            else raise BDDDynamics "invalid angle";
+            if is_valid angular_velocity then () 
+            else raise BDDDynamics "invalid angular_velocity";
             if is_valid inertia_scale andalso inertia_scale >= 0.0 then ()
             else raise BDDDynamics "invalid inertia_scale";
             if is_valid angular_damping andalso angular_damping >= 0.0 then ()
@@ -920,29 +1003,25 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
     (* This is used to prevent connected bodies from colliding.
        It may lie, depending on the collideConnected flag.
        Port note: Used in ContactManager. *)
-    fun should_collide (body : ('b, 'f, 'j) body, other : ('b, 'f, 'j) body) : bool =
-        raise BDDDynamics "unimplemented"
-        (*
-        // At least one body should be dynamic.
-        if (m_type != b2_dynamicBody && other->m_type != b2_dynamicBody)
-        {
-                return false;
-        }
-
-        // Does a joint prevent collision?
-        for (b2JointEdge* jn = m_jointList; jn; jn = jn->next)
-        {
-                if (jn->other == other)
-                {
-                        if (jn->joint->m_collideConnected == false)
-                        {
-                                return false;
-                        }
-                }
-        }
-
-        return true;
-        *)
+    fun should_collide (body : ('b, 'f, 'j) body, 
+                        other : ('b, 'f, 'j) body) : bool =
+        (* At least one body should be dynamic. *)
+        if get_typ body <> Dynamic andalso get_typ other <> Dynamic
+        then false
+        else
+            (* Does a joint prevent collision? *)
+            let exception ReturnFalse
+            in (oapp G.get_next
+                  (fn jn =>
+                   if G.get_other jn = other
+                   then if J.get_collide_connected (G.get_joint jn) = false
+                        then raise ReturnFalse
+                        else ()
+                   else ())
+                  (get_joint_list body);
+                true)
+                handle ReturnFalse => false
+            end
 
    (* Port note: used in TOISolver. *)
    fun synchronize_transform b : unit =
@@ -1222,82 +1301,6 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
                  node_a = E.new (),
                  node_b = E.new (),
                  toi_count = 0 })
-  end
-
-  (* Internal, joints *)
-  structure J =
-  struct
-    val FLAG_ISLAND = 0wx1 : Word8.word
-    val FLAG_COLLIDE_CONNECTED = 0wx2 : Word8.word
-
-    fun get_flags (ref (J{ flags, ... })) = flags
-    fun get_typ (ref (J{ typ, ... })) = typ
-    fun get_prev (ref (J{ prev, ... })) = prev
-    fun get_next (ref (J{ next, ... })) = next
-    fun get_edge_a (ref (J{ edge_a, ... })) = edge_a
-    fun get_edge_b (ref (J{ edge_b, ... })) = edge_b
-    fun get_body_a (ref (J{ body_a, ... })) = body_a
-    fun get_body_b (ref (J{ body_b, ... })) = body_b
-    fun get_data (ref (J{ data, ... })) = data
-    fun get_local_center_a (ref (J{ local_center_a, ... })) = local_center_a
-    fun get_local_center_b (ref (J{ local_center_b, ... })) = local_center_b
-    fun get_inv_mass_a (ref (J{ inv_mass_a, ... })) = inv_mass_a
-    fun get_inv_i_a (ref (J{ inv_i_a, ... })) = inv_i_a
-    fun get_inv_mass_b (ref (J{ inv_mass_b, ... })) = inv_mass_b
-    fun get_inv_i_b (ref (J{ inv_i_b, ... })) = inv_i_b
-
-    fun set_flags (r as ref (J{ flags = _, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), flags) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-    fun set_typ (r as ref (J{ flags, typ = _, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), typ) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-    fun set_prev (r as ref (J{ flags, typ, prev = _, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), prev) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-    fun set_next (r as ref (J{ flags, typ, prev, next = _, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), next) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-    fun set_edge_a (r as ref (J{ flags, typ, prev, next, edge_a = _, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), edge_a) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-    fun set_edge_b (r as ref (J{ flags, typ, prev, next, edge_a, edge_b = _, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), edge_b) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-    fun set_body_a (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a = _, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), body_a) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-    fun set_body_b (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b = _, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), body_b) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-    fun set_data (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data = _, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), data) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-    fun set_local_center_a (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a = _, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), local_center_a) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-    fun set_local_center_b (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b = _, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b }), local_center_b) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-    fun set_inv_mass_a (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a = _, inv_i_a, inv_mass_b, inv_i_b }), inv_mass_a) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-    fun set_inv_i_a (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a = _, inv_mass_b, inv_i_b }), inv_i_a) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-    fun set_inv_mass_b (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b = _, inv_i_b }), inv_mass_b) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-    fun set_inv_i_b (r as ref (J{ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b = _ }), inv_i_b) = r := J { flags = flags, typ = typ, prev = prev, next = next, edge_a = edge_a, edge_b = edge_b, body_a = body_a, body_b = body_b, data = data, local_center_a = local_center_a, local_center_b = local_center_b, inv_mass_a = inv_mass_a, inv_i_a = inv_i_a, inv_mass_b = inv_mass_b, inv_i_b = inv_i_b}
-
-    fun get_flag (j, f) = Word8.andb (f, get_flags j) <> 0w0
-    fun set_flag (j, f) = set_flags (j, Word8.orb(get_flags j, f))
-    fun clear_flag (j, f) = set_flags (j, Word8.andb(get_flags j, Word8.notb f))
-
-    (* Used in island solver *)
-    fun init_velocity_constraints (j : ('b, 'f, 'j) joint,
-                                   step : time_step) : unit =
-        raise BDDDynamics "unimplemented"
-
-    (* Used in island solver *)
-    fun solve_velocity_constraints (j : ('b, 'f, 'j) joint,
-                                    step : time_step) : unit =
-        raise BDDDynamics "unimplemented"
-
-    (* Used in island solver *)
-    fun solve_position_constraints (j : ('b, 'f, 'j) joint,
-                                    baumgarte : real) : bool =
-        raise BDDDynamics "unimplemented"
-
-  end
-
-  (* Internal, joint edges *)
-  structure G =
-  struct
-    fun get_other (ref (G{ other, ... })) = other
-    fun get_joint (ref (G{ joint, ... })) = joint
-    fun get_prev (ref (G{ prev, ... })) = prev
-    fun get_next (ref (G{ next, ... })) = next
-    fun set_other (r as ref (G{ other = _, joint, prev, next }), other) = 
-        r := G { other = other, joint = joint, prev = prev, next = next}
-    fun set_joint (r as ref (G{ other, joint = _, prev, next }), joint) = 
-        r := G { other = other, joint = joint, prev = prev, next = next}
-    fun set_prev (r as ref (G{ other, joint, prev = _, next }), prev) = 
-        r := G { other = other, joint = joint, prev = prev, next = next}
-    fun set_next (r as ref (G{ other, joint, prev, next = _ }), next) = 
-        r := G { other = other, joint = joint, prev = prev, next = next}
   end
 
   (* Internal, worlds *)
