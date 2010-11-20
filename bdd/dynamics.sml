@@ -352,6 +352,11 @@ struct
                  shape = shape, friction = friction, restitution = restitution,
                  proxy = proxy, filter = filter, sensor = sensor, data = data }
 
+    (* Used by body *)
+    fun get_mass_data f =
+      BDDShape.compute_mass (get_shape f, get_density f)
+
+
     fun create_proxy (fixture : ('b, 'f, 'j) fixture, 
                       broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase, 
                       xf : BDDMath.transform) =

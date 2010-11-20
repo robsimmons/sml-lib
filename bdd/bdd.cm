@@ -45,11 +45,11 @@ group is
   contact-sig.sml
   contact.sml
 
-  body-sig.sml
-  body.sml
-
   fixture-sig.sml
   fixture.sml
+
+  body-sig.sml
+  body.sml
 
   toi-solver-sig.sml
   toi-solver.sml

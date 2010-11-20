@@ -4,7 +4,7 @@
    physical properties like density and friction.
 
    In BoxDiaDia this signature is used twice: Once transparently for
-   the internal BDDBody structure, which clients should ignore, and
+   the internal BDDFixture structure, which clients should ignore, and
    once abstractly for the final client interface.
 
    Corresponding to dynamics/b2fixture.h. *)

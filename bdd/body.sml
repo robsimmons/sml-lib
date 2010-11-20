@@ -137,7 +137,97 @@ struct
 
 
   fun reset_mass_data b =
-      raise BDDBody "unimplemented (cpp)"
+      let
+          (* Compute mass data from shapes. Each shape has its own density. *)
+          val () = D.B.set_mass (b, 0.0)
+          val () = D.B.set_inv_mass (b, 0.0)
+          val () = D.B.set_i (b, 0.0)
+          val () = D.B.set_inv_i (b, 0.0)
+          val () = sweep_set_localcenter (D.B.get_sweep b, vec2 (0.0, 0.0))
+      in
+          (* Static and kinematic bodies have zero mass. *)
+          if D.B.get_typ b = D.Static orelse
+             D.B.get_typ b = D.Kinematic
+          then
+             let in
+                 sweep_set_c0 (D.B.get_sweep b, 
+                               transformposition (D.B.get_xf b));
+                 sweep_set_c (D.B.get_sweep b, 
+                              transformposition (D.B.get_xf b))
+             end
+          else
+             let
+                 val () = if D.B.get_typ b = D.Dynamic
+                          then ()
+                          else raise BDDBody "assertion failed"
+
+                 (* Accumulate mass over all fixtures. *)
+                 val center = ref (vec2 (0.0, 0.0))
+                 val () =
+                     oapp D.F.get_next
+                     (fn f =>
+                      if Real.== (D.F.get_density f, 0.0)
+                      then ()
+                      else
+                          let val mass_data = D.F.get_mass_data f
+                          in
+                              D.B.set_mass(b, D.B.get_mass b +
+                                           #mass mass_data);
+                              center := !center :+:
+                              (#mass mass_data *: #center mass_data);
+                              D.B.set_i(b, D.B.get_i b + #i mass_data)
+                          end)
+                     (D.B.get_fixture_list b)
+                 (* Compute center of mass. *)
+                 val () =
+                 if D.B.get_mass b > 0.0
+                 then
+                     let in
+                         D.B.set_inv_mass (b, 1.0 / D.B.get_mass b);
+                         center := D.B.get_inv_mass b *: !center
+                     end
+                 else
+                     (* Force all dynamic bodies to have positive mass. *)
+                     let in
+                         D.B.set_mass (b, 1.0);
+                         D.B.set_inv_mass (b, 1.0)
+                     end
+
+                 val () =
+                 if D.B.get_i b > 0.0 andalso
+                    not (D.B.get_flag(b, FLAG_FIXED_ROTATION))
+                 then
+                     (* Center the intertia about the center of mass. *)
+                     let in
+                         D.B.set_i (b, D.B.get_i b -
+                                    D.B.get_mass b * dot2(!center, !center));
+                         (* PERF *)
+                         (if D.B.get_i b > 0.0
+                          then ()
+                          else raise BDDBody "assertion");
+                         D.B.set_inv_i (b, 1.0 / D.B.get_i b)
+                     end
+                 else
+                     let in
+                         D.B.set_i (b, 0.0);
+                         D.B.set_inv_i (b, 0.0)
+                     end
+
+                 (* Move center of mass *)
+                 val old_center : vec2 = sweepc (D.B.get_sweep b)
+                 val c = D.B.get_xf b @*: (!center)
+             in
+                 sweep_set_localcenter (D.B.get_sweep b, !center);
+                 sweep_set_c0 (D.B.get_sweep b, c);
+                 sweep_set_c (D.B.get_sweep b, c);
+                 (* Update center of mass velocity. *)
+                 D.B.set_linear_velocity 
+                 (b,
+                  D.B.get_linear_velocity b :+: 
+                  cross2sv(D.B.get_angular_velocity b,
+                           c :-: old_center))
+             end
+      end
 
   fun set_fixed_rotation (b, f) =
       let in

@@ -77,9 +77,6 @@ struct
   fun ray_cast (f, input) =
       BDDShape.ray_cast (get_shape f, fixture_transform f, input)
 
-  fun get_mass_data f =
-      BDDShape.compute_mass (get_shape f, get_density f)
-
   val is_sensor = get_sensor
   val shape = get_shape
 

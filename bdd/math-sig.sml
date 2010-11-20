@@ -185,6 +185,7 @@ sig
   val sweep_set_c : sweep * vec2 -> unit
   val sweep_set_a0 : sweep * real -> unit  
   val sweep_set_c0 : sweep * vec2 -> unit
+  val sweep_set_localcenter : sweep * vec2 -> unit
 
   val sweepa0 : sweep -> real
   val sweepc0 : sweep -> vec2
