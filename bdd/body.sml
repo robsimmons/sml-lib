@@ -429,48 +429,60 @@ b2Fixture* b2Body::CreateFixture(const b2FixtureDef* def)
 (* PSSt. lots of this stuff will have to move to dynamics, probably.
    check to make sure it's not already there! *)
 
-    fun set_mass_data (body : body, mass_data : mass_data) : unit =
-        raise BDDBody "unimplemented"
-(*
-        b2Assert(m_world->IsLocked() == false);
-        if (m_world->IsLocked() == true)
-        {
-                return;
-        }
+    fun set_mass_data (b : body, mass_data : mass_data) : unit =
+        let val world = D.B.get_world b
+            val () = if D.W.get_flag (world, D.W.FLAG_LOCKED)
+                     then raise BDDBody "can't set mass data while locked"
+                     else ()
+        in
+            case D.B.get_typ b of
+                D.Dynamic =>
+                let
+                    (* Port note: Assignment to inv_mass here is dead *)
+                    val () = D.B.set_i (b, 0.0)
+                    val () = D.B.set_inv_i (b, 0.0)
+                        
+                    val mass = if #mass mass_data <= 0.0
+                               then 1.0
+                               else #mass mass_data
+                    val () = D.B.set_mass (b, mass)
+                    val () = D.B.set_inv_mass (b, 1.0 / mass)
 
-        if (m_type != b2_dynamicBody)
-        {
-                return;
-        }
+                    val () =
+                    if #i mass_data > 0.0 andalso
+                       not (D.B.get_flag (b, D.B.FLAG_FIXED_ROTATION))
+                    then
+                        let in
+                            D.B.set_i (b, #i mass_data -
+                                       D.B.get_mass b *
+                                       dot2(#center mass_data,
+                                            #center mass_data));
+                            (* PERF *)
+                            if D.B.get_i b > 0.0
+                            then ()
+                            else raise BDDBody "assertion failed";
+                            D.B.set_inv_i (b, 1.0 / D.B.get_i b)
+                        end
+                    else ()
 
-        m_invMass = 0.0f;
-        m_I = 0.0f;
-        m_invI = 0.0f;
+                    (* Move center of mass *)
+                    val center = #center mass_data
+                    val old_center : vec2 = sweepc (D.B.get_sweep b)
+                    val c = D.B.get_xf b @*: center
+                in
+                    sweep_set_localcenter (D.B.get_sweep b, center);
+                    sweep_set_c0 (D.B.get_sweep b, c);
+                    sweep_set_c (D.B.get_sweep b, c);
+                    (* Update center of mass velocity. *)
+                    D.B.set_linear_velocity 
+                    (b,
+                     D.B.get_linear_velocity b :+: 
+                     cross2sv(D.B.get_angular_velocity b,
+                              c :-: old_center))
+                end
+              | _ => ()
+      end
 
-        m_mass = massData->mass;
-        if (m_mass <= 0.0f)
-        {
-                m_mass = 1.0f;
-        }
-
-        m_invMass = 1.0f / m_mass;
-
-        if (massData->I > 0.0f && (m_flags & b2Body::e_fixedRotationFlag) == 0)
-        {
-                m_I = massData->I - m_mass * b2Dot(massData->center, massData->center);
-                b2Assert(m_I > 0.0f);
-                m_invI = 1.0f / m_I;
-        }
-
-        // Move center of mass.
-        b2Vec2 oldCenter = m_sweep.c;
-        m_sweep.localCenter = massData->center;
-        m_sweep.c0 = m_sweep.c = b2Mul(m_xf, m_sweep.localCenter);
-
-        // Update center of mass velocity.
-        m_linearVelocity += b2Cross(m_angularVelocity, m_sweep.c - oldCenter);
-}
-*)
 
 (* Advance, synchronizetransform are in dynamics *)
 

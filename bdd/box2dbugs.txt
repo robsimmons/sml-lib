@@ -77,6 +77,11 @@ b2Body.h
   "Creates a fixture and attach it to this body" -> 
   "Create" or "attaches" (both times)
 
+b2Body.cpp
+
+  in SetMassData, the assignment m_invMass = 0.0 is always overwritten
+  a few lines later.
+
 manual.html:
 
 Several of the examples in the manual.html write "b2Transfrom" instead
