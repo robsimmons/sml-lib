@@ -36,7 +36,6 @@ struct
 
   open D.B
   val get_type = get_typ
-  val set_type = set_typ
 
   fun set_awake (b, f) = 
       let in
@@ -483,9 +482,6 @@ b2Fixture* b2Body::CreateFixture(const b2FixtureDef* def)
               | _ => ()
       end
 
-
-(* Advance, synchronizetransform are in dynamics *)
-
     fun set_transform (b, position : vec2, angle : real) : unit =
         raise BDDBody "unimplemented"
 (*
@@ -510,152 +506,29 @@ b2Fixture* b2Body::CreateFixture(const b2FixtureDef* def)
         m_world->m_contactManager.FindNewContacts();
 *)
 
-(*
-void b2Body::SetType(b2BodyType type)
-{
-        if (m_type == type)
-        {
-                return;
-        }
-
-        m_type = type;
-
-        ResetMassData();
-
-        if (m_type == b2_staticBody)
-        {
-                m_linearVelocity.SetZero();
-                m_angularVelocity = 0.0f;
-        }
-
-        SetAwake(true);
-
-        m_force.SetZero();
-        m_torque = 0.0f;
-
-        // Since the body type changed, we need to flag contacts for filtering.
-        for (b2ContactEdge* ce = m_contactList; ce; ce = ce->next)
-        {
-                ce->contact->FlagForFiltering();
-        }
-}
-
-
-void b2Body::ResetMassData()
-{
-        // Compute mass data from shapes. Each shape has its own density.
-        m_mass = 0.0f;
-        m_invMass = 0.0f;
-        m_I = 0.0f;
-        m_invI = 0.0f;
-        m_sweep.localCenter.SetZero();
-
-        // Static and kinematic bodies have zero mass.
-        if (m_type == b2_staticBody || m_type == b2_kinematicBody)
-        {
-                m_sweep.c0 = m_sweep.c = m_xf.position;
-                return;
-        }
-
-        b2Assert(m_type == b2_dynamicBody);
-
-        // Accumulate mass over all fixtures.
-        b2Vec2 center = b2Vec2_zero;
-        for (b2Fixture* f = m_fixtureList; f; f = f->m_next)
-        {
-                if (f->m_density == 0.0f)
-                {
-                        continue;
-                }
-
-                b2MassData massData;
-                f->GetMassData(&massData);
-                m_mass += massData.mass;
-                center += massData.mass * massData.center;
-                m_I += massData.I;
-        }
-
-        // Compute center of mass.
-        if (m_mass > 0.0f)
-        {
-                m_invMass = 1.0f / m_mass;
-                center *= m_invMass;
-        }
+    fun set_type (b : body, typ : D.body_type) =
+        if D.B.get_typ b = typ
+        then ()
         else
-        {
-                // Force all dynamic bodies to have a positive mass.
-                m_mass = 1.0f;
-                m_invMass = 1.0f;
-        }
+            let in
+                D.B.set_typ (b, typ);
+                reset_mass_data b;
+                (if typ = D.Static
+                 then (D.B.set_linear_velocity (b, vec2 (0.0, 0.0));
+                       D.B.set_angular_velocity (b, 0.0))
+                 else ());
+                set_awake (b, true);
+                D.B.set_force (b, vec2 (0.0, 0.0));
+                D.B.set_torque (b, 0.0);
+                (* Since the body type changed, we need to flag 
+                   contacts for filtering. *)
+                oapp D.E.get_next (D.C.flag_for_filtering o !! o
+                                   D.E.get_contact)
+                  (D.B.get_contact_list b)
+            end
 
-        if (m_I > 0.0f && (m_flags & e_fixedRotationFlag) == 0)
-        {
-                // Center the inertia about the center of mass.
-                m_I -= m_mass * b2Dot(center, center);
-                b2Assert(m_I > 0.0f);
-                m_invI = 1.0f / m_I;
-
-        }
-        else
-        {
-                m_I = 0.0f;
-                m_invI = 0.0f;
-        }
-
-        // Move center of mass.
-        b2Vec2 oldCenter = m_sweep.c;
-        m_sweep.localCenter = center;
-        m_sweep.c0 = m_sweep.c = b2Mul(m_xf, m_sweep.localCenter);
-
-        // Update center of mass velocity.
-        m_linearVelocity += b2Cross(m_angularVelocity, m_sweep.c - oldCenter);
-}
-
-( * ShouldCollide is in D.B * )
-    and synchronizefixtures
-
-void b2Body::SetActive(bool flag)
-{
-        if (flag == IsActive())
-        {
-                return;
-        }
-
-        if (flag)
-        {
-                m_flags |= e_activeFlag;
-
-                // Create all proxies.
-                b2BroadPhase* broadPhase = &m_world->m_contactManager.m_broadPhase;
-                for (b2Fixture* f = m_fixtureList; f; f = f->m_next)
-                {
-                        f->CreateProxy(broadPhase, m_xf);
-                }
-
-                // Contacts are created the next time step.
-        }
-        else
-        {
-                m_flags &= ~e_activeFlag;
-
-                // Destroy all proxies.
-                b2BroadPhase* broadPhase = &m_world->m_contactManager.m_broadPhase;
-                for (b2Fixture* f = m_fixtureList; f; f = f->m_next)
-                {
-                        f->DestroyProxy(broadPhase);
-                }
-
-                // Destroy the attached contacts.
-                b2ContactEdge* ce = m_contactList;
-                while (ce)
-                {
-                        b2ContactEdge* ce0 = ce;
-                        ce = ce->next;
-                        m_world->m_contactManager.Destroy(ce0->contact);
-                }
-                m_contactList = NULL;
-        }
-}
-*)
+(* Advance, synchronizetransform are in dynamics *)
+(* ShouldCollide is in D.B 
+    and synchronizefixtures *)
 
 end

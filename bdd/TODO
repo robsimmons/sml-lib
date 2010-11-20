@@ -64,6 +64,9 @@ things into dynamics when they need to be there.
 
 make actual assert macros
 
+can the contact in a contact edge be non-optional? It seems box2d assumes
+it to be non-null in most places
+
 Potential bugs:
 
 check that FLAG_ISLAND (etc.) are fully qualified, since if a structure is open we might
