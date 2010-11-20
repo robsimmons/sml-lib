@@ -54,5 +54,7 @@ sig
   (* Evaluate this contact with your transforms to compute a manifold. *)
   val evaluate : contact * BDDMath.transform * BDDMath.transform ->
       BDDTypes.manifold
-      
+
+  (* Internal. XXX split into internal/external interfaces *)
+  val update : contact * world -> unit
 end

@@ -38,6 +38,9 @@ struct
      incident_vertex
      flip 
      Accessors in BDDCollision.
+
+     Port note: In Box2D this is a union with a field "key",
+     which is all the packed bytes.
      *)
   type contact_id = Word32.word
 

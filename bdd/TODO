@@ -86,10 +86,12 @@ but overridden in thing.sml are calling the right version.
 +-------------------------------------------------+
 
 dynamics - missing some guts
+  F.create_proxy
+  F.synchronize
+  B.should_collide
+  B.synchronize_fixtures
 
-body - missing some guts
-
-fixture - some small stuff missing
+body - deleting fixtures; can test without, of course
 
 joints - everything. I just stubbed it out so that
 I could write the calling code, but none have

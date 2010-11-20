@@ -37,20 +37,6 @@ struct
   open D.B
   val get_type = get_typ
 
-  fun set_awake (b, f) = 
-      let in
-          set_sleep_time (b, 0.0);
-          if f 
-          then set_flag (b, FLAG_AWAKE)
-          else 
-              let in
-                  clear_flag (b, FLAG_AWAKE);
-                  set_linear_velocity (b, vec2 (0.0, 0.0));
-                  set_force (b, vec2 (0.0, 0.0));
-                  set_torque (b, 0.0)
-              end
-      end
-
   fun get_awake b = get_flag (b, FLAG_AWAKE)
 
   fun set_linear_velocity (b : body, v : BDDMath.vec2) : unit =

@@ -997,6 +997,20 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
         get_linear_velocity_from_world_point(b, get_world_point(b, 
                                                                 local_point))
 
+    fun set_awake (b, f) = 
+        let in
+            set_sleep_time (b, 0.0);
+            if f 
+            then set_flag (b, FLAG_AWAKE)
+            else 
+                let in
+                    clear_flag (b, FLAG_AWAKE);
+                    set_linear_velocity (b, vec2 (0.0, 0.0));
+                    set_force (b, vec2 (0.0, 0.0));
+                    set_torque (b, 0.0)
+                end
+        end
+
   end
 
   (* Internal, contact edges *)
@@ -1208,14 +1222,6 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
                  node_a = E.new (),
                  node_b = E.new (),
                  toi_count = 0 })
-
-    (* Update the contact manifold and touching status.
-       Note: do not assume the fixture AABBs are overlapping or are valid. *)
-    (* Port note: Passing world instead of contact listener, since those
-       fields are flattened into world. *)
-    fun update (c : ('b, 'f, 'j) contact, world : ('b, 'f, 'j) world) =
-        raise BDDDynamics "unimplemented (b2contact.cpp)"
-
   end
 
   (* Internal, joints *)

@@ -80,7 +80,7 @@ struct
                   (* It persists. *)
                   else 
                       let in
-                          D.C.update (c, world);
+                          Contact.update (c, world);
                           loop (D.C.get_next c)
                       end
               end
@@ -731,7 +731,7 @@ void b2World::DestroyJoint(b2Joint* j)
         let
           val backup : sweep = sweepcopy (D.B.get_sweep body)
           val () = D.B.advance (body, !toi)
-          val () = D.C.update (toi_contact, world)
+          val () = Contact.update (toi_contact, world)
           val () = if not (D.C.get_flag (toi_contact, D.C.FLAG_ENABLED))
                    (* Contact disabled. Backup and recurse. *)
                    then let in
@@ -771,7 +771,7 @@ void b2World::DestroyJoint(b2Joint* j)
                          (* The contact likely has some new contact points. The listener
                             gives the client a chance to disable the contact. *)
                          if contact <> toi_contact
-                         then D.C.update (contact, world)
+                         then Contact.update (contact, world)
                          else ();
                          
                          (* Did the user disable the contact? *)
