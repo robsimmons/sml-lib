@@ -483,28 +483,29 @@ b2Fixture* b2Body::CreateFixture(const b2FixtureDef* def)
       end
 
     fun set_transform (b, position : vec2, angle : real) : unit =
-        raise BDDBody "unimplemented"
-(*
-        b2Assert(m_world->IsLocked() == false);
-        if (m_world->IsLocked() == true)
-        {
-                return;
-        }
+        let val world = D.B.get_world b
+            val () = if D.W.get_flag (world, D.W.FLAG_LOCKED)
+                     then raise BDDBody "can't set transform data while locked"
+                     else ()
 
-        m_xf.R.Set(angle);
-        m_xf.position = position;
+            val xf = transform_pos_angle (position, angle)
+            (* nb. so that we can modify it *)
+            val sweep = D.B.get_sweep b
+            val c = xf @*: sweeplocalcenter sweep
 
-        m_sweep.c0 = m_sweep.c = b2Mul(m_xf, m_sweep.localCenter);
-        m_sweep.a0 = m_sweep.a = angle;
-
-        b2BroadPhase* broadPhase = &m_world->m_contactManager.m_broadPhase;
-        for (b2Fixture* f = m_fixtureList; f; f = f->m_next)
-        {
-                f->Synchronize(broadPhase, m_xf, m_xf);
-        }
-
-        m_world->m_contactManager.FindNewContacts();
-*)
+            val bp = D.W.get_broad_phase world
+        in
+            D.B.set_xf (b, xf);
+            sweep_set_c0 (sweep, c);
+            sweep_set_c (sweep, c);
+            sweep_set_a0 (sweep, angle);
+            sweep_set_a (sweep, angle);
+            oapp D.F.get_next
+            (fn fixture =>
+             D.F.synchronize (fixture, bp, xf, xf)
+             ) (D.B.get_fixture_list b);
+            D.W.CM.find_new_contacts world
+        end
 
     fun set_type (b : body, typ : D.body_type) =
         if D.B.get_typ b = typ

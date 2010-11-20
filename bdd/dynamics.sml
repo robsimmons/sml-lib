@@ -382,6 +382,11 @@ void b2Fixture::CreateProxy(b2BroadPhase* broadPhase, const b2Transform& xf)
            is non-optional. *)
         BDDBroadPhase.remove_proxy (broadphase, get_proxy fixture)
 
+    fun synchronize (fixture : ('b, 'f, 'j) fixture,
+                     broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase,
+                     transform1 : transform,
+                     transform2 : transform) =
+        raise BDDDynamics "unimplemented"
  (*
 
 void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transform1, const b2Transform& transform2)
@@ -1393,6 +1398,89 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
         in
             set_contact_count (world, get_contact_count world - 1)
         end
+
+      (* Callback used in find_new_contacts. *)
+      exception Return
+      fun add_pair (world : ('b, 'f, 'j) world) 
+          (fixture_a : ('b, 'f, 'j) fixture, 
+           fixture_b : ('b, 'f, 'j) fixture) : unit =
+        let
+          val body_a = F.get_body fixture_a
+          val body_b = F.get_body fixture_b
+          (* No self-contact *)
+          val () = if body_a = body_b then raise Return
+                   else ()
+
+          (* Just raises Return if a contact already exists. *)
+          fun one_edge e =
+              if SOME body_a = E.get_other e
+              then
+                  let val fa = C.get_fixture_a (!! (E.get_contact e))
+                      val fb = C.get_fixture_b (!! (E.get_contact e))
+                  in
+                      if (fa = fixture_a andalso fb = fixture_b) orelse
+                         (fa = fixture_b andalso fb = fixture_a)
+                      (* Contact already exists. *)
+                      then raise Return
+                      else ()
+                  end
+              else ()
+          val () = oapp E.get_next one_edge (B.get_contact_list body_b)
+
+          (* Does a joint override collision? Is at least one body dynamic? *)
+          val () = if B.should_collide (body_b, body_a)
+                   then ()
+                   else raise Return
+
+          (* Check user filtering. *)
+          val () = if get_should_collide world (fixture_a, fixture_b)
+                   then ()
+                   else raise Return
+
+          (* Call the factory. *)
+          val c = C.new (fixture_a, fixture_b)
+
+          (* Contact creation may swap fixtures.
+             XXX (it doesn't, currently.)
+             *)
+          val fixture_a = C.get_fixture_a c
+          val fixture_b = C.get_fixture_b c
+          val body_a = F.get_body fixture_a
+          val body_b = F.get_body fixture_b
+
+          (* Add to world DLL. *)
+          val () = C.set_next (c, get_contact_list world)
+          val () = case get_contact_list world of
+              NONE => ()
+            | SOME prev => C.set_prev (prev, SOME c)
+          val () = set_contact_list (world, SOME c)
+
+          (* Connect to island graph. *)
+          val node_a = C.get_node_a c
+          val () = E.set_contact (node_a, SOME c)
+          val () = E.set_other (node_a, SOME body_b)
+
+          val () = E.set_next (node_a, B.get_contact_list body_a)
+          val () = case B.get_contact_list body_a of
+              NONE => ()
+            | SOME prev => E.set_prev (prev, SOME node_a)
+          val () = B.set_contact_list (body_a, SOME node_a)
+
+          val node_b = C.get_node_b c
+          val () = E.set_contact (node_b, SOME c)
+          val () = E.set_other (node_b, SOME body_a)
+
+          val () = E.set_next (node_b, B.get_contact_list body_b)
+          val () = case B.get_contact_list body_b of
+              NONE => ()
+            | SOME prev => E.set_prev (prev, SOME node_b)
+          val () = B.set_contact_list (body_b, SOME node_b)
+        in
+          set_contact_count (world, get_contact_count world + 1)
+        end handle Return => ()
+
+      fun find_new_contacts world =
+        BDDBroadPhase.update_pairs (get_broad_phase world, add_pair world)
 
     end
 
