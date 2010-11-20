@@ -47,7 +47,7 @@ sig
   val create_fixture : body *
     { (* Cloned. *)
       shape : BDDShape.shape,
-      data : body_data,
+      data : fixture_data,
       (* The friction coefficient, usually in the range [0, 1].
          Default value 0.2. *)
       friction : real,
@@ -65,7 +65,7 @@ sig
   (* create_fixture_default (body, shape, data, density)
      Add a fixture based on a shape, with default values for the
      physical parameters above. *)
-  val create_fixture_default : body * BDDShape.shape * body_data * real ->
+  val create_fixture_default : body * BDDShape.shape * fixture_data * real ->
                                fixture
 
   (* Destroy a fixture. This removes the fixture from the broad-phase

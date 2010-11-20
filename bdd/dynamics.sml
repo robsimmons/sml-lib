@@ -131,7 +131,7 @@ struct
              restitution : real,
              (* Broad phase proxy, where the user data is
                 this fixture. *)
-             proxy : ('b, 'f, 'j) fixturecell ref BDDBroadPhase.proxy,
+             proxy : ('b, 'f, 'j) fixturecell ref BDDBroadPhase.proxy option,
              filter : filter,
              sensor : bool,
              data : 'f }
@@ -356,11 +356,31 @@ struct
     fun get_mass_data f =
       BDDShape.compute_mass (get_shape f, get_density f)
 
+    (* Port note: Corresponding to b2Fixture::Create and new *)
+    fun new (body, { data, friction, restitution, filter, is_sensor,
+                     shape, density }) =
+        ref (F { body = SOME body,
+                 data = data,
+                 friction = friction,
+                 restitution = restitution,
+                 filter = filter,
+                 sensor = is_sensor,
+                 shape = BDDShape.clone shape,
+                 density = density,
+                 next = NONE,
+                 proxy = NONE,
+                 (* PERF uninitialized in box2d *)
+                 aabb = { lowerbound = vec2 (0.0, 0.0),
+                          upperbound = vec2 (0.0, 0.0) }
+                 })
 
+    (* Create a proxy for the fixture in the broad phase, and store it in
+       fixture. *)
     fun create_proxy (fixture : ('b, 'f, 'j) fixture, 
                       broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase, 
                       xf : BDDMath.transform) =
-        raise BDDDynamics "unimplemented" (* maybe should be part of 'new' *)
+        raise BDDDynamics "unimplemented" (* maybe should be part of 'new' --
+        probably not because I call it elsewhere too *)
             (* XXX called from body.setactive too *)
 
  (*
@@ -376,11 +396,14 @@ void b2Fixture::CreateProxy(b2BroadPhase* broadPhase, const b2Transform& xf)
 
     fun destroy_proxy (fixture : ('b, 'f, 'j) fixture, 
                        broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase) =
-        (* Port note: There was a non-asserting check that the proxy id was
-           null here, which doesn't make sense to me; every fixture
-           should have a proxy if it was initialized. Anyway the proxy
-           is non-optional. *)
-        BDDBroadPhase.remove_proxy (broadphase, get_proxy fixture)
+        (* Proxy can be missing if the body is not active. *)
+        case get_proxy fixture of
+            NONE => ()
+          | SOME p => 
+                let in
+                    BDDBroadPhase.remove_proxy (broadphase, p);
+                    set_proxy (fixture, NONE)
+                end
 
     fun synchronize (fixture : ('b, 'f, 'j) fixture,
                      broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase,

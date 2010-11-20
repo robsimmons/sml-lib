@@ -64,8 +64,12 @@ struct
 
             (* Port note: Two paths to this in the original. *)
             fun common_case () =
-              let val proxy_a = D.F.get_proxy fixture_a
-                  val proxy_b = D.F.get_proxy fixture_b
+              (* Port note: If these are nullProxy, then they get passed
+                 to b2DynamicTree::GetFatAABB and assert. So this
+                 is an unchecked access. These should only be NONE if
+                 the corresponding body is inactive. *)
+              let val proxy_a = !!(D.F.get_proxy fixture_a)
+                  val proxy_b = !!(D.F.get_proxy fixture_b)
               in
                   if not (BDDBroadPhase.test_overlap (proxy_a, proxy_b))
                   (* Clear contacts that cease to overlap in the broad phase. *)

@@ -291,58 +291,45 @@ struct
   val get_joints = get_joint_list
   val get_fixtures = get_fixture_list
 
-  fun create_fixture (body : body,
+  fun create_fixture (body : body, def as
                       { shape : BDDShape.shape,
-                        data : body_data,
+                        data : fixture_data,
                         friction : real,
                         restitution : real,
                         density : real,
                         is_sensor : bool,
                         filter : D.filter }) : fixture =
-      raise BDDBody "unimplemented"
-(*
-b2Fixture* b2Body::CreateFixture(const b2FixtureDef* def)
-{
-        b2Assert(m_world->IsLocked() == false);
-        if (m_world->IsLocked() == true)
-        {
-                return NULL;
-        }
+    let val world = D.B.get_world body
+        val () = if D.W.get_flag (world, D.W.FLAG_LOCKED)
+                 then raise BDDBody "can't set mass data while locked"
+                 else ()
 
-        b2BlockAllocator* allocator = &m_world->m_blockAllocator;
+        val f = D.F.new (body, def)
+        val bp = D.W.get_broad_phase world
+    in
+        if D.B.get_flag (body, D.B.FLAG_ACTIVE)
+        then D.F.create_proxy (f, bp, D.B.get_xf body)
+        else ();
 
-        void* memory = allocator->Allocate(sizeof(b2Fixture));
-        b2Fixture* fixture = new (memory) b2Fixture;
-        fixture->Create(allocator, this, def);
+        D.F.set_next (f, D.B.get_fixture_list body);
+        D.B.set_fixture_list (body, SOME f);
+        D.B.set_fixture_count (body, 1 + D.B.get_fixture_count body);
 
-        if (m_flags & e_activeFlag)
-        {
-                b2BroadPhase* broadPhase = &m_world->m_contactManager.m_broadPhase;
-                fixture->CreateProxy(broadPhase, m_xf);
-        }
+        (* Adjust mass properties if needed. *)
+        if D.F.get_density f > 0.0
+        then reset_mass_data body
+        else ();
 
-        fixture->m_next = m_fixtureList;
-        m_fixtureList = fixture;
-        ++m_fixtureCount;
+        (* Let the world know we have a new fixture. This will cause 
+           new contacts to be created at the beginning of the next 
+           time step. *)
+        D.W.set_flags (world, D.W.FLAG_NEW_FIXTURE);
 
-        fixture->m_body = this;
-
-        // Adjust mass properties if needed.
-        if (fixture->m_density > 0.0f)
-        {
-                ResetMassData();
-        }
-
-        // Let the world know we have a new fixture. This will cause new contacts
-        // to be created at the beginning of the next time step.
-        m_world->m_flags |= b2World::e_newFixture;
-
-        return fixture;
-}
-*)
+        f
+    end
 
     fun create_fixture_default (body : body, shape : BDDShape.shape,
-                                data : body_data, density : real) : fixture =
+                                data : fixture_data, density : real) : fixture =
         create_fixture (body,
                         { shape = shape,
                           data = data,

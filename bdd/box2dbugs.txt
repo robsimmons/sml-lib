@@ -82,6 +82,11 @@ b2Body.cpp
   in SetMassData, the assignment m_invMass = 0.0 is always overwritten
   a few lines later.
 
+  in CreateFixture, the line
+	fixture->m_body = this;
+  is redundant because b2Fixture::Create already sets to this to
+  the parent body.
+
 manual.html:
 
 Several of the examples in the manual.html write "b2Transfrom" instead
