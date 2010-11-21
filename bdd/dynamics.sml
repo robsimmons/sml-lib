@@ -47,12 +47,12 @@ struct
     | AtUpper
     | Equal
 
-  fun !! (SOME r) = r
-    | !! NONE = raise BDDDynamics
+  fun !! _ (SOME r) = r
+    | !! s NONE = raise BDDDynamics
       ("Expected non-NONE reference; corresponds to an unchecked NULL " ^
        "dereference in Box2D. This is probably because an element " ^
        "(e.g. fixture, joint) was used after being detached, " ^
-       "or before being initialized.")
+       "or before being initialized: " ^ s)
 
   (* Action that the raycast callback can take upon encountering a fixture.
      Port note: These were all encoded as special float values in Box2D. *)
@@ -266,7 +266,7 @@ struct
     fun get_aabb (ref (F{ aabb, ... })) = aabb
     fun get_density (ref (F{ density, ... })) = density
     fun get_next (ref (F{ next, ... })) = next
-    fun get_body (ref (F{ body, ... })) = !!body
+    fun get_body (ref (F{ body, ... })) = !! "fbody" body
     fun get_shape (ref (F{ shape, ... })) = shape
     fun get_friction (ref (F{ friction, ... })) = friction
     fun get_restitution (ref (F{ restitution, ... })) = restitution
@@ -1134,8 +1134,8 @@ struct
     fun get_next (ref (C { next, ... })) = next
     fun get_node_a (ref (C { node_a, ... })) = node_a
     fun get_node_b (ref (C { node_b, ... })) = node_b
-    fun get_fixture_a (ref (C { fixture_a, ... })) = !! fixture_a
-    fun get_fixture_b (ref (C { fixture_b, ... })) = !! fixture_b
+    fun get_fixture_a (ref (C { fixture_a, ... })) = !! "cfa" fixture_a
+    fun get_fixture_b (ref (C { fixture_b, ... })) = !! "cfb" fixture_b
     fun get_manifold (ref (C { manifold, ... })) = manifold
     fun get_toi_count (ref (C { toi_count, ... })) = toi_count
 
@@ -1289,8 +1289,8 @@ struct
 
     fun new (fixture_a, fixture_b) =
         ref (C { flags = FLAG_ENABLED,
-                 fixture_a = NONE,
-                 fixture_b = NONE,
+                 fixture_a = SOME fixture_a,
+                 fixture_b = SOME fixture_b,
                  manifold = { point_count = 0,
                               (* PERF uninitialized in Box2D. *)
                               typ = E_Circles,
@@ -1448,8 +1448,8 @@ struct
           fun one_edge e =
               if SOME body_a = E.get_other e
               then
-                  let val fa = C.get_fixture_a (!! (E.get_contact e))
-                      val fb = C.get_fixture_b (!! (E.get_contact e))
+                  let val fa = C.get_fixture_a (!! "fa" (E.get_contact e))
+                      val fb = C.get_fixture_b (!! "fb" (E.get_contact e))
                   in
                       if (fa = fixture_a andalso fb = fixture_b) orelse
                          (fa = fixture_b andalso fb = fixture_a)

@@ -3,7 +3,8 @@
 (* Main dynamics library. Ties together all the mutually-referential types
    like bodies, fixtures, contacts and joints.
    
-   Corresponding to dynamics/b2world.cpp and dynamics/contacts/b2contactmanager.cpp. *)
+   Corresponding to dynamics/b2world.cpp and 
+   dynamics/contacts/b2contactmanager.cpp. *)
 functor BDDWorld(Arg : BDDWORLD_ARG) :>
   BDDWORLD where type fixture_data = Arg.fixture_data 
              and type body_data = Arg.body_data =
