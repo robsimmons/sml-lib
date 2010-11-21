@@ -111,6 +111,7 @@ sig
   val getflag : string -> bool ref option
   val getparam : string -> string ref option
   val getparamlist : string -> string list ref option
+  val getparamacc : string -> string list ref option
 
   (* get a parameter as an integer. Supply a default in case it
      is malformed. *)

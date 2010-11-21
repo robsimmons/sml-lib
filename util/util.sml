@@ -27,8 +27,8 @@ struct
   type 'a orderer = ('a * 'a) -> order
   fun order_field proj f (l, r) = f (proj l, proj r)
 
-  fun sum_compare ca cb (A a1, A a2) = ca (a1, a2)
-    | sum_compare ca cb (B b1, B b2) = cb (b1, b2)
+  fun sum_compare ca _  (A a1, A a2) = ca (a1, a2)
+    | sum_compare _  cb (B b1, B b2) = cb (b1, b2)
     | sum_compare _  _  (A _,  B _)  = LESS
     | sum_compare _  _  (B _,  A _)  = GREATER
 
@@ -58,9 +58,9 @@ struct
      | GREATER => GREATER
      | EQUAL => ob (b, bb))
 
-  fun lex_list_order oi (nil, nil) = EQUAL
-    | lex_list_order oi (nil, _ :: _) = LESS
-    | lex_list_order oi (_ :: _, nil) = GREATER
+  fun lex_list_order _  (nil, nil) = EQUAL
+    | lex_list_order _  (nil, _ :: _) = LESS
+    | lex_list_order _  (_ :: _, nil) = GREATER
     | lex_list_order oi (a :: al, b :: bl) =
     (case oi (a, b) of
        EQUAL => lex_list_order oi (al, bl)
@@ -88,17 +88,17 @@ struct
         | neq => neq
 
   fun mapa f (A x) = A (f x)
-    | mapa f (B x) = B x
+    | mapa _ (B x) = B x
 
   fun mapb f (B x) = B (f x)
-    | mapb f (A x) = A x
+    | mapb _ (A x) = A x
     (* interesting: this second case can't be
 
        ... | mapb f a = a
 
        because a changes type. *)
 
-  fun sift f nil = (nil, nil)
+  fun sift _ nil = (nil, nil)
     | sift f (h::t) =
     let val (aas, bbs) = sift f t
     in
@@ -107,11 +107,11 @@ struct
       | B b => (aas, b :: bbs)
     end
 
-  fun pow n 0 = 1
+  fun pow _ 0 = 1
     | pow n m = n * pow n (m - 1)
 
   fun I x = x
-  fun K x y = x
+  fun K x _ = x
 
   fun opandalso (a, b) = a andalso b
   fun oporelse  (a, b) = a orelse b
@@ -151,7 +151,7 @@ struct
 
   fun is a b = a = b
 
-  fun protect f cleanup a =
+  fun protect f (cleanup : unit -> unit) a =
     let 
       val ret = f a
         handle e => (cleanup (); raise e)

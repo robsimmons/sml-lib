@@ -554,8 +554,8 @@ struct
       Array.app solve_one_velocity_constraint constraints
 
   fun store_impulses (solver : ('b, 'f, 'j) contact_solver) : unit =
-    Array.appi 
-    (fn (i, {manifold, point_count, points, ... } : ('b, 'f, 'j) constraint) =>
+    Array.app
+    (fn ({manifold, point_count, points, ... } : ('b, 'f, 'j) constraint) =>
      for 0 (point_count - 1)
      (fn j =>
       let

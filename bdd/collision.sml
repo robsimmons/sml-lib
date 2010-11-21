@@ -192,7 +192,6 @@ struct
                        max_fraction : real })
       : BDDTypes.ray_cast_output option =
       let
-          exception No
           val tmin = ref (~max_float)
           val tmax = ref max_float
 
@@ -206,7 +205,7 @@ struct
           fun setnormaly y = vec2set (normal, 0.0, y)
 
           (* In original, a loop for i = 0 and 1 *)
-          fun loop proj setnormal =
+          fun loop proj (setnormal : real -> unit) =
               if proj absd < epsilon
               then (* parallel *)
                   not (proj p < proj lowerbound orelse

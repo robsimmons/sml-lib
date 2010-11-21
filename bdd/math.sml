@@ -5,8 +5,6 @@
 structure BDDMath :> BDDMATH =
 struct
 
-  exception Unimplemented of string
-
   (* This function is used to ensure that a floating point number is
      not a NaN or infinity. *)
   val is_valid = Real.isFinite (* checks both NaN and infs. *)

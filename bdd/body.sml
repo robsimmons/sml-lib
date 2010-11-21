@@ -277,14 +277,7 @@ struct
   val get_joints = get_joint_list
   val get_fixtures = get_fixture_list
 
-  fun create_fixture (body : body, def as
-                      { shape : BDDShape.shape,
-                        data : fixture_data,
-                        friction : real,
-                        restitution : real,
-                        density : real,
-                        is_sensor : bool,
-                        filter : D.filter }) : fixture =
+  fun create_fixture (body : body, def) : fixture =
     let val world = D.B.get_world body
         val () = if D.W.get_flag (world, D.W.FLAG_LOCKED)
                  then raise BDDBody "can't set mass data while locked"

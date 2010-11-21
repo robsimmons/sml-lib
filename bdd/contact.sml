@@ -18,9 +18,6 @@ struct
   infix 6 :+: :-: %-% %+% +++
   infix 7 *: *% +*: +*+ #*% @*:
 
-  exception BDDBody of string
-  
-
   structure D = BDDDynamics
   datatype bodycell = datatype D.bodycell
   datatype body_type = datatype D.body_type

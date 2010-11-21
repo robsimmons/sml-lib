@@ -10,7 +10,7 @@ struct
   exception StringUtil of string
 
   fun I x = x
-  fun K x y = x
+  fun K x _ = x
   
   fun unformatted_table sll =
     (foldl (fn (sl, rest) =>
@@ -22,7 +22,7 @@ struct
       
   (* PERF probably more efficient to use String.concat.
      I use this a LOT, so good to check... *)
-  fun delimit s nil = ""
+  fun delimit _ nil = ""
     | delimit s (h :: t) =
         foldl (fn (a, b) => b ^ s ^ a) h t
 
@@ -229,8 +229,6 @@ struct
           implode (lc (explode s))
       end
 
-  (* XXX PERF this could be a lot more efficient. *)
-  fun filter f = implode o (List.filter f) o explode
   fun vconcat vec = Vector.foldr (op ^) "" vec
 
   fun filter f s = 
@@ -288,7 +286,7 @@ struct
   fun hexdig i = implode [CharVector.sub (digits, i div 16),
                           CharVector.sub (digits, i mod 16)]
 
-  fun inlist nil c = false
+  fun inlist nil _ = false
     | inlist (h :: t) (c : char) = c = h orelse inlist t c
 
   fun harden f esc l s =
@@ -486,7 +484,7 @@ struct
               true if all strings in sl appear in s,
               in order without overlap, beginning
               at character n *)
-          fun allinorder n nil s = true
+          fun allinorder _ nil _ = true
             | allinorder n (h :: t) s =
               case findat n h s of
                   NONE => false

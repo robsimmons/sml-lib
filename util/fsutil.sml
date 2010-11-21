@@ -103,8 +103,6 @@ struct
       end
   end
 
-  fun stream_map f s = (fn () => f (s ()))
-
   fun stream_app f s = 
       (case s () of
            NONE => ()
@@ -248,7 +246,7 @@ struct
   fun seekn x s = 
       ignore (size (TextIO.inputN (s, x)) <> x andalso raise Seek)
 
-  fun skipi 0 s = ()
+  fun skipi 0 _ = ()
     | skipi n s =
       if n < 0 then raise Seek
       else if n < 32 then let in ignore (TextIO.input1 s); skipi (n - 1) s end

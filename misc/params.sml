@@ -19,14 +19,14 @@ struct
     ForwardDeclared
   | Declared of 'a
 
-  val flags = ref nil 
+  val flags = ref nil
                (* cell      default   (commandlinename, docstring, nothing) *)
-              : (bool ref * (bool * (string * string * unit) option) state * 
+              : (bool ref * (bool * (string * string * unit) option) state *
                 (* name nothing *)
                  string * unit) list ref
 
   val params = ref nil
-               : (string ref * (string * (string * string * unit) option) state * 
+               : (string ref * (string * (string * string * unit) option) state *
                   string * unit) list ref
 
   (* final bool: true if accumulator *)
@@ -39,10 +39,10 @@ struct
   fun get lr (name : string) =
     let
       fun f nil = NONE
-        | f ((r, _, n, _)::t) = 
-          if name = n 
+        | f ((r, _, n, _) :: t) =
+          if name = n
           then SOME r
-          else f t 
+          else f t
     in
       f (!lr)
     end
@@ -50,19 +50,19 @@ struct
   fun argget selector lr (name : string) =
     let
       fun f nil = NONE
-        | f ((h as (r, Declared(_, SOME(n, _, _)), _, _))::t) = 
-          if name = n 
+        | f ((h as (_, Declared(_, SOME(n, _, _)), _, _)) :: t) =
+          if name = n
           then SOME (selector h)
-          else f t 
-        | f ((_, ForwardDeclared, name, _) :: t) = 
+          else f t
+        | f ((_, ForwardDeclared, name, _) :: _) =
             raise Params ("Arg " ^ name ^ " was only forward declared!")
-        | f (_::t) = f t
+        | f (_ :: t) = f t
     in
       f (!lr)
     end
 
-  fun make (f  : 'spec option -> (string * string * 'extra) option) 
-           (lr : ('output ref * ('output * (string * string * 'extra) option) state * 
+  fun make (f  : 'spec option -> (string * string * 'extra) option)
+           (lr : ('output ref * ('output * (string * string * 'extra) option) state *
                   string * 'flag) list ref)
            (flags : 'flag)
            (default : 'output)
@@ -70,8 +70,8 @@ struct
            (name : string)
            : 'output ref =
     case get lr name of
-      NONE => 
-        let 
+      NONE =>
+        let
           val h = ref default
         in
           lr := ((h, Declared(default, f cmd), name, flags) :: !lr);
@@ -81,8 +81,8 @@ struct
     | SOME (r : 'output ref) =>
         let
           (* If it's there as ForwardDeclared, upgrade. *)
-          fun g b nil = r
-            | g b ((h as (rr, ForwardDeclared, n, fl)) :: t) =
+          fun g _ nil = r
+            | g b ((h as (rr, ForwardDeclared, n, _)) :: t) =
             if name = n
             then
               let in
@@ -98,7 +98,7 @@ struct
         end
 
   (* Same as make, but forward declares if it's not there. *)
-  fun use_ (lr : ('output ref * ('output * (string * string * 'extra) option) state * 
+  fun use_ (lr : ('output ref * ('output * (string * string * 'extra) option) state *
                   string * 'flag) list ref)
            (flags : 'flag)
            (default : 'output)  (* this is the default for the type of arg.
@@ -108,7 +108,7 @@ struct
     case get lr name of
       NONE =>
         let
-          val h = ref default 
+          val h = ref default
         in
           lr := ((h, ForwardDeclared, name, flags) :: !lr);
           h
@@ -147,7 +147,7 @@ struct
         fun pl ((cl, doc, c)) s = [cl, str c, s, doc]
         (* XXX fail for undeclared flags..? *)
         fun f ml s ts l = rev (foldr (fn ((_, Declared(d, SOME xx), _, _), b) =>
-                                      ml xx (ts d) :: b 
+                                      ml xx (ts d) :: b
                                         | (_, b) => b) [s] l)
         fun bts d = (if d then "(true)" else "(false)")
     in
@@ -167,11 +167,11 @@ struct
        | l => "\nThe following parameters take a list of strings.\n" ^
               "Specify them followed by a list of arguments separated\n" ^
               "by the given separator character.\n" ^
-              (table (f pl ["param", "sep", "default", "description"] 
+              (table (f pl ["param", "sep", "default", "description"]
                            (StringUtil.delimit ",") l)))
     end
 
-  fun docommandline () = 
+  fun docommandline () =
     let
       fun f nil l = rev l
         | f (h::t) l =
@@ -185,19 +185,19 @@ struct
                       (case t of
                            nil => raise BadOption
                                (h ^ " must be followed by a list")
-                         | v::rest => 
+                         | v::rest =>
                                let
-                                   val toks = 
+                                   val toks =
                                        String.fields (StringUtil.ischar ch) v
                                in
                                    pr := (if acc then toks @ !pr else toks);
                                    f rest l
                                end))
-             | SOME sr => 
-                 (case t of 
-                    nil => raise BadOption 
+             | SOME sr =>
+                 (case t of
+                    nil => raise BadOption
                           (h ^ " must be followed by a value")
-                  | v::rest => 
+                  | v::rest =>
                           let in
                             sr := v;
                             f rest l
@@ -230,7 +230,7 @@ struct
           TextIO.output(TextIO.stdErr, "Usage: " ^ u ^ "\n\n");
           TextIO.output(TextIO.stdErr, usage ())
       end
-          
+
   fun main0 u go =
       case require 0 of
         ExactArgs _ => ignore (go ())

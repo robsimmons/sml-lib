@@ -10,7 +10,6 @@ struct
   infix 6 :+: :-: %-% %+% +++
   infix 7 *: *% +*: +*+ #*% @*:
 
-  exception BDDIsland of string
   structure D = BDDDynamics
   structure CS = BDDContactSolver
 
@@ -249,6 +248,7 @@ struct
                                                          D.B.get_sleep_time b)
                            end
           in
+              Vector.app onebody bodies;
               (* The whole island goes to sleep. *)
               if !min_sleep_time > BDDSettings.time_to_sleep
               then Vector.app (fn body =>

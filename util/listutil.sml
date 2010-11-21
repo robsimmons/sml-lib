@@ -9,7 +9,7 @@ struct
     struct
         exception NotFound
 
-        fun find eq nil key = NONE
+        fun find _ nil _ = NONE
           | find eq ((a, b) :: t) key =
             if eq (a, key) then SOME b
             else find eq t key
@@ -24,33 +24,32 @@ struct
             ex nil al
           end
 
-        fun get eq nil key = NONE
-          | get eq ((h as (a, b)) :: t) key =
+        fun get _ nil _ = NONE
+          | get eq ((h as (a, _)) :: t) key =
             if eq (a, key) then SOME h
             else get eq t key
 
         fun haskey f l k = Option.isSome (find f l k)
 
-        fun update eq l a b = map (fn (aa, bb) => 
+        fun update eq l a b = map (fn (aa, bb) =>
                                    (aa, if eq(aa, a) then b else bb)) l
 
-        fun modify eq l a bf = map (fn (aa, bb) => 
+        fun modify eq l a bf = map (fn (aa, bb) =>
                                    (aa, if eq(aa, a) then bf bb else bb)) l
-                
-        fun removefirst eq nil key = raise NotFound
+
+        fun removefirst _ nil _ = raise NotFound
           | removefirst eq ((a, b) :: t) key =
             if eq (a, key) then t
             else (a, b) :: removefirst eq t key
-                
-        fun removeall eq nil key = nil
+
+        fun removeall _ nil _ = nil
           | removeall eq ((a, b) :: t) key =
             if eq (a, key) then removeall eq t key
             else (a, b) :: removeall eq t key
-                
+
         fun bycompare f x = EQUAL = f x
 
-        fun s (a, b) = (b, a)
-        fun swap l = map s l
+        fun swap l = map (fn (a, b) => (b, a)) l
 
     end
 
@@ -58,20 +57,20 @@ struct
 
     structure Sorted =
     struct
-        fun insert cmp nil a = [a]
-          | insert cmp (h ::t ) a =
+        fun insert _ nil a = [a]
+          | insert cmp (h :: t) a =
             case cmp (h, a) of
                 LESS => h :: insert cmp t a
               | _ => a :: h :: t
 
-        fun reverse c a = 
+        fun reverse c a =
             case c a of
                 LESS => GREATER
               | GREATER => LESS
               | EQUAL => EQUAL
 
-        fun insertbest 0 _ _ _ = nil
-          | insertbest max cmp nil a = [a]
+        fun insertbest 0   _   _        _ = nil
+          | insertbest _   _   nil      a = [a]
           | insertbest max cmp (h :: t) a =
             case cmp(h, a) of
                 LESS => h :: insertbest (max - 1) cmp t a
@@ -79,7 +78,7 @@ struct
 
     end
 
-    fun stratify cmp nil = nil
+    fun stratify _ nil = nil
       | stratify cmp ((aa, bb) :: t) =
       let
         val ls = stratify cmp t
@@ -94,7 +93,7 @@ struct
         insert (aa, bb) ls
       end
 
-     fun sift f nil = (nil, nil)
+     fun sift _ nil = (nil, nil)
        | sift f (h :: t) =
          let val (ts, fs) = sift f t
          in
@@ -103,26 +102,26 @@ struct
              else (ts, h :: fs)
          end
 
-    fun combinel f nil = raise ListUtil
+    fun combinel _ nil = raise ListUtil
       | combinel f (h :: t) = foldl f h t
 
-    fun combiner f [x] = x
+    fun combiner _ [x] = x
       | combiner f (h :: t) = f (h, combiner f t)
-      | combiner f nil = raise ListUtil
+      | combiner _ nil = raise ListUtil
 
     fun list x = [x]
 
-    fun aslongas f nil = nil
+    fun aslongas _ nil = nil
       | aslongas f (h :: t) = if f h then h :: aslongas f t else nil
 
-    fun after f nil = nil
+    fun after _ nil = nil
       | after f (l as (h :: t)) = if f h then l else after f t
 
     fun partitionaslongas f l =
         let
             fun pala a (u as (h :: t)) = if f h then pala (h :: a) t
                                        else (rev a, u)
-              | pala a nil = (l, nil)
+              | pala _ nil = (l, nil)
         in
             pala nil l
         end
@@ -131,20 +130,20 @@ struct
       | position' f n (h :: t) = if f h then SOME n else position' f (n + 1) t
     fun position f l = position' f 0 l
 
-    fun all2 f nil nil = true
+    fun all2 _ nil nil = true
       | all2 f (a :: ta) (b :: tb) = f (a, b) andalso all2 f ta tb
-      | all2 f _ _ = false
+      | all2 _ _ _ = false
 
-    fun map3 f nil nil nil = nil
+    fun map3 _ nil nil nil = nil
       | map3 f (a :: ta) (b :: tb) (c :: tc) = f (a, b, c) :: map3 f ta tb tc
       | map3 _ _ _ _ = raise ListUtil
 
-    fun app3 f nil nil nil = ()
+    fun app3 _ nil nil nil = ()
       | app3 f (a :: ta) (b :: tb) (c :: tc) = (ignore (f (a, b, c)); app3 f ta tb tc)
       | app3 _ _ _ _ = raise ListUtil
 
-    fun foldl3 f acc nil nil nil = acc
-      | foldl3 f acc (a :: ta) (b :: tb) (c :: tc) = 
+    fun foldl3 _ acc nil nil nil = acc
+      | foldl3 f acc (a :: ta) (b :: tb) (c :: tc) =
         foldl3 f (f((a, b, c), acc)) ta tb tc
       | foldl3 _ _ _ _ _ = raise ListUtil
 
@@ -155,7 +154,7 @@ struct
       in
         go (b, 0, l)
       end
-  
+
     fun foldri f b l =
       let
         fun go (_, nil) = b
@@ -164,33 +163,33 @@ struct
         go (0, l)
       end
 
-    fun mapsecond f nil = nil 
+    fun mapsecond _ nil = nil
       | mapsecond f ((a, b) :: t) = (a, f b) :: mapsecond f t
 
-    fun mapfirst  f nil = nil
+    fun mapfirst  _ nil = nil
       | mapfirst  f ((a, b) :: t) = (f a, b) :: mapfirst f t
 
-    fun appsecond f nil = ()
+    fun appsecond _ nil = ()
       | appsecond f ((_, b) :: t) = (ignore (f b); appsecond f t)
 
-    fun appfirst  f nil = ()
+    fun appfirst  _ nil = ()
       | appfirst  f ((a, _) :: t) = (ignore (f a); appfirst f t)
 
-    fun existfirst f nil = false
-      | existfirst f ((a, b) :: t) = f a orelse existfirst f t
+    fun existfirst _ nil = false
+      | existfirst f ((a, _) :: t) = f a orelse existfirst f t
 
-    fun existsecond f nil = false
-      | existsecond f ((a, b) :: t) = f b orelse existsecond f t
+    fun existsecond _ nil = false
+      | existsecond f ((_, b) :: t) = f b orelse existsecond f t
 
     fun mapi f l =
-        let fun mm n nil = nil
+        let fun mm _ nil = nil
               | mm n (h :: t) = f (h, n) :: mm (n + 1) t
         in
             mm 0 l
         end
 
     fun appi f l =
-        let fun mm n nil = ()
+        let fun mm _ nil = ()
               | mm n (h :: t) = (ignore (f (h, n)); mm (n + 1) t)
         in
             mm 0 l
@@ -216,7 +215,7 @@ struct
             fun ms nil = nil
               | ms [s] = [s]
               | ms [a, b] = merge [a] [b]
-              | ms ll = 
+              | ms ll =
                 let val (a, b) = split ll
                 in merge (ms a) (ms b)
                 end
@@ -237,7 +236,7 @@ struct
 
             fun merge a nil = a
               | merge nil b = b
-              | merge (aa as ((ah as (a, ai)) :: ta)) 
+              | merge (aa as ((ah as (a, ai)) :: ta))
                       (bb as ((bh as (b, bi)) :: tb)) =
                 case cmp (a, b) of
                     EQUAL =>
@@ -250,7 +249,7 @@ struct
 
             fun ms nil = nil
               | ms [s] = [s]
-              | ms ll = 
+              | ms ll =
                 let val (a, b) = split ll
                 in merge (ms a) (ms b)
                 end
@@ -278,7 +277,7 @@ struct
             fun ms nil = nil
               | ms [s] = [s]
               | ms [a, b] = merge [a] [b]
-              | ms ll = 
+              | ms ll =
                 let val (a, b) = split ll
                 in merge (ms a) (ms b)
                 end
@@ -296,22 +295,22 @@ struct
             m (tl l) (hd l)
         end
 
-    fun byfirst f ((a, b), (aa, bb)) = f (a, aa)
-    fun bysecond f ((a, b), (aa, bb)) = f (b, bb)
+    fun byfirst f ((a, _), (aa, _)) = f (a, aa)
+    fun bysecond f ((_, b), (_, bb)) = f (b, bb)
 
-    fun allfirst f ((a, b) :: t) = f a andalso allfirst f t
-      | allfirst f nil = true
+    fun allfirst f ((a, _) :: t) = f a andalso allfirst f t
+      | allfirst _ nil = true
 
-    fun allsecond f ((a, b) :: t) = f b andalso allsecond f t
-      | allsecond f nil = true
+    fun allsecond f ((_, b) :: t) = f b andalso allsecond f t
+      | allsecond _ nil = true
 
-    fun alladjacent f nil = true
-      | alladjacent f [_] = true
+    fun alladjacent _ nil = true
+      | alladjacent _ [_] = true
       | alladjacent f (a :: (l as (b :: _))) = f (a, b) andalso alladjacent f l
 
     (* assumes f reflexive *)
     fun allpairs f l =
-        let 
+        let
             fun apa _ nil = true
               | apa a (b :: t) = f (a, b) andalso f (b, a) andalso apa a t
 
@@ -323,8 +322,8 @@ struct
         end
 
     (* if f is symmetric *)
-    fun allpairssym f l = 
-        let 
+    fun allpairssym f l =
+        let
             fun apa _ nil = true
               | apa a (b :: t) = f (a, b) andalso apa a t
 
@@ -335,8 +334,8 @@ struct
             ap l
         end
 
-    fun apppairssym f l = 
-        let 
+    fun apppairssym f l =
+        let
             fun apa _ nil = ()
               | apa a (b :: t) = (ignore (f (a, b)); apa a t)
 
@@ -364,7 +363,7 @@ struct
                          in (map #1 pairs) :: (transpose (map #2 pairs))
                          end
 
-   fun example f nil = NONE
+   fun example _ nil = NONE
      | example f (h :: t) = if f h then SOME h else example f t
 
    fun extract f l =
@@ -372,15 +371,15 @@ struct
        (* PERF revappend? *)
        fun ex (l, h :: r) = if f h then SOME (h, rev l @ r)
                             else ex (h :: l, r)
-         | ex (l, nil) = NONE
+         | ex (_, nil) = NONE
      in
        ex (nil, l)
      end
 
-   fun findpartial f nil = NONE
-     | findpartial f (h :: t) = 
-     case f h of 
-       NONE => findpartial f t 
+   fun findpartial _ nil = NONE
+     | findpartial f (h :: t) =
+     case f h of
+       NONE => findpartial f t
      | yes => yes
 
    fun tabulatepartial (n, f) =
@@ -396,12 +395,12 @@ struct
 
    fun unzip3 abc_list =
        let fun unzip3_loop nil (aa, bb, cc) = (rev aa, rev bb, rev cc)
-             | unzip3_loop ((a, b, c) :: rest) (aa, bb, cc) = 
+             | unzip3_loop ((a, b, c) :: rest) (aa, bb, cc) =
            unzip3_loop rest (a :: aa, b :: bb, c :: cc)
        in unzip3_loop abc_list (nil, nil, nil)
        end
 
-   fun zip3 a b c = map (fn ((a, b), c) => (a, b, c)) 
+   fun zip3 a b c = map (fn ((a, b), c) => (a, b, c))
                         (ListPair.zip (ListPair.zip (a, b), c))
 
    (* a wedding is defined as being between an 'a and a 'b *)
@@ -422,7 +421,7 @@ struct
                            (ListPair.zip (zip3 a b c, d))
 
    fun choosemap f l =
-     let 
+     let
        fun cm bef (h :: aft) = f(h, rev bef @ aft) :: cm (h :: bef) aft
          | cm _ nil = nil
      in
@@ -453,9 +452,9 @@ struct
        in
            ck (k, length l, l)
        end
-       
 
-   fun mapto f nil = nil
+
+   fun mapto _ nil = nil
      | mapto f (h :: t) = (h, f h) :: mapto f t
 
    fun maptopartial f l = List.mapPartial (fn x =>
@@ -464,7 +463,7 @@ struct
                                              | SOME y => SOME (x, y)) l
 
    fun cleave' 0 l acc = (rev acc, l)
-     | cleave' n nil acc = raise Subscript
+     | cleave' _ nil _ = raise Subscript
      | cleave' n (h :: t) acc = cleave' (n - 1) t (h :: acc)
 
    fun cleave n l = if n < 0 then raise Subscript else cleave' n l nil
@@ -473,9 +472,9 @@ struct
      | permutations (h :: t) =
        let
            val pt = permutations t
-               
+
            (* each_pos (x : 'a) (l : 'a list)
-              returns 'a list list where 
+              returns 'a list list where
               x has been inserted in each possible
               position within l *)
            fun each_pos x nil = [[x]]
@@ -484,7 +483,7 @@ struct
                (map (fn l => hh :: l) (each_pos x tt))
        in
            List.concat
-           (map 
+           (map
             (fn one_perm =>
              each_pos h one_perm) pt)
        end
@@ -493,7 +492,7 @@ struct
 
     (* cuter with folds! *)
     fun power l =
-      foldl (fn (elt, sofar) => 
+      foldl (fn (elt, sofar) =>
              foldl (fn (lis, sets) =>
                     (elt :: lis) :: sets) sofar sofar
              ) [nil] l
