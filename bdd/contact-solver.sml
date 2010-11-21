@@ -405,6 +405,8 @@ struct
       (c as { body_a, body_b, normal, friction, point_count, ... } 
        : ('b, 'f, 'j) constraint) : unit =
   let
+      val () = print "Solving a velocity constraint.\n"
+
       val w_a : real ref = ref (D.B.get_angular_velocity body_a)
       val w_b : real ref = ref (D.B.get_angular_velocity body_b)
       val v_a : vec2 ref = ref (D.B.get_linear_velocity body_a)
@@ -641,6 +643,11 @@ struct
   fun solve_position_constraints (solver : ('b, 'f, 'j) contact_solver,
                                   baumgarte : real) : bool =
     let
+
+      (* XXX bug here! *)
+      val () = print 
+          ("Solving " ^ Int.toString (Array.length (#constraints solver)) ^
+           " position constraints.\n")
 
       val min_separation = ref 0.0
       fun oneconstraint (c : ('b, 'f, 'j) constraint) =

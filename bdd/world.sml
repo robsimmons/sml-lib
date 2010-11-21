@@ -486,6 +486,7 @@ void b2World::DestroyJoint(b2Joint* j)
         (* Port note: Box2D creates an island on the stack and keeps reusing 
            it. I made it just be a function, for simplicity. 
            PERF: Did doing this make some of the counts dead? *)
+        val () = print "SOLVE.\n"
 
         (* Clear all the island flags. *)
         val () = oapp D.B.get_next 
@@ -723,6 +724,7 @@ void b2World::DestroyJoint(b2Joint* j)
                else ()
            end
         val () = loop 0
+
       in
         case (!toi_contact, !toi_other) of
             (NONE, NONE) => D.B.advance (body, 1.0)
@@ -810,6 +812,8 @@ void b2World::DestroyJoint(b2Joint* j)
        Time is not conserved. *)
     fun solve_toi (world : world) : unit =
       let
+          val () = print "SOLVE_TOI\n"
+
         (* Prepare all contacts. *)
           fun onecontact c =
             let in

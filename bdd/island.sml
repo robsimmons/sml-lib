@@ -68,6 +68,9 @@ struct
       let
           val bodies = Vector.fromList bodies
           val joints = Vector.fromList joints
+
+          val () = print ("Solve island with " ^ 
+                          Int.toString (Vector.length bodies) ^ " bodies\n")
           (* Contacts are partitioned so that constraints with
              static bodies are solved last. *)
           val contacts = partition_contacts_to_vector contacts
@@ -208,7 +211,8 @@ struct
               then ()
               else iterate (n + 1)
             end
-
+          val () = iterate 0
+        
           val () = report (world, solver)
 
       in

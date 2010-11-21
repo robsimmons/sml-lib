@@ -1460,15 +1460,21 @@ struct
               else ()
           val () = oapp E.get_next one_edge (B.get_contact_list body_b)
 
+          val () = print "Should collide?\n"
+
           (* Does a joint override collision? Is at least one body dynamic? *)
           val () = if B.should_collide (body_b, body_a)
                    then ()
                    else raise Return
 
+          val () = print " ok 1\n"
+
           (* Check user filtering. *)
           val () = if get_should_collide world (fixture_a, fixture_b)
                    then ()
                    else raise Return
+
+          val () = print " ok 2\n"
 
           (* Call the factory. *)
           val c = C.new (fixture_a, fixture_b)
