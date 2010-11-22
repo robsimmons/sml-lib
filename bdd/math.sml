@@ -45,8 +45,8 @@ struct
   fun vec2setfrom ({x, y} : vec2, {x = xx, y = yy} : vec2) =
       (x := !xx; y := !yy)
   fun vec2neg ({x, y} : vec2) = { x = ref (0.0 - !x), y = ref (0.0 - !y) }
-  fun vec2idx ({x, y} : vec2) 0 = !x
-    | vec2idx {x, y} 1 = !y
+  fun vec2idx ({x, y = _} : vec2) 0 = !x
+    | vec2idx {x = _, y} 1 = !y
     | vec2idx _ _ = raise Subscript
 
   fun vec2pluseq ({x, y} : vec2, {x = ref xx, y = ref yy} : vec2) =
@@ -93,17 +93,17 @@ struct
   type vec3 = { x : real ref, y : real ref, z : real ref }
   fun vec3 (x, y, z) = { x = ref x, y = ref y, z = ref z }
   fun vec3copy ({x, y, z} : vec3) = vec3 (!x, !y, !z)
-  fun vec3x ({x, y, z} : vec3) = !x
-  fun vec3y ({x, y, z} : vec3) = !y
-  fun vec3z ({x, y, z} : vec3) = !z
+  fun vec3x ({x, y = _, z = _} : vec3) = !x
+  fun vec3y ({x = _, y, z = _} : vec3) = !y
+  fun vec3z ({x = _, y = _, z} : vec3) = !z
   fun vec3zero {x, y, z} = (x := 0.0; y := 0.0; z := 0.0)
   fun vec3set ({x, y, z}, xx, yy, zz) = (x := xx; y := yy; z := zz)
   fun vec3neg ({x, y, z} : vec3) = { x = ref (0.0 - !x), 
                                      y = ref (0.0 - !y), 
                                      z = ref (0.0 - !z) }
-  fun vec3idx ({x, y, z} : vec3) 0 = !x
-    | vec3idx {x, y, z} 1 = !y
-    | vec3idx {x, y, z} 2 = !z
+  fun vec3idx ({x, y = _, z = _} : vec3) 0 = !x
+    | vec3idx {x = _, y, z = _} 1 = !y
+    | vec3idx {x = _, y = _, z} 2 = !z
     | vec3idx _ _ = raise Subscript
 
   fun vec3pluseq ({x, y, z} : vec3, {x = ref xx, y = ref yy, z = ref zz}) =
@@ -130,8 +130,8 @@ struct
                             col2 = vec2(a12, 
                                         a22) }
 
-  fun mat22col1 { col1, col2 } = col1
-  fun mat22col2 { col1, col2 } = col2
+  fun mat22col1 { col1, col2 = _ } = col1
+  fun mat22col2 { col1 = _, col2 } = col2
 
   (* Construct this matrix using an angle. This matrix becomes
      an orthonormal rotation matrix. *)
@@ -167,7 +167,7 @@ struct
   fun mat22setzero ({ col1, col2 } : mat22) =
       (vec2setzero col1; vec2setzero col2)
 
-  fun mat22getangle ({ col1, col2 } : mat22) =
+  fun mat22getangle ({ col1, col2 = _ } : mat22) =
       atan2 (vec2y col1, vec2x col1)
 
   fun mat22inverse ({ col1, col2 } : mat22) =
@@ -239,7 +239,7 @@ struct
                det * dot3(col1, cross3vv(col2, b)))
       end
 
-  fun mat33solve22 ({ col1, col2, col3 } : mat33, b : vec2) : vec2 =
+  fun mat33solve22 ({ col1, col2, col3 = _ } : mat33, b : vec2) : vec2 =
       let
           val a11 = vec3x col1     val a12 = vec3x col2
           val a21 = vec3y col1     val a22 = vec3y col2
@@ -272,7 +272,7 @@ struct
       (vec2set(position, vec2x pp, vec2y pp);
        mat22setangle(r, rr))
 
-  fun transform_getangle { position, r } = mat22getangle r
+  fun transform_getangle { position = _, r } = mat22getangle r
 
   (* Don't modify these. *)
   val vec2_zero = vec2(0.0, 0.0)

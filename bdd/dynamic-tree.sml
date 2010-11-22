@@ -347,6 +347,7 @@ struct
 
             (* Predict AABB displacement. *)
             val d : vec2 = aabb_multiplier *: displacement
+            val r : vec2 = vec2(aabb_extension, aabb_extension)
 
             val (blx, bux) = if vec2x d < 0.0
                              then (vec2x d, 0.0)
@@ -357,9 +358,17 @@ struct
 
             (* Extend AABB *)
             val b : aabb = { lowerbound = 
-                               #lowerbound aabb :-: displacement :+: vec2(blx, bly),
+                               #lowerbound aabb :-: r :+: vec2(blx, bly),
                              upperbound = 
-                               #upperbound aabb :+: displacement :+: vec2(bux, buy) }
+                               #upperbound aabb :+: r :+: vec2(bux, buy) }
+
+            fun pxy v = 
+                Real.fmt (StringCvt.FIX (SOME 2)) (vec2x v) ^ " " ^
+                Real.fmt (StringCvt.FIX (SOME 2)) (vec2y v)
+            val () = print ("  moved_aabb: " ^
+                            pxy (#lowerbound b) ^ " to " ^
+                            pxy (#upperbound b) ^ "\n")
+
         in
             proxy := Node { aabb = b, data = data, parent = ref Empty,
                             left = ref Empty, right = ref Empty, stamp = stamp };

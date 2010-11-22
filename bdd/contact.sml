@@ -51,6 +51,8 @@ struct
      fields are flattened into world. *)
   fun update (c : contact, world : world) =
     let
+      val () = print "-> Update contact.\n"
+
       val old_manifold = get_manifold c
       (* Re-enable this contact. *)
       val () = set_flag (c, FLAG_ENABLED)
@@ -89,7 +91,7 @@ struct
           end
       else
           let 
-              val manifold = evaluate (c, xf_a, xf_a)
+              val manifold = evaluate (c, xf_a, xf_b)
           in
               set_manifold (c, manifold);
               touching := #point_count manifold > 0;

@@ -509,6 +509,11 @@ void b2World::DestroyJoint(b2Joint* j)
          then ()
          else
          let 
+           val XXX_xf = transformposition (Body.get_transform seed)
+           val () = print ("Try seed @" ^
+                           Real.fmt (StringCvt.FIX (SOME 2)) (vec2x XXX_xf) ^ "," ^
+                           Real.fmt (StringCvt.FIX (SOME 2)) (vec2y XXX_xf) ^ "\n")
+
            (* Accumulates arguments for island solver. *)
            val bodies = ref nil
            val joints = ref nil
@@ -542,6 +547,11 @@ void b2World::DestroyJoint(b2Joint* j)
                            val fixture_a = D.C.get_fixture_a contact
                            val fixture_b = D.C.get_fixture_b contact
                        in 
+                         print (" .. edge " ^
+                                (if (D.C.get_flag (contact, D.C.FLAG_TOUCHING))
+                                 then "touching"
+                                 else "not-touching") ^ "\n");
+
                          (* Has this contact already been added to an
                             island? Is it enabled and touching? Are
                             both fixtures non-sensors? *)
@@ -854,6 +864,39 @@ void b2World::DestroyJoint(b2Joint* j)
                    then (ContactManager.find_new_contacts world;
                          clear_flag (world, FLAG_NEW_FIXTURE))
                    else ()
+
+          (* XXX all debug *)
+          fun onecontact c =
+        let
+            val world_manifold = { normal = vec2 (~999.0, ~999.0),
+                                   points = Array.fromList
+                                   [ vec2 (~111.0, ~111.0),
+                                     vec2 (~222.0, ~222.0) ] }
+            val { point_count, ... } = Contact.get_manifold c
+            val () = Contact.get_world_manifold (world_manifold, c)
+            val name1 = (* getfixturename (Contact.get_fixture_a c) *) "name1"
+            val name2 = (* getfixturename (Contact.get_fixture_b c) *) "name2"
+            val rtos = Real.fmt (StringCvt.FIX (SOME 2))
+        in
+            print ("New " ^ name1 ^ "-" ^ name2 ^ " Contact! ");
+            if Contact.is_touching c
+            then print "touching "
+            else ();
+            print (Int.toString point_count ^ " points: ");
+            for 0 (point_count - 1) 
+            (fn i =>
+             let val pt = Array.sub(#points world_manifold, i)
+                 (* val (x, y) = vectoscreen pt *)
+             in
+                 print (rtos (vec2x pt) ^ "," ^ rtos (vec2y pt) ^ " ")
+             end);
+
+            print "\n"
+        end
+          val () = oapp Contact.get_next onecontact (D.W.get_contact_list world)
+
+          (* XXX end all debug *)
+
           val () = set_flag (world, FLAG_LOCKED)
 
           val inv_dt = if dt > 0.0
@@ -867,6 +910,38 @@ void b2World::DestroyJoint(b2Joint* j)
                        warm_starting = get_warm_starting world }
           (* Update contacts. This is where some contacts are destroyed. *)
           val () = ContactManager.collide world
+
+
+          (* XXX all debug *)
+          fun onecontact2 c =
+        let
+            val world_manifold = { normal = vec2 (~999.0, ~999.0),
+                                   points = Array.fromList
+                                   [ vec2 (~111.0, ~111.0),
+                                     vec2 (~222.0, ~222.0) ] }
+            val { point_count, ... } = Contact.get_manifold c
+            val () = Contact.get_world_manifold (world_manifold, c)
+            val name1 = (* getfixturename (Contact.get_fixture_a c) *) "name1"
+            val name2 = (* getfixturename (Contact.get_fixture_b c) *) "name2"
+            val rtos = Real.fmt (StringCvt.FIX (SOME 2))
+        in
+            print ("Post-collide " ^ name1 ^ "-" ^ name2 ^ " Contact! ");
+            if Contact.is_touching c
+            then print "touching "
+            else ();
+            print (Int.toString point_count ^ " points: ");
+            for 0 (point_count - 1) 
+            (fn i =>
+             let val pt = Array.sub(#points world_manifold, i)
+                 (* val (x, y) = vectoscreen pt *)
+             in
+                 print (rtos (vec2x pt) ^ "," ^ rtos (vec2y pt) ^ " ")
+             end);
+
+            print "\n"
+        end
+          val () = oapp Contact.get_next onecontact2 (D.W.get_contact_list world)
+
 
           (* Integrate velocities, solve velocity constraints, and
              integrate positions. *)
