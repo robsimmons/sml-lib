@@ -13,7 +13,7 @@ struct
   structure D = BDDDynamics
   structure CS = BDDContactSolver
 
-  fun listutil_sift f nil = (nil, nil)
+  fun listutil_sift _ nil = (nil, nil)
     | listutil_sift f (h :: t) =
       let val (ts, fs) = listutil_sift f t
       in
@@ -143,7 +143,7 @@ struct
           val () = CS.store_impulses solver
 
           (* Integrate positions. *)
-          fun onebody b =
+          fun integrate_onebody b =
             case D.B.get_typ b of
                D.Static => ()
              | _ =>
@@ -186,7 +186,7 @@ struct
 
                  (* Note: shapes are synchronized later. *)
                end
-          val () = Vector.app onebody bodies
+          val () = Vector.app integrate_onebody bodies
 
           (* Iterate over constraints. *)
           fun iterate n = 
@@ -223,7 +223,7 @@ struct
               val ang_tol_sqr = BDDSettings.angular_sleep_tolerance * 
                   BDDSettings.angular_sleep_tolerance
 
-              fun one_body (b : ('b, 'f, 'j) D.body) : unit =
+              fun sleep_one_body (b : ('b, 'f, 'j) D.body) : unit =
                   case D.B.get_typ b of
                       D.Static => ()
                     | _ =>
@@ -248,7 +248,7 @@ struct
                                                          D.B.get_sleep_time b)
                            end
           in
-              Vector.app onebody bodies;
+              Vector.app sleep_one_body bodies;
               (* The whole island goes to sleep. *)
               if !min_sleep_time > BDDSettings.time_to_sleep
               then Vector.app (fn body =>

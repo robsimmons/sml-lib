@@ -172,21 +172,7 @@ struct
     val set_should_collide_filter = set_should_collide
 
 
-    fun create_body (world : world,
-                     def as { typ : Body.body_type,
-                              position : BDDMath.vec2,
-                              angle : real,
-                              linear_velocity : BDDMath.vec2,
-                              angular_velocity : real,
-                              linear_damping : real,
-                              angular_damping : real,
-                              allow_sleep : bool,
-                              awake : bool,
-                              fixed_rotation : bool,
-                              bullet : bool,
-                              active : bool,
-                              data : body_data,
-                              inertia_scale : real }) : body =
+    fun create_body (world : world, def) : body =
       if is_locked world
       then raise BDDWorld "Can't call create_body from callbacks."
       else

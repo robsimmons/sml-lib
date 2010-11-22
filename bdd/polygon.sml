@@ -30,7 +30,7 @@ struct
         vertices = copy_array vertices,
         normals = copy_array normals }
 
-  fun get_support ({ centroid, vertices, normals } : polygon,
+  fun get_support ({ centroid = _, vertices, normals = _ } : polygon,
                    d : vec2) =
       let
           val best = ref 0
@@ -313,7 +313,7 @@ struct
         val r = vec2(polygon_radius, polygon_radius)
       in
           { lowerbound = !lower :-: r,
-            upperbound = !upper :-: r }
+            upperbound = !upper :+: r }
       end
 
   fun compute_mass ({vertices, ...} : polygon, density : real) : BDDTypes.mass_data =

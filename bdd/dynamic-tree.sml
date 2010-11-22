@@ -157,7 +157,8 @@ struct
            end
 
   fun insert_leaf (tree as ref { root, ... } : 'a dynamic_tree,
-                   leaf as ref (Node { aabb, data, parent, left, right, stamp })) =
+                   leaf as ref (Node { aabb, data = _, parent = _, 
+                                       left = _, right = _, stamp = _ })) =
       (case !root of
            Empty => 
                let in
@@ -296,10 +297,18 @@ struct
 
   fun aabb_proxy (tree : 'a dynamic_tree, aabb : aabb, a : 'a) : 'a aabb_proxy =
       let
+          fun pxy v = 
+              Real.fmt (StringCvt.FIX (SOME 2)) (vec2x v) ^ " " ^
+              Real.fmt (StringCvt.FIX (SOME 2)) (vec2y v)
+          val () = print ("  inc aabb: " ^
+                          pxy (#lowerbound aabb) ^ " to " ^
+                          pxy (#upperbound aabb) ^ "\n")
+
+          
           (* Fatten the aabb. *)
           val r : vec2 = vec2(aabb_extension, aabb_extension)
           val fat : aabb = { lowerbound = #lowerbound aabb :-: r,
-                             upperbound = #upperbound aabb :-: r }
+                             upperbound = #upperbound aabb :+: r }
           (* XXX: Probably don't need to pass all this junk to
              insert_node. *)
           val node = ref (Node { aabb = fat, data = SOME a, parent = ref Empty,
@@ -375,7 +384,7 @@ struct
     let fun q node =
         case !node of
             Empty => ()
-          | n as Node { left, right, aabb = node_aabb, ... } =>
+          | Node { left, right, aabb = node_aabb, ... } =>
             if BDDCollision.aabb_overlap (node_aabb, aabb)
             then if is_leaf node
                  then if f node
@@ -420,7 +429,7 @@ struct
       fun loop node =
         case !node of
             Empty => ()
-          | n as Node { left, right, aabb = node_aabb, ... } =>
+          | Node { aabb = node_aabb, ... } =>
             if not (BDDCollision.aabb_overlap (node_aabb, !segment_aabb))
             then ()
             else

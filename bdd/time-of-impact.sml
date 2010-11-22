@@ -57,7 +57,7 @@ struct
                 val point_b = xfb @*: local_point_b
                 val axis = point_b :-: point_a
                 (* nb. mag unused *)
-                val s : real = vec2normalize axis
+                val _ : real = vec2normalize axis
             in
                 { typ = TPoints,
                   proxya = proxya,
@@ -209,8 +209,10 @@ struct
         case typ of
             TPoints =>
               let
+                  (* unused -twm
                   val axis_a : vec2 = mul_t22mv (transformr xfa, axis)
                   val axis_b : vec2 = mul_t22mv (transformr xfb, vec2neg axis)
+                  *)
 
                   val local_point_a : vec2 = #vertex proxya indexa
                   val local_point_b : vec2 = #vertex proxyb indexb
@@ -226,7 +228,9 @@ struct
                   val normal : vec2 = mul22v (transformr xfa, axis)
                   val point_a : vec2 = xfa @*: local_point
 
+                  (* unused -twm
                   val axis_b : vec2 = mul_t22mv (transformr xfb, vec2neg normal)
+                  *)
 
                   val local_point_b = #vertex proxyb indexb
                   val point_b = xfb @*: local_point_b
@@ -239,7 +243,9 @@ struct
                   val normal : vec2 = mul22v (transformr xfb, axis)
                   val point_b = xfb @*: local_point
 
+                  (* unused -twm
                   val axis_a : vec2 = mul_t22mv (transformr xfa, vec2neg normal)
+                  *)
                   val local_point_a : vec2 = #vertex proxya indexa
                   val point_a : vec2 = xfa @*: local_point_a
               in

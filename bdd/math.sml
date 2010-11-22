@@ -258,8 +258,8 @@ struct
   fun transform_pos_angle (pp, angle : real) =
       { position = vec2copy pp,
         r = mat22angle angle }
-  fun transformposition { position, r } = position
-  fun transformr ({ position, r } : transform) = r
+  fun transformposition { position, r = _ } = position
+  fun transformr ({ position = _, r } : transform) = r
   fun transform_setidentity ({ position, r } : transform) =
       (vec2setzero position;
        mat22setidentity r)

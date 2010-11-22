@@ -337,7 +337,7 @@ struct
 
   (* Compute the collision manifold between a polygon and a circle. *)
   exception NoCollision
-  fun collide_polygon_and_circle ({ centroid, vertices, normals } : BDDPolygon.polygon,
+  fun collide_polygon_and_circle ({ centroid = _, vertices, normals } : BDDPolygon.polygon,
                                   xfa : BDDMath.transform,
                                   { p = cirp, radius = cirr } : BDDCircle.circle,
                                   xfb : BDDMath.transform) : BDDTypes.manifold =
@@ -709,7 +709,7 @@ struct
           point_count = Array.length points,
           typ = typ,
           points = points }
-    end handle NoCollision s =>
+    end handle NoCollision _ =>
         let in
             (* print ("NO: " ^ s ^ "\n"); *)
             (* XXX should return NONE in the no collision case.

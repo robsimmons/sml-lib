@@ -34,7 +34,7 @@ struct
 
   type filter = D.filter
   open D.F
-  val set_filter = () (* overridden *)
+  datatype ? = set_filter
 
   local 
       fun mk16 nil = 0w0

@@ -216,8 +216,7 @@ struct
             Array.tabulate (Vector.length contacts,
                             fn x => onecontact (Vector.sub(contacts, x)))
 
-        fun warm_start_one (c as { body_a, body_b,
-                                   normal, points, ... } 
+        fun warm_start_one ({ body_a, body_b, normal, points, ... } 
                             : ('b, 'f, 'j) constraint) : unit =
           let
             val tangent = cross2vs(normal, 1.0)
@@ -226,8 +225,7 @@ struct
             val inv_mass_b = D.B.get_inv_mass body_b
             val inv_i_b = D.B.get_inv_i body_b
 
-            fun warm_point (ccp as 
-                            { normal_impulse, 
+            fun warm_point ({ normal_impulse, 
                               tangent_impulse, 
                               r_a, r_b, ... } : constraint_point) : unit =
               let
@@ -258,7 +256,7 @@ struct
           constraints = constraints }
     end
 
-  (* Port note: Inner case analysis in solve_one_velocity_constraints,
+  (* Port note: Inner case analysis in solve_one_velocity_constraint,
      for two points. The Box2D code has a for(;;) loop, but this just
      appears to be so that the code can 'break' early. Here we just
      return. *)
@@ -576,7 +574,7 @@ struct
 
      Note, this is almost the same function as in toi-solver.
      (Redundancy is present in Box2D too.) *)
-  fun contact_solver_manifold (cc : ('b, 'f, 'j) constraint, index : int) :
+  fun position_solver_manifold (cc : ('b, 'f, 'j) constraint, index : int) :
       { normal : vec2, point : vec2, separation : real } =
     case #typ cc of
         E_Circles =>
@@ -659,14 +657,13 @@ struct
             val inv_i_a = D.B.get_mass body_a * D.B.get_inv_i body_a
             val inv_mass_b = D.B.get_mass body_b * D.B.get_inv_mass body_b
             val inv_i_b = D.B.get_mass body_b * D.B.get_inv_i body_b
-
-            (* Solve normal constraints. *)
         in
+            (* Solve normal constraints. *)
             for 0 (#point_count c - 1)
             (fn j =>
              let
                  val { normal : vec2, point : vec2, separation : real } =
-                     contact_solver_manifold (c, j)
+                     position_solver_manifold (c, j)
 
                  val r_a : vec2 = point :-: sweepc (D.B.get_sweep body_a)
                  val r_b : vec2 = point :-: sweepc (D.B.get_sweep body_b)
@@ -681,6 +678,7 @@ struct
                      clampr (baumgarte * (separation + linear_slop),
                              ~max_linear_correction,
                              0.0)
+
                  (* Compute the effective mass. *)
                  val rn_a : real = cross2vv (r_a, normal)
                  val rn_b : real = cross2vv (r_b, normal)
@@ -696,9 +694,9 @@ struct
                    let
                      val sweep : sweep = D.B.get_sweep body
                    in
+                     sweep_set_c (sweep, sweepc sweep :-: (inv_mass *: p));
                      sweep_set_a (sweep, sweepa sweep - 
                                   (inv_i * cross2vv (r, p)));
-                     sweep_set_c (sweep, sweepc sweep :-: (inv_mass *: p));
                      D.B.synchronize_transform body
                    end
              in
@@ -708,7 +706,7 @@ struct
         end
     in
       Array.app oneconstraint (#constraints solver);
-      (* We can't expect minSpeparation >= -b2_linearSlop because we don't
+      (* We can't expect minSeparation >= -b2_linearSlop because we don't
          push the separation above -b2_linearSlop. *)
       !min_separation >= ~1.5 * linear_slop
     end

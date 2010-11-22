@@ -389,6 +389,13 @@ struct
                 (* Create proxy in the broad-phase. *)
                 let 
                     val aabb = BDDShape.compute_aabb (get_shape fixture, xf)
+
+                    fun pxy v = 
+                        Real.fmt (StringCvt.FIX (SOME 2)) (vec2x v) ^ " " ^
+                        Real.fmt (StringCvt.FIX (SOME 2)) (vec2y v)
+                    val () = print ("  fix_aabb: " ^
+                                    pxy (#lowerbound aabb) ^ " to " ^
+                                    pxy (#upperbound aabb) ^ "\n")
                 in
                     set_aabb (fixture, aabb);
                     set_proxy (fixture,

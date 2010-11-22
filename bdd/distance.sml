@@ -25,7 +25,7 @@ struct
         support_vertex = (fn _ => p),
         radius = radius }
 
-    | shape_proxy (BDDShape.Polygon (p as { vertices, normals, centroid })) =
+    | shape_proxy (BDDShape.Polygon (p as { vertices, normals, centroid = _ })) =
       (* PERF could just use intrinsic length, like elsewhere. *)
       { vertex_count = Array.length vertices,
         vertex = (fn idx => Array.sub(vertices, idx)),
@@ -56,16 +56,10 @@ struct
        indexb : int
       }
 
-  fun set_a ({ wa, wb, w, a, indexa, indexb }, aa) =
+  fun set_a ({ wa, wb, w, a = _, indexa, indexb }, aa) =
       { wa = wa, wb = wb, w = w, a = aa, 
         indexa = indexa, indexb = indexb }
 
-  fun zero_vertex () = { wa = vec2(0.0, 0.0),
-                         wb = vec2(0.0, 0.0),
-                         w = vec2(0.0, 0.0),
-                         a = ref 0.0,
-                         indexa = 0,
-                         indexb = 0 }
   datatype simplex = 
       Zero
     | One of simplex_vertex
@@ -169,12 +163,14 @@ struct
               end
         | _ => raise BDDDistance
 
+(* Port note: unused because of dead code removed from distance -twm
   fun simplex_closest_point (simplex : simplex) : vec2 =
       case simplex of
           One v1 => #w v1
         | Two (v1, v2) => #a v1 *: #w v1 :+: #a v2 *: #w v2
         | Three _ => vec2_zero
         | _ => raise BDDDistance
+*)
 
   fun simplex_witness_points (simplex : simplex) : vec2 * vec2 =
       case simplex of

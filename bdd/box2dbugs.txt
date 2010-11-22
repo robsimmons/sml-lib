@@ -64,6 +64,9 @@ b2TimeOfImpact.cpp:
   The return value of b2SeparationFunction::Initialize isn't used.
   This might be better as a constructor.
   
+  None of the axisA and axisB variables are used in
+  b2SeparationFunction::Evaluate, nor are the computations trivial. Am
+  I missing something?
 
 b2Fixture.h
 

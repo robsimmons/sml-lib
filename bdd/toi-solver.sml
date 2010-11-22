@@ -23,10 +23,6 @@ struct
       { constraints : ('b, 'f, 'j) constraint array,
         toi_body : ('b, 'f, 'j) D.body }
 
-  (* PERF I think there is something faster with slices *)
-  fun array_clone a = Array.tabulate (Array.length a,
-                                      fn x => Array.sub (a, x))
-
   (* Port note: contacts arrive (in a list) in the reverse order that
      they would appear in the array in Box2D. *)
   fun solver (contacts : ('b, 'f, 'j) BDDDynamics.contact list,
