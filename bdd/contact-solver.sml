@@ -642,7 +642,6 @@ struct
                                   baumgarte : real) : bool =
     let
 
-      (* XXX bug here! *)
       val () = print 
           ("Solving " ^ Int.toString (Array.length (#constraints solver)) ^
            " position constraints.\n")

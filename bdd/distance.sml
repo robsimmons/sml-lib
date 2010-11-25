@@ -13,19 +13,33 @@ struct
 
   exception BDDDistance
 
+  fun vtos v = rtos (vec2x v) ^ "," ^ rtos (vec2y v)
+
   (* Port note: I took a different strategy here than in Box2D.
      In the case of circles, these functions become very simple
      (just one vertex), so I implemented them directly rather
      than storing a vector of vertices and doing the polygon
      case. This is probably significantly faster, for circles. *)
   fun shape_proxy (BDDShape.Circle { radius, p }) =
+      let in
+          print ("Proxy CIRCLE " ^ vtos p ^ " >" ^ rtos radius ^ "\n");
       { vertex_count = 1,
         vertex = (fn _ => p),
         support = (fn _ => 0),
         support_vertex = (fn _ => p),
         radius = radius }
+      end
 
-    | shape_proxy (BDDShape.Polygon (p as { vertices, normals, centroid = _ })) =
+    | shape_proxy (BDDShape.Polygon (p as { vertices, normals = _, centroid = _ })) =
+      let in
+          print ("Proxy POLYGON ");
+          for 0 (Array.length vertices - 1)
+          (fn i =>
+           (print (vtos (Array.sub(vertices, i)));
+            print " ")
+           );
+          print "\n";
+
       (* PERF could just use intrinsic length, like elsewhere. *)
       { vertex_count = Array.length vertices,
         vertex = (fn idx => Array.sub(vertices, idx)),
@@ -35,9 +49,10 @@ struct
         support_vertex = (fn v => BDDPolygon.get_support_vertex (p, v)),
         (* Port note: constant. *)
         radius = BDDSettings.polygon_radius }
+      end
 
   fun initial_cache () =
-      { metric = ref 0.0,
+      { metric = ref (0.0 : real),
         count = ref 0,
         indexa = Array.array(3, 0),
         indexb = Array.array(3, 0) }
@@ -66,6 +81,19 @@ struct
     | Two of simplex_vertex * simplex_vertex
     | Three of simplex_vertex * simplex_vertex * simplex_vertex
 
+  fun svtos { wa, wb, w, a, indexa, indexb } = 
+      vtos wa ^ "|" ^ vtos wb ^ "|" ^ vtos w ^ "|" ^
+      rtos a ^ "|" ^ Int.toString indexa ^ "|" ^ Int.toString indexb
+
+  fun stos Zero = "(Zero)"
+    | stos (One sv) = "(One " ^ svtos sv ^ ")"
+    | stos (Two (sv1, sv2)) = "(Two " ^ svtos sv1 ^ ", " ^ svtos sv2 ^ ")"
+    | stos (Three (sv1, sv2, sv3)) = "(Three " ^ 
+      svtos sv1 ^ ", " ^ 
+      svtos sv2 ^ ", " ^ 
+      svtos sv3 ^ ")"
+
+
   fun simplex_metric (One _) = 0.0
     | simplex_metric (Two (v1, v2)) = BDDMath.distance(#w v1, #w v2)
     | simplex_metric (Three (v1, v2, v3)) = 
@@ -76,7 +104,13 @@ struct
                   proxya : distance_proxy, transforma,
                   proxyb : distance_proxy, transformb) : simplex =
       let fun new() =
-          let val wa = transforma @*: #vertex proxya 0
+          let 
+              val () = print "new simplex cache.\n"
+              val () = print ("vertexa: " ^ vtos (#vertex proxya 0) ^ "\n")
+              val () = print ("vertexb: " ^ vtos (#vertex proxyb 0) ^ "\n")
+              val () = print ("transforma: " ^ xftos transforma ^ "\n");
+              val () = print ("transformb: " ^ xftos transformb ^ "\n");
+              val wa = transforma @*: #vertex proxya 0
               val wb = transformb @*: #vertex proxyb 0
           in
               One { indexa = 0,
@@ -88,6 +122,7 @@ struct
                     a = 0.0 }
           end
       in
+        print ("There are " ^ Int.toString (!(#count cache)) ^ " in cache.\n");
         if !(#count cache) = 0
         then new()
         else
@@ -362,6 +397,8 @@ struct
           (* Initialize the simplex. *)
           val start_simplex = 
               read_cache(cache, proxya, transforma, proxyb, transformb)
+
+          val () = print ("distance start simplex:\n  " ^ stos start_simplex ^ "\n")
 
           (* Port note: In the Box2D source code there are loop
              variables distance_sqr1 and 2. But they are dead,

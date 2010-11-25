@@ -1291,24 +1291,36 @@ struct
              Some other code actually mentions this fact (but does not
              appear to rely on it). We should probably reproduce the
              behavior here though. *)
-          | (BDDShape.Circle ca, BDDShape.Polygon pb) =>
-                BDDCollision.collide_polygon_and_circle (pb, xfb, ca, xfa)
+          | (BDDShape.Circle _, BDDShape.Polygon _) =>
+                raise BDDDynamics "impossible! abnormal contact order"
+                (* BDDCollision.collide_polygon_and_circle (pb, xfb, ca, xfa) *)
 
     fun new (fixture_a, fixture_b) =
-        ref (C { flags = FLAG_ENABLED,
-                 fixture_a = SOME fixture_a,
-                 fixture_b = SOME fixture_b,
-                 manifold = { point_count = 0,
-                              (* PERF uninitialized in Box2D. *)
-                              typ = E_Circles,
-                              points = Array.fromList nil,
-                              local_normal = vec2 (0.0, 0.0),
-                              local_point = vec2 (0.0, 0.0) },
-                 prev = NONE,
-                 next = NONE,
-                 node_a = E.new (),
-                 node_b = E.new (),
-                 toi_count = 0 })
+        let 
+            (* Port note: Normalize so that circle always comes before polygon.
+               Not clear that the code requires this (except see above), but
+               this makes it easier to compare to Box2D's behavior directly,
+               since it swaps as a result of its handmade vtable. *)
+            val (fixture_a, fixture_b) = 
+                case (F.get_shape fixture_a, F.get_shape fixture_b) of
+                    (BDDShape.Circle _, BDDShape.Polygon _) => (fixture_b, fixture_a)
+                  | _ => (fixture_a, fixture_b)
+        in
+          ref (C { flags = FLAG_ENABLED,
+                   fixture_a = SOME fixture_a,
+                   fixture_b = SOME fixture_b,
+                   manifold = { point_count = 0,
+                                (* PERF uninitialized in Box2D. *)
+                                typ = E_Circles,
+                                points = Array.fromList nil,
+                                local_normal = vec2 (0.0, 0.0),
+                                local_point = vec2 (0.0, 0.0) },
+                   prev = NONE,
+                   next = NONE,
+                   node_a = E.new (),
+                   node_b = E.new (),
+                   toi_count = 0 })
+        end
   end
 
   (* Internal, worlds *)

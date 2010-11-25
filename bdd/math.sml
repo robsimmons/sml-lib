@@ -96,7 +96,7 @@ struct
   fun vec3x ({x, y = _, z = _} : vec3) = !x
   fun vec3y ({x = _, y, z = _} : vec3) = !y
   fun vec3z ({x = _, y = _, z} : vec3) = !z
-  fun vec3zero {x, y, z} = (x := 0.0; y := 0.0; z := 0.0)
+  fun vec3zero {x : real ref, y : real ref, z : real ref} = (x := 0.0; y := 0.0; z := 0.0)
   fun vec3set ({x, y, z}, xx, yy, zz) = (x := xx; y := yy; z := zz)
   fun vec3neg ({x, y, z} : vec3) = { x = ref (0.0 - !x), 
                                      y = ref (0.0 - !y), 
@@ -153,8 +153,10 @@ struct
       let val c = Math.cos angle
           val s = Math.sin angle
       in
-          vec2set(col1, c, ~s);
-          vec2set(col2, s, c)
+          vec2set(col1, c, 
+                        s);
+                             vec2set(col2, ~s, 
+                                            c)
       end
 
 
@@ -275,10 +277,10 @@ struct
   fun transform_getangle { position = _, r } = mat22getangle r
 
   (* Don't modify these. *)
-  val vec2_zero = vec2(0.0, 0.0)
-  val mat22_identity = mat22with(1.0, 0.0,
-                                 0.0, 1.0)
-  val transform_identity = { position = vec2 (0.0, 0.0),
+  val vec2_zero : vec2 = vec2(0.0, 0.0)
+  val mat22_identity : mat22 = mat22with(1.0, 0.0,
+                                         0.0, 1.0)
+  val transform_identity = { position = vec2 (0.0, 0.0) : vec2,
                              r = mat22_identity }
 
   (* Functional math on vectors, matrices, etc. *)
@@ -418,7 +420,7 @@ struct
   fun sweep_gettransform ({ local_center, c0, c, a0, a }, 
                           transform : transform, 
                           alpha : real) =
-      let val angle : real = 1.0 - alpha * !a0 + alpha * !a
+      let val angle : real = (1.0 - alpha) * !a0 + alpha * !a
       in
           vec2setfrom (transformposition transform,
                        vec2add(vec2stimes (1.0 - alpha, c0),

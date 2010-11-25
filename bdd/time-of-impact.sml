@@ -293,19 +293,26 @@ struct
          This loop terminates when an axis is repeated (no progress is made). *)
       fun outer_loop iter =
         let
+            val () = print ("sa: " ^ sweeptos sweepa ^ " time " ^ rtos (!t1) ^ "\n")
             val xfa : transform = sweep_transform (sweepa, !t1)
             val xfb : transform = sweep_transform (sweepb, !t1)
+            val () = print ("xfa: " ^ xftos xfa ^ "\n")
+
+            (* FIXME HERE tom: I think that xfa and xfb have diverged, specifically
+               the rotations. *)
 
             (* Get the distance between shapes. We can also use the results
                to get a separating axis. *)
             val { distance, ... } = 
                 BDDDistance.distance (distance_input (xfa, xfb), cache)
         in
+            print ("  toi distance: " ^ rtos distance ^ "\n");
             (* If the shapes are overlapped, we give up on continuous collision. *)
             if distance < 0.0
             then (SOverlapped, 0.0) (* Failure! *)
             else if distance < target + tolerance
-            then (STouching, !t1) (* Victory! *)
+            then (print "  toi initial touching\n";
+                  (STouching, !t1) (* Victory! *))
             else
             let
                 (* Initialize the separating axis. *)
@@ -347,7 +354,8 @@ struct
                           (* Check for touching *)
                           else if s1 <= target + tolerance
                           (* Victory! t1 should hold the TOI (could be 0.0). *)
-                          then SOME (STouching, !t1)
+                          then (print ("  toi touching at " ^ rtos (!t1) ^ "\n");
+                                SOME (STouching, !t1))
                           else
                           let
                               (* Compute 1D root of: f(x) - target = 0 *)

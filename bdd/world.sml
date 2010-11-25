@@ -689,6 +689,9 @@ void b2World::DestroyJoint(b2Joint* j)
                           else let val body_a = D.F.get_body fixture_a
                                    val body_b = D.F.get_body fixture_b
 
+                                   val () = print ("sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^ "\n")
+                                   val () = print ("sweepb: " ^ sweeptos (D.B.get_sweep body_b) ^ "\n")
+
                                    (* Compute the time of impact in interval [0, minTOI] *)
                                    val toi_input = 
                                        { proxya = BDDDistance.shape_proxy (D.F.get_shape fixture_a),
@@ -697,17 +700,20 @@ void b2World::DestroyJoint(b2Joint* j)
                                          sweepb = D.B.get_sweep body_b,
                                          tmax = !toi }
                                in
+                                   print ("tmax: " ^ rtos (!toi) ^ "\n");
+                                   print "toi test:\n";
                                    case BDDTimeOfImpact.time_of_impact toi_input of
                                      (BDDTimeOfImpact.STouching, t) =>
                                          if t < !toi
                                          then let in
+                                                print ("  yes at " ^ rtos t ^ "\n");
                                                 toi_contact := SOME contact;
                                                 toi := t;
                                                 toi_other := SOME other;
                                                 found := true
                                               end
-                                         else ()
-                                   | _ => ();
+                                         else print "  not in time\n"
+                                   | _ => print "  not touching\n";
 
                                    count := !count + 1
                                end
@@ -717,11 +723,20 @@ void b2World::DestroyJoint(b2Joint* j)
                oapp D.E.get_next one_edge (D.B.get_contact_list body);
                if !found andalso !count > 1 andalso iter < 49
                then loop (iter + 1)
-               else ()
+               else
+                   (* XXX *)
+                   print (Int.toString (iter + 1) ^ " iters, " ^
+                          Int.toString (!count) ^ " count\n")
            end
         val () = loop 0
 
       in
+        print ((case !toi_contact of
+                    NONE => "NO "
+                  | SOME _ => "YES ") ^
+               (case !toi_other of
+                    NONE => "NO "
+                  | SOME _ => "YES ") ^ "\n");
         case (!toi_contact, !toi_other) of
             (NONE, NONE) => D.B.advance (body, 1.0)
           | (SOME _, NONE) => raise BDDWorld "impossible"

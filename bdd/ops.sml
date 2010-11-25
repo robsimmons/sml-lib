@@ -10,7 +10,7 @@ structure BDDOps =
 struct
 
   (* These may seem a little crazy, but there's a plan. Each
-     binary operator has ats its middle component a regular
+     binary operator has as its middle component a regular
      math operation like * for times. Its left and right
      parts are single-character mnemonics for the type of
      argument:
@@ -51,5 +51,27 @@ struct
 
   fun oapp _ _ NONE = ()
     | oapp next (f : 'a -> unit) (SOME x) = (f x; oapp next f (next x))
+
+  (* XXX only for debugging *)
+  local open BDDMath
+  in
+    fun rtos r = Real.fmt (StringCvt.FIX (SOME 4)) r
+    fun vtos v = rtos (vec2x v) ^ "," ^ rtos (vec2y v)
+
+    fun mat22tos m = "[" ^ rtos (vec2x (mat22col1 m)) ^ " " ^ rtos (vec2x (mat22col2 m)) ^
+                     " / " ^ rtos (vec2y (mat22col1 m)) ^ " " ^ rtos (vec2y (mat22col2 m)) ^ "]"
+
+    fun xftos xf =
+        (vtos (transformposition xf) ^
+         " @" ^ rtos (transform_getangle xf) ^ " " ^
+         mat22tos (transformr xf))
+
+    fun sweeptos sweep =
+        ("lc: " ^ vtos (sweeplocalcenter sweep) ^ " c: " ^
+         vtos (sweepc0 sweep) ^ " -- " ^
+         vtos (sweepc sweep) ^ " @" ^
+         rtos (sweepa0 sweep) ^ " -- " ^
+         rtos (sweepa sweep))
+  end
 
 end
