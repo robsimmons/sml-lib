@@ -408,7 +408,9 @@ struct
                  a : real ref
                }
   fun sweep { local_center, c0, c, a0, a } : sweep =
-      { local_center = local_center, c0 = c0, c = c, a0 = ref a0, a = ref a }
+      { local_center = local_center, 
+        c0 = vec2copy c0, 
+        c = vec2copy c, a0 = ref a0, a = ref a }
 
   fun sweepcopy { local_center, c0, c, a0, a } : sweep =
       { local_center = vec2copy local_center,
@@ -416,7 +418,7 @@ struct
         c = vec2copy c,
         a0 = ref (!a0),
         a = ref (!a) }
-
+  (* PERF some of the copying is superfluous *)
   fun sweep_gettransform ({ local_center, c0, c, a0, a }, 
                           transform : transform, 
                           alpha : real) =
@@ -433,11 +435,11 @@ struct
       end
 
   fun sweepa ({ a, ... } : sweep) = !a
-  fun sweepc ({ c, ... } : sweep) = c
+  fun sweepc ({ c, ... } : sweep) = vec2copy c
   fun sweeplocalcenter ({ local_center, ... } : sweep) = local_center
 
   fun sweepa0 ({ a0, ... } : sweep) = !a0
-  fun sweepc0 ({ c0, ... } : sweep) = c0
+  fun sweepc0 ({ c0, ... } : sweep) = vec2copy c0
 
   fun sweep_set_a ({a, ... } : sweep, aa) = a := aa
   fun sweep_set_c ({c, ... } : sweep, cc) = vec2setfrom (c, cc)
@@ -447,7 +449,7 @@ struct
 
   fun sweep_set_localcenter ({ local_center, ... } : sweep, lc) =
       vec2setfrom (local_center, lc)
-      
+
 
   (* PERF *)
   fun sweep_transform (arg, alpha : real) =

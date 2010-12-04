@@ -105,7 +105,7 @@ struct
                   proxyb : distance_proxy, transformb) : simplex =
       let fun new() =
           let 
-              val () = print "new simplex cache.\n"
+              val () = print "new simplex cache\n"
               val () = print ("vertexa: " ^ vtos (#vertex proxya 0) ^ "\n")
               val () = print ("vertexb: " ^ vtos (#vertex proxyb 0) ^ "\n")
               val () = print ("transforma: " ^ xftos transforma ^ "\n");

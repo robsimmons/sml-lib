@@ -118,7 +118,10 @@ struct
                           D.B.get_angular_velocity body *
                           clampr (1.0 - 
                                   #dt step * D.B.get_angular_damping body,
-                                  0.0, 1.0))
+                                  0.0, 1.0));
+
+                         print ("  vel: " ^ vtos (D.B.get_linear_velocity body) ^ 
+                                " " ^ rtos (D.B.get_angular_velocity body) ^ "\n")
                      end
                  | _ => ()) bodies
 
@@ -170,8 +173,17 @@ struct
                                (max_rotation / Real.abs rotation))
                           else ()
 
+                 val () =
+                     print ("  new vel: " ^ vtos (D.B.get_linear_velocity b) ^ 
+                            " " ^ rtos (D.B.get_angular_velocity b) ^ "\n")
+
+
                  val sweep = D.B.get_sweep b
+
                in
+                 print ("  dt: " ^ rtos (#dt step) ^ "\n");
+                 print ("  orig sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
+
                  (* Store positions for continuous collision. *)
                  sweep_set_c0 (sweep, sweepc sweep);
                  sweep_set_a0 (sweep, sweepa sweep);
@@ -182,8 +194,12 @@ struct
                  sweep_set_a (sweep, sweepa sweep +
                               #dt step * D.B.get_angular_velocity b);
 
+                 print ("  uync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
+
                  (* Compute new transform. *)
-                 D.B.synchronize_transform b
+                 D.B.synchronize_transform b;
+
+                 print ("  sync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n")
 
                  (* Note: shapes are synchronized later. *)
                end

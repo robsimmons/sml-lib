@@ -652,6 +652,7 @@ void b2World::DestroyJoint(b2Joint* j)
            collisions when objects rotate through each other. *)
         fun loop iter =
           let
+              val () = print ("(iter " ^ itos iter ^ ")\n")
               fun one_edge ce =
                   (* n.b. weird behavior if contact 
                      was not initialized *)
@@ -735,8 +736,8 @@ void b2World::DestroyJoint(b2Joint* j)
                     NONE => "NO "
                   | SOME _ => "YES ") ^
                (case !toi_other of
-                    NONE => "NO "
-                  | SOME _ => "YES ") ^ "\n");
+                    NONE => "NO"
+                  | SOME _ => "YES") ^ "\n");
         case (!toi_contact, !toi_other) of
             (NONE, NONE) => D.B.advance (body, 1.0)
           | (SOME _, NONE) => raise BDDWorld "impossible"

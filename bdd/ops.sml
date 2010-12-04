@@ -52,9 +52,13 @@ struct
   fun oapp _ _ NONE = ()
     | oapp next (f : 'a -> unit) (SOME x) = (f x; oapp next f (next x))
 
+      (* XXXX!! this does not make it fast duh *)
+  val print = ignore
+
   (* XXX only for debugging *)
   local open BDDMath
   in
+    val itos = Int.toString
     fun rtos r = Real.fmt (StringCvt.FIX (SOME 4)) r
     fun vtos v = rtos (vec2x v) ^ "," ^ rtos (vec2y v)
 
