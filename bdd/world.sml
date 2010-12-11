@@ -939,7 +939,7 @@ void b2World::DestroyJoint(b2Joint* j)
             val () = Contact.get_world_manifold (world_manifold, c)
             val name1 = (* getfixturename (Contact.get_fixture_a c) *) "name1"
             val name2 = (* getfixturename (Contact.get_fixture_b c) *) "name2"
-            val rtos = Real.fmt (StringCvt.FIX (SOME 2))
+            (* val rtos = Real.fmt (StringCvt.FIX (SOME 2)) *)
         in
             print ("Post-collide " ^ name1 ^ "-" ^ name2 ^ " Contact! ");
             if Contact.is_touching c
@@ -951,7 +951,7 @@ void b2World::DestroyJoint(b2Joint* j)
              let val pt = Array.sub(#points world_manifold, i)
                  (* val (x, y) = vectoscreen pt *)
              in
-                 print (rtos (vec2x pt) ^ "," ^ rtos (vec2y pt) ^ " ")
+                 print (vtos pt ^ ", ")
              end);
 
             print "\n"

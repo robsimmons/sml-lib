@@ -1034,6 +1034,7 @@ struct
    fun synchronize_transform b : unit =
        let 
            val sweep : sweep = get_sweep b
+           val () = print ("s_t angle: " ^ rtos (sweepa sweep) ^ "\n")
            val r : mat22 = mat22angle (sweepa sweep)
            val pos : vec2 = sweepc sweep :-: (r +*: sweeplocalcenter sweep)
        in
@@ -1070,7 +1071,14 @@ struct
           (get_fixture_list b)
       end
 
-    fun get_world_point (b, p) = get_xf b @*: p
+    fun get_world_point (b, p) = 
+        let in
+            print ("[getworldpoint lp " ^ vtos p ^
+                   " xf " ^ xftos (get_xf b) ^ 
+                   " -> " ^ vtos (get_xf b @*: p) ^ "]\n");
+
+            get_xf b @*: p
+        end
     fun get_world_vector (b, v) = transformr (get_xf b) +*: v
     fun get_local_point (b, p) = mul_ttransformv (get_xf b, p)
     fun get_local_vector (b, v) = mul_t22mv (transformr (get_xf b), v)

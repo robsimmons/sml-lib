@@ -58,6 +58,7 @@ struct
   end
 
 
+  val default_filter = D.default_filter
   fun filter_group_index (_, g) = g
   fun filter_category_bits (w, _) = 
       Word16.fromInt (Word32.toInt (Word32.andb(Word32.>>(w, 0w16), 0wxFFFF)))

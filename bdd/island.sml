@@ -195,11 +195,14 @@ struct
                               #dt step * D.B.get_angular_velocity b);
 
                  print ("  uync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
+                 print ("  uync xf: " ^ xftos (D.B.get_xf b) ^ "\n");
 
                  (* Compute new transform. *)
                  D.B.synchronize_transform b;
 
-                 print ("  sync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n")
+                 print ("  sync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
+
+                 print ("  sync xf: " ^ xftos (D.B.get_xf b) ^ "\n")
 
                  (* Note: shapes are synchronized later. *)
                end

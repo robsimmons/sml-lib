@@ -5,6 +5,9 @@
 structure BDDMath :> BDDMATH =
 struct
 
+    (* XXX *)
+    fun rtos r = Real.fmt (StringCvt.FIX (SOME 4)) r
+
   (* This function is used to ensure that a floating point number is
      not a NaN or infinity. *)
   val is_valid = Real.isFinite (* checks both NaN and infs. *)
@@ -140,8 +143,12 @@ struct
       let val c = Math.cos angle
           val s = Math.sin angle
       in
-          mat22with ( c, s,
-                     ~s, c)
+          (* print ("c: " ^ rtos c ^ " s: " ^ rtos s ^ "\n"); *)
+          (* FUN BUG "right": if this is (c, s, ~s, c), then polygons stand
+             themselves up instead of falling over (angular impulses
+             are reversed). *)
+          mat22with (c, ~s,
+                     s, c)
       end
 
 
@@ -153,6 +160,7 @@ struct
       let val c = Math.cos angle
           val s = Math.sin angle
       in
+          (* print ("c: " ^ rtos c ^ " s: " ^ rtos s ^ "\n");*)
           vec2set(col1, c, 
                         s);
                              vec2set(col2, ~s, 

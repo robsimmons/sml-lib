@@ -39,6 +39,8 @@ sig
          against the mask bits. *)
       group_index : int } -> filter
 
+  val default_filter : filter
+
   (* Give the categories as a list of ints. Usually a fixture
      is just in one category. No category may be larger than 15
      or less than 0. *)

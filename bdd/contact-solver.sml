@@ -71,6 +71,19 @@ struct
             val w_a : real = D.B.get_angular_velocity body_a
             val w_b : real = D.B.get_angular_velocity body_b
 
+            val () = print ("CS: ra " ^ rtos radius_a ^ 
+                            " rb " ^ rtos radius_b ^ 
+                            " f " ^ rtos friction ^
+                            " r " ^ rtos restitution ^ "\n" ^
+                            "    va " ^ vtos v_a ^
+                            " vb " ^ vtos v_b ^
+                            " wa " ^ rtos w_a ^
+                            " wb " ^ rtos w_b ^ "\n" ^
+                            "    sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^ "\n" ^
+                            "    sweepb: " ^ sweeptos (D.B.get_sweep body_b) ^ "\n" ^
+                            "    xfa: " ^ xftos (D.B.get_xf body_a) ^ "\n" ^
+                            "    xfb: " ^ xftos (D.B.get_xf body_b) ^ "\n")
+
             (* PERF assert *)
             val () = if #point_count manifold > 0
                      then ()
@@ -403,8 +416,6 @@ struct
       (c as { body_a, body_b, normal, friction, point_count, ... } 
        : ('b, 'f, 'j) constraint) : unit =
   let
-      val () = print "Solving a velocity constraint.\n"
-
       val w_a : real ref = ref (D.B.get_angular_velocity body_a)
       val w_b : real ref = ref (D.B.get_angular_velocity body_b)
       val v_a : vec2 ref = ref (D.B.get_linear_velocity body_a)
@@ -414,6 +425,14 @@ struct
       val inv_i_a : real = D.B.get_inv_i body_a
       val inv_i_b : real = D.B.get_inv_i body_b
       val tangent : vec2 = cross2vs (normal, 1.0)
+
+      val () = print("Solve vel: v_a " ^ vtos (!v_a) ^
+                     " v_b " ^ vtos (!v_b) ^
+                     " w_a " ^ rtos (!w_a) ^
+                     " w_b " ^ rtos (!w_b) ^
+                     " norm " ^ vtos normal ^ "\n")
+      val () = print("      xfa " ^ xftos (D.B.get_xf body_a) ^
+                     " xfb " ^ xftos (D.B.get_xf body_b) ^ "\n")
 
       (* PERF assert *)
       val () = if point_count = 1 orelse point_count = 2
@@ -544,7 +563,12 @@ struct
       D.B.set_linear_velocity (body_a, !v_a);
       D.B.set_angular_velocity (body_a, !w_a);
       D.B.set_linear_velocity (body_b, !v_b);
-      D.B.set_angular_velocity (body_b, !w_b)
+      D.B.set_angular_velocity (body_b, !w_b);
+
+      print("      aft alv " ^ vtos (!v_a) ^
+            " aav " ^ rtos (!w_a) ^
+            " blv " ^ vtos (!v_b) ^
+            " bav " ^ rtos (!w_b) ^ "\n")
   end
 
   fun solve_velocity_constraints 
@@ -560,6 +584,10 @@ struct
           val { local_point, id, ... } =
               Array.sub(#points manifold, j)
       in
+          print ("SI #" ^ itos j ^ 
+                 " lp " ^ vtos local_point ^
+                 " ni " ^ rtos (!(#normal_impulse (Array.sub (points, j)))) ^
+                 " ti " ^ rtos (!(#tangent_impulse (Array.sub (points, j)))) ^ "\n");
           Array.update (#points manifold, j,
                         { local_point = local_point,
                           id = id,
@@ -592,6 +620,9 @@ struct
                 then vec2normalized (point_b :-: point_a)
                 else vec2 (1.0, 0.0)
           in
+              print ("    circles: pa " ^ vtos (point_a) ^ 
+                     " pb " ^ vtos (point_b) ^ 
+                     " sep " ^ rtos(dot2(point_b :-: point_a, normal) - #radius cc) ^ "\n");
               { normal = normal,
                 point = 0.5 *: (point_a :+: point_b),
                 separation = dot2(point_b :-: point_a, normal) - #radius cc }
@@ -609,6 +640,9 @@ struct
               val separation : real =
                   dot2(clip_point :-: plane_point, normal) - #radius cc
           in
+              print ("    facea: pp " ^ vtos plane_point ^ 
+                     " cp " ^ vtos clip_point ^ 
+                     " sep " ^ rtos separation ^ "\n");
               { normal = normal,
                 separation = separation,
                 point = clip_point }
@@ -626,6 +660,9 @@ struct
               val separation : real =
                   dot2(clip_point :-: plane_point, normal) - #radius cc
           in
+              print ("    faceb: pp " ^ vtos plane_point ^ 
+                     " cp " ^ vtos clip_point ^ 
+                     " sep " ^ rtos separation ^ "\n");
               (* Ensure normal points from A to B. *)
               { normal = vec2neg normal,
                 separation = separation,
@@ -643,8 +680,8 @@ struct
     let
 
       val () = print 
-          ("Solving " ^ Int.toString (Array.length (#constraints solver)) ^
-           " position constraints.\n")
+          ("SolvePositionConstraints: " ^ Int.toString (Array.length (#constraints solver)) ^
+           "\n")
 
       val min_separation = ref 0.0
       fun oneconstraint (c : ('b, 'f, 'j) constraint) =
@@ -656,6 +693,13 @@ struct
             val inv_i_a = D.B.get_mass body_a * D.B.get_inv_i body_a
             val inv_mass_b = D.B.get_mass body_b * D.B.get_inv_mass body_b
             val inv_i_b = D.B.get_mass body_b * D.B.get_inv_i body_b
+
+            val () = print ("  Solve pos: ima " ^ rtos inv_mass_a ^
+                            " imb " ^ rtos inv_mass_b ^
+                            " iia " ^ rtos inv_i_a ^ 
+                            " iib " ^ rtos inv_i_b ^
+                            " pts " ^ itos (#point_count c) ^ "\n")
+                            
         in
             (* Solve normal constraints. *)
             for 0 (#point_count c - 1)
@@ -666,6 +710,11 @@ struct
 
                  val r_a : vec2 = point :-: sweepc (D.B.get_sweep body_a)
                  val r_b : vec2 = point :-: sweepc (D.B.get_sweep body_b)
+
+                 val () = print ("    pt " ^ vtos point ^
+                                 " sep " ^ rtos separation ^
+                                 " ra " ^ vtos r_a ^
+                                 " rb " ^ vtos r_b ^ "\n")
 
                  (* Track max constraint error. *)
                  val () = if separation < !min_separation
@@ -701,10 +750,13 @@ struct
              in
                  update_sweep (body_a, inv_mass_a, inv_i_a, r_a);
                  update_sweep (body_b, inv_mass_b, inv_i_b, r_b)
-             end)
+             end);
+            print ("  sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^
+                   "\n  sweepb: " ^ sweeptos (D.B.get_sweep body_b) ^ "\n")
         end
     in
       Array.app oneconstraint (#constraints solver);
+      print ("  minsep: " ^ rtos (!min_separation) ^ "\n");
       (* We can't expect minSeparation >= -b2_linearSlop because we don't
          push the separation above -b2_linearSlop. *)
       !min_separation >= ~1.5 * linear_slop

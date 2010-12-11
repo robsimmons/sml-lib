@@ -129,3 +129,11 @@ b2ContactSolver.cpp:
 
 // We can't expect minSpeparation
    "minSpeparation" -> "minSeparation"
+
+b2TOISolver.cpp:
+
+	m_count = NULL;
+
+should be m_count = 0, since this is an int.
+
+
