@@ -5,6 +5,8 @@
 structure BDDMath :> BDDMATH =
 struct
 
+  exception BDDMath of string
+
     (* XXX *)
     fun rtos r = Real.fmt (StringCvt.FIX (SOME 4)) r
 
@@ -416,10 +418,18 @@ struct
                  a : real ref
                }
   fun sweep { local_center, c0, c, a0, a } : sweep =
+      let in
+          (* XXX This is not an error. Just trying to track down a difference
+             between bdd and box2d. *)
+
+      if a > BDDSettings.epsilon + 2.0 * BDDSettings.pi
+      then raise BDDMath ("Angle overflow in sweep ctor: " ^ rtos a)
+      else ();
+
       { local_center = local_center, 
         c0 = vec2copy c0, 
         c = vec2copy c, a0 = ref a0, a = ref a }
-
+      end
   fun sweepcopy { local_center, c0, c, a0, a } : sweep =
       { local_center = vec2copy local_center,
         c0 = vec2copy c0,
@@ -449,7 +459,19 @@ struct
   fun sweepa0 ({ a0, ... } : sweep) = !a0
   fun sweepc0 ({ c0, ... } : sweep) = vec2copy c0
 
-  fun sweep_set_a ({a, ... } : sweep, aa) = a := aa
+  val MAX_ANGLE = BDDSettings.epsilon + 2.0 * BDDSettings.pi
+
+  fun sweep_set_a ({a, ... } : sweep, aa) = 
+      let in
+          (* XXX This is not an error. Just trying to track down a difference
+             between bdd and box2d. *)
+(*
+          if aa > (* BDDSettings.epsilon + 2.0 * BDDSettings.pi *) MAX_ANGLE
+          then raise BDDMath ("Angle overflow in sweep_set_a: " ^ rtos aa)
+          else ();
+*)
+          a := aa
+      end
   fun sweep_set_c ({c, ... } : sweep, cc) = vec2setfrom (c, cc)
 
   fun sweep_set_a0 ({a0, ... } : sweep, aa0) = a0 := aa0
@@ -474,13 +496,26 @@ struct
           a0 := (1.0 - t) * !a0 + t * !a
       end
 
+  (* Normalize the sweep's angle (in radians) to be between -pi and pi *)
+  (* XXX twm: This doesn't keep it between ~pi and pi. Maybe ~2pi and 2pi? *)
   fun sweep_normalize ({ a0, a, ... } : sweep) =
       let 
           val twopi = 2.0 * BDDSettings.pi
           val d = twopi * real (Real.floor(!a0 / twopi))
+          val () = print ("sweep_normalize: " ^ rtos (!a0) ^
+                          " a0 / 2pi " ^ rtos (!a0 / twopi) ^
+                          " floor " ^ Int.toString (Real.floor(!a0 / twopi)) ^
+                          " d " ^ rtos d ^ 
+                          " res: " ^ rtos (!a0 - d) ^ 
+                          " " ^ rtos (!a - d) ^ "\n")
       in
           a0 := !a0 - d;
-          a := !a - d
+          a := !a - d;
+          (* PERF bdd-specific assert *)
+          if !a > BDDSettings.epsilon + (2.0 * BDDSettings.pi) orelse 
+             !a < (BDDSettings.pi * ~2.0) - BDDSettings.epsilon
+          then raise BDDMath ("Angle overflow in sweepnormalize: " ^ rtos (!a))
+          else ()
       end
 
 end

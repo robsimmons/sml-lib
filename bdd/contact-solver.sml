@@ -175,6 +175,13 @@ struct
                       val rn2_a = cross2vv(#r_a ccp2, normal)
                       val rn2_b = cross2vv(#r_b ccp2, normal)
 
+                      val () = print ("Block solver: " ^
+                                      rtos rn1_a ^ " " ^
+                                      rtos rn1_b ^ " " ^
+                                      rtos rn2_a ^ " " ^
+                                      rtos rn2_b ^ " " ^
+                                      "\n")
+
                       val k11 = inv_mass_a + inv_mass_b + 
                           inv_i_a * rn1_a * rn1_a +
                           inv_i_b * rn1_b * rn1_b
@@ -184,6 +191,10 @@ struct
                       val k12 = inv_mass_a + inv_mass_b +
                           inv_i_a * rn1_a * rn2_a +
                           inv_i_b * rn1_b * rn2_b
+
+                      val () = print ("          ks: " ^ rtos k11 ^ 
+                                      " " ^ rtos k22 ^
+                                      " " ^ rtos k12 ^ "\n")
 
                       (* Ensure a reasonable condition number. *)
                       val MAX_CONDITION_NUMBER = 100.0
@@ -195,6 +206,7 @@ struct
                               val k = mat22cols (vec2(k11, k12), vec2(k12, k22))
                               val norm = mat22inverse k
                           in
+                              print ("    inverted: " ^ mat22tos norm ^ "\n");
                               (k, norm, points)
                           end
                       else
@@ -252,10 +264,10 @@ struct
                                          D.B.get_linear_velocity body_a :-:
                                          inv_mass_a *: p);
                 D.B.set_angular_velocity (body_b,
-                                          D.B.get_angular_velocity body_b -
+                                          D.B.get_angular_velocity body_b +
                                           inv_i_b * cross2vv(r_b, p));
                 D.B.set_linear_velocity (body_b,
-                                         D.B.get_linear_velocity body_b :-:
+                                         D.B.get_linear_velocity body_b :+:
                                          inv_mass_b *: p)
               end
           in
@@ -359,6 +371,7 @@ struct
             (* Compute normal velocity *)
             val vn1 = dot2(dv1, normal)
           in
+            print ("Case 2: dv1 " ^ vtos dv1 ^ " vn1 " ^ rtos vn1 ^ "\n");
             if Real.abs(vn1 - #velocity_bias cp1) < ERROR_TOL
             then ()
             else raise BDDContactSolver "assertion failure"
@@ -738,18 +751,20 @@ struct
                  val impulse : real = if k > 0.0 then ~ capital_c / k else 0.0
                  val p : vec2 = impulse *: normal
 
-                 fun update_sweep (body, inv_mass, inv_i, r) =
-                   let
-                     val sweep : sweep = D.B.get_sweep body
-                   in
-                     sweep_set_c (sweep, sweepc sweep :-: (inv_mass *: p));
-                     sweep_set_a (sweep, sweepa sweep - 
-                                  (inv_i * cross2vv (r, p)));
-                     D.B.synchronize_transform body
-                   end
+                 val sweep_a : sweep = D.B.get_sweep body_a
+                 val sweep_b : sweep = D.B.get_sweep body_b
              in
-                 update_sweep (body_a, inv_mass_a, inv_i_a, r_a);
-                 update_sweep (body_b, inv_mass_b, inv_i_b, r_b)
+                 sweep_set_c (sweep_a, sweepc sweep_a :-: (inv_mass_a *: p));
+                 sweep_set_a (sweep_a, sweepa sweep_a - 
+                              (inv_i_a * cross2vv (r_a, p)));
+                 print ("    ba sweep: " ^ sweeptos (sweep_a) ^ "\n");
+                 D.B.synchronize_transform body_a;
+
+                 sweep_set_c (sweep_b, sweepc sweep_b :+: (inv_mass_b *: p));
+                 sweep_set_a (sweep_b, sweepa sweep_b +
+                              (inv_i_b * cross2vv (r_b, p)));
+                 print ("    bb sweep: " ^ sweeptos (sweep_b) ^ "\n");
+                 D.B.synchronize_transform body_b
              end);
             print ("  sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^
                    "\n  sweepb: " ^ sweeptos (D.B.get_sweep body_b) ^ "\n")

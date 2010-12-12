@@ -3,6 +3,8 @@
 signature BDDMATH =
 sig
 
+  exception BDDMath of string
+
   (* This function is used to ensure that a floating point number is
      not a NaN or infinity. *)
   val is_valid : real -> bool

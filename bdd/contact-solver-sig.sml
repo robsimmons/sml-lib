@@ -7,6 +7,8 @@
 signature BDDCONTACT_SOLVER =
 sig
 
+  exception BDDContactSolver of string
+
   (* Parameterized by user data, since it uses the internal
      polymorpic types. *)
   type ('b, 'f, 'j) contact_solver

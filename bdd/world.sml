@@ -464,7 +464,6 @@ void b2World::DestroyJoint(b2Joint* j)
                                               p1 = point1, 
                                               p2 = point2 })
         end
-
     (* Find islands, integrate and solve constraints, solve position
        constraints. *)
     fun solve (world : world, step : D.time_step) =
@@ -473,6 +472,16 @@ void b2World::DestroyJoint(b2Joint* j)
            it. I made it just be a function, for simplicity. 
            PERF: Did doing this make some of the counts dead? *)
         val () = print "SOLVE.\n"
+
+        (* XXX just debug *)
+        val () = oapp D.B.get_next 
+            (fn b =>
+             let in
+                 print ("Presolve sweep: " ^ sweeptos (D.B.get_sweep b) ^ "\n" ^
+                        "            xf: " ^ xftos (D.B.get_xf b) ^ "\n")
+             end)
+            (get_body_list world)
+        (* XXX end just debug *)
 
         (* Clear all the island flags. *)
         val () = oapp D.B.get_next 
@@ -697,13 +706,17 @@ void b2World::DestroyJoint(b2Joint* j)
                                    val toi_input = 
                                        { proxya = BDDDistance.shape_proxy (D.F.get_shape fixture_a),
                                          proxyb = BDDDistance.shape_proxy (D.F.get_shape fixture_b),
-                                         sweepa = D.B.get_sweep body_a,
-                                         sweepb = D.B.get_sweep body_b,
+                                         sweepa = BDDMath.sweepcopy (D.B.get_sweep body_a),
+                                         sweepb = BDDMath.sweepcopy (D.B.get_sweep body_b),
                                          tmax = !toi }
+
+                                   val () = print ("tmax: " ^ rtos (!toi) ^ " toi test:\n");
+                                   val toires = BDDTimeOfImpact.time_of_impact toi_input
                                in
-                                   print ("tmax: " ^ rtos (!toi) ^ "\n");
-                                   print "toi test:\n";
-                                   case BDDTimeOfImpact.time_of_impact toi_input of
+                                   print ("2sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^ "\n");
+                                   print ("2sweepb: " ^ sweeptos (D.B.get_sweep body_b) ^ "\n");
+
+                                   case toires of
                                      (BDDTimeOfImpact.STouching, t) =>
                                          if t < !toi
                                          then let in
@@ -824,7 +837,7 @@ void b2World::DestroyJoint(b2Joint* j)
        Time is not conserved. *)
     fun solve_toi (world : world) : unit =
       let
-          val () = print "SOLVE_TOI\n"
+          val () = print "SOLVE_TOI()\n"
 
         (* Prepare all contacts. *)
           fun onecontact c =
@@ -855,7 +868,8 @@ void b2World::DestroyJoint(b2Joint* j)
             then ()
             else if Body.get_bullet b
                  then ()
-                 else (solve_toi_body (world, b);
+                 else (print "Collide non-bullet.\n";
+                       solve_toi_body (world, b);
                        D.B.set_flag (b, D.B.FLAG_TOI))
           val () = oapp D.B.get_next onebody_nonbullet (get_body_list world)
 
@@ -865,7 +879,8 @@ void b2World::DestroyJoint(b2Joint* j)
             then ()
             else if not (Body.get_bullet b)
                  then ()
-                 else (solve_toi_body (world, b);
+                 else (print "Collide bullet.\n";
+                       solve_toi_body (world, b);
                        D.B.set_flag (b, D.B.FLAG_TOI))
           val () = oapp D.B.get_next onebody_bullet (get_body_list world)
       in
@@ -904,7 +919,7 @@ void b2World::DestroyJoint(b2Joint* j)
              let val pt = Array.sub(#points world_manifold, i)
                  (* val (x, y) = vectoscreen pt *)
              in
-                 print (rtos (vec2x pt) ^ "," ^ rtos (vec2y pt) ^ " ")
+                 print (vtos pt ^ ", ")
              end);
 
             print "\n"
@@ -965,10 +980,32 @@ void b2World::DestroyJoint(b2Joint* j)
                    then solve (world, step)
                    else ()
 
+          (* XXX just debug *)
+          val () = oapp D.B.get_next 
+              (fn b =>
+               let in
+                   print ("Postsolve sweep: " ^ sweeptos (D.B.get_sweep b) ^ "\n" ^
+                          "             xf: " ^ xftos (D.B.get_xf b) ^ "\n")
+               end)
+              (get_body_list world)
+          (* XXX end just debug *)
+
+
           (* Handle TOI events. *)
           val () = if get_continuous_physics world andalso dt > 0.0
                    then solve_toi world
                    else ()
+
+          (* XXX just debug *)
+          val () = oapp D.B.get_next 
+              (fn b =>
+               let in
+                   print ("Posttoi sweep: " ^ sweeptos (D.B.get_sweep b) ^ "\n" ^
+                          "           xf: " ^ xftos (D.B.get_xf b) ^ "\n")
+               end)
+              (get_body_list world)
+          (* XXX end just debug *)
+
 
           val () = if dt > 0.0
                    then set_inv_dt0 (world, inv_dt)

@@ -52,8 +52,7 @@ struct
   fun oapp _ _ NONE = ()
     | oapp next (f : 'a -> unit) (SOME x) = (f x; oapp next f (next x))
 
-      (* XXXX!! this does not make it fast duh *)
-  val print = ignore
+      (* moved print hack to prelude.sml *)
 
   (* XXX only for debugging *)
   local open BDDMath

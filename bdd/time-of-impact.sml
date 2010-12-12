@@ -269,6 +269,8 @@ struct
 
       (* Large rotations can make the root finder fail, so we normalize the
          sweep angles. *)
+      val () = print ("TOI sweepa: " ^ sweeptos sweepa ^ "\n")
+      val () = print ("TOI sweepb: " ^ sweeptos sweepb ^ "\n")
       val () = sweep_normalize sweepa
       val () = sweep_normalize sweepb
 

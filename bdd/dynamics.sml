@@ -1035,6 +1035,11 @@ struct
        let 
            val sweep : sweep = get_sweep b
            val () = print ("s_t angle: " ^ rtos (sweepa sweep) ^ "\n")
+(* not error
+           val () = if sweepa sweep > (2.0 * BDDSettings.pi + BDDSettings.epsilon)
+                    then raise BDDDynamics "ANGLE OVERFLOW."
+                    else ()
+*)
            val r : mat22 = mat22angle (sweepa sweep)
            val pos : vec2 = sweepc sweep :-: (r +*: sweeplocalcenter sweep)
        in

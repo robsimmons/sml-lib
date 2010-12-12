@@ -65,6 +65,11 @@ struct
                     gravity : BDDMath.vec2,
                     allow_sleep : bool) : unit =
       let
+          (* XXX PERF should be unnecessary, but makes traces more like box2d. *)
+          val bodies = rev bodies
+          val contacts = rev contacts
+          val joints = rev joints
+
           val bodies = Vector.fromList bodies
           val joints = Vector.fromList joints
 
@@ -121,7 +126,9 @@ struct
                                   0.0, 1.0));
 
                          print ("  vel: " ^ vtos (D.B.get_linear_velocity body) ^ 
-                                " " ^ rtos (D.B.get_angular_velocity body) ^ "\n")
+                                " " ^ rtos (D.B.get_angular_velocity body) ^ "\n" ^
+                                "  xf: " ^ xftos (D.B.get_xf body) ^ "\n" ^
+                                "  sweep: " ^ sweeptos (D.B.get_sweep body) ^ "\n")
                      end
                  | _ => ()) bodies
 
@@ -134,12 +141,13 @@ struct
                               joints
 
           (* Solve velocity constraints. *)
-          val () = for 1 (#velocity_iterations step)
-              (fn _ =>
+          val () = for 0 (#velocity_iterations step - 1)
+              (fn i =>
                let in
                    Vector.app (fn j => 
                                D.J.solve_velocity_constraints (j, step))
                               joints;
+                   print ("* Vel iter " ^ Int.toString i ^ "\n");
                    CS.solve_velocity_constraints solver
                end)
 
