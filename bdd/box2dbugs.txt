@@ -137,3 +137,9 @@ b2TOISolver.cpp:
 should be m_count = 0, since this is an int.
 
 
+b2Math.h:
+
+The b2Sweep::Normalize method does not work as advertised; for example
+if the angle is slightly negative, then floor of a0/2pi is -1, and a0
+becomes 2pi + a0. a may be larger than 2pi. This is probably just a
+problem with the documentation.

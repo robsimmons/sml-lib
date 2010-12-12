@@ -76,4 +76,8 @@ sig
   (* Compute the height of the embedded tree. *)
   val compute_height : 'a broadphase -> int
 
+  (* Just for debugging. *)
+  val debugprint : ('a -> string) -> 'a broadphase -> unit
+
+
 end

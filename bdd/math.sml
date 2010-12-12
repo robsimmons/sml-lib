@@ -512,9 +512,9 @@ struct
           a0 := !a0 - d;
           a := !a - d;
           (* PERF bdd-specific assert *)
-          if !a > BDDSettings.epsilon + (2.0 * BDDSettings.pi) orelse 
-             !a < (BDDSettings.pi * ~2.0) - BDDSettings.epsilon
-          then raise BDDMath ("Angle overflow in sweepnormalize: " ^ rtos (!a))
+          if !a0 > BDDSettings.epsilon + (2.0 * BDDSettings.pi) orelse 
+             !a0 < (BDDSettings.pi * ~2.0) - BDDSettings.epsilon
+          then raise BDDMath ("Angle overflow in sweepnormalize: " ^ rtos (!a0))
           else ()
       end
 

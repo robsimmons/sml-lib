@@ -12,9 +12,9 @@ group is
 
   math-sig.sml
   math.sml
-  ops.sml
 
   types.sml
+  ops.sml
 
   circle-sig.sml
   circle.sml

@@ -12,7 +12,7 @@
 
    I renamed functions like is_bullet to get_bullet to match with the
    style of the others, since there doesn't seem to be any advantage
-   of irregularity.
+   to irregularity.
 
    Corresponding to dynamics/b2world.h, dynamics/b2body.h, 
    dynamics/b2fixture.h. *)
@@ -257,7 +257,7 @@ sig
     val set_gravity : world * BDDMath.vec2 -> unit
     val get_gravity : world -> BDDMath.vec2
 
-    (* Is the world licked (in the middle of a time step)? *)
+    (* Is the world locked (in the middle of a time step)? *)
     val is_locked : world -> bool
 
     (* Set flag to control automatic clearing of forces after each time step. *)

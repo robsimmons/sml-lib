@@ -75,6 +75,9 @@ struct
          vtos (sweepc sweep) ^ " @" ^
          rtos (sweepa0 sweep) ^ " -- " ^
          rtos (sweepa sweep))
+
+    fun aabbtos { lowerbound, upperbound } =
+        "(low: " ^ vtos lowerbound ^ " up: " ^ vtos upperbound ^ ")"
   end
 
 end

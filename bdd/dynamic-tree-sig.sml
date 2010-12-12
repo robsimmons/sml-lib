@@ -5,6 +5,8 @@
 signature BDDDYNAMIC_TREE =
 sig
 
+  exception BDDDynamicTree of string
+
   (* A dynamic tree arranges data in a binary tree to accelerate queries
      such as volume queries and ray casts. Leafs are proxies with an
      AABB. In the tree we expand the proxy AABB by b2_fatAABBFactor so
@@ -68,5 +70,8 @@ sig
   val ray_cast : 'a dynamic_tree * 
                  (BDDTypes.ray_cast_input * 'a aabb_proxy -> real) *
                  BDDTypes.ray_cast_input -> unit
+
+  (* Just for debugging. *)
+  val debugprint : ('a -> string) -> 'a dynamic_tree -> unit
 
 end

@@ -52,6 +52,68 @@ struct
         path : Word32.word,
         root : 'a aabb_proxy } ref
 
+  (* PERF just for debugging. *)
+  fun checkstructure s (r as ref (Node { left, right, ... })) =
+      let
+          fun checkpar _ Empty = ()
+            | checkpar which (Node { parent, ... }) =
+              if parent = r
+              then ()
+              else raise BDDDynamicTree 
+                  ("checkstructure " ^ s ^ ": node's " ^ 
+                   which ^ " child's parent isn't node")
+      in
+          checkpar "left" (!left);
+          checkpar "right" (!right);
+          checkstructure s left;
+          checkstructure s right
+      end
+    | checkstructure _ (ref Empty) = ()
+
+  fun checktreestructure s (ref { node_count : int, path : Word32.word, root : 'a aabb_proxy }) =
+      checkstructure s root
+
+  fun debugprint pa (tree as ref { node_count, path, root }) =
+      let
+          fun indent 0 = ()
+            | indent n = (print " "; indent (n - 1))
+          fun pr (depth, Empty) = 
+              let in
+                  indent depth;
+                  print "Empty\n"
+              end
+            | pr (depth, Node { data = SOME _, left = ref (Node _), ... }) =
+              raise BDDDynamicTree "node has data and a left child"
+            | pr (depth, Node { data = SOME _, right = ref (Node _), ... }) =
+              raise BDDDynamicTree "node has data and a right child"
+            | pr (depth, Node { data = NONE, left = ref Empty, ... }) =
+              raise BDDDynamicTree "node without data and without child"
+            | pr (depth, Node { data = NONE, right = ref Empty, ... }) =
+              raise BDDDynamicTree "node without data and without child"
+            | pr (depth, Node { data = SOME dat, left, right, aabb, ... }) =
+              let in
+                  indent depth;
+                  print ("Leaf: " ^ aabbtos aabb ^ "\n");
+                  indent depth;
+                  print (" dat: " ^ pa dat ^ "\n");
+                  (* Should be empty *)
+                  pr (depth + 2, !left);
+                  pr (depth + 2, !right)
+              end
+            | pr (depth, Node { data = NONE, left, right, aabb, ... }) =
+              let in
+                  indent depth;
+                  print ("Node: " ^ aabbtos aabb ^ "\n");
+                  pr (depth + 2, !left);
+                  pr (depth + 2, !right)
+              end
+      in
+          print ("DT: " ^ Int.toString node_count ^ " " ^
+                 Word32.toString path ^ ":\n");
+          pr (0, !root);
+          checktreestructure "dp" tree
+      end
+
   fun cmp_proxy (ref (Node { stamp = a, ... }),
                  ref (Node { stamp = b, ... })) = Int.compare (a, b)
     | cmp_proxy _ = raise BDDDynamicTree "can only compare leaves."
@@ -224,14 +286,15 @@ struct
     | insert_leaf _ = raise BDDDynamicTree "can't insert empty"
 
   (* Assumes the proxy is a leaf. *)
-  fun remove_leaf (tree (* : 'a dynamic_tree *), 
-                   proxy (* : 'a aabb_proxy *)) =
+  fun remove_leaf (tree : 'a dynamic_tree, 
+                   proxy : 'a aabb_proxy) =
     let val { parent, ... } = !!proxy
     in
+      checktreestructure "remove_leaf before" tree;
       (* If it's the root, we just make the tree empty. 
          Port note: Throughout this code, Box2D uses equality
          on proxy IDs (integers); I ref equality. *)
-      case !parent of
+      (case !parent of
           Empty => set_root (tree, ref Empty)
         | Node { left, right, parent = grandparent, ... } =>
             let
@@ -249,14 +312,15 @@ struct
                       in
                           (* Destroy parent and connect grandparent
                              to sibling. *)
-                          if g_left = sibling
+                          if g_left = parent
                           then set_left (grandparent, sibling)
                           else set_right (grandparent, sibling);
                           set_parent (sibling, grandparent);
                           (* Adjust ancestor bounds. *)
                           adjust_aabbs grandparent
                       end
-            end
+            end);
+       checktreestructure "remove_leaf after" tree
     end
 
   fun rebalance (tree : 'a dynamic_tree, iters : int) =
@@ -271,6 +335,7 @@ struct
              between the two children of the root on every step, etc. *)
           val path = ref (#path (!tree))
       in
+          checktreestructure "rebalance before" tree;
           for 1 iters
           (fn _ =>
            let fun loop (node, bit) =
@@ -292,7 +357,8 @@ struct
            in
                loop (#root (!tree), 0w0)
            end);
-           set_path (tree, !path)
+           set_path (tree, !path);
+           checktreestructure "rebalance after" tree
       end
 
   fun aabb_proxy (tree : 'a dynamic_tree, aabb : aabb, a : 'a) : 'a aabb_proxy =

@@ -890,6 +890,9 @@ void b2World::DestroyJoint(b2Joint* j)
     fun step (world : world, dt : real, 
               velocity_iterations : int, position_iterations : int) : unit =
       let
+          (* XXX good, but not implemented in box2d *)
+          (* val () = BDDBroadPhase.debugprint (fn _ => "?") (D.W.get_broad_phase world) *)
+
           (* If new fixtures were added, we need to find the new contacts. *)
           val () = if get_flag (world, FLAG_NEW_FIXTURE)
                    then (ContactManager.find_new_contacts world;

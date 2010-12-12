@@ -25,6 +25,14 @@ struct
               (* Enqueued moves for the next update_pairs. *)
               move_buffer : 'a proxy list ref }
 
+  fun debugprint pa (BP { tree, count, move_buffer }) =
+      let
+      in
+          print ("BP with " ^ Int.toString (!count) ^ " moves: " ^
+                 Int.toString (length (!move_buffer)) ^ "\n");
+          BDDDynamicTree.debugprint pa tree
+      end
+
   (* nb. doesn't remove existing moves.
      Port note: Stored in the opposite order from Box2D, which
      uses a growing array. *)
