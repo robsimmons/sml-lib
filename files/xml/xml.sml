@@ -96,7 +96,16 @@ struct
           (Elem (tag, rev content) :: content', stack)
 
       fun hookData ((content, stack), (_, vec, _)) =
-          (Text (vectortoutf8 vec) :: content, stack)
+          let in
+              (*
+              print "hookData:\n  ";
+              Vector.app (fn uc =>
+                          print (UniChar.Char2String uc ^ "(" ^ Word.toString uc ^ ")")
+                          ) vec;
+              print "\nend hookData\n";
+              *)
+              (Text (vectortoutf8 vec) :: content, stack)
+          end
 
       fun hookCData ((content, stack), (_, vec)) =
           (Text (vectortoutf8 vec) :: content, stack)
@@ -140,7 +149,7 @@ struct
 
   fun parsestring string =
       normalize (Parser.parseDocument
-                 (SOME (Uri.String2Uri ("raw-data:" ^ string))) 
+                 (SOME (Uri.rawUri string))
                  (SOME dtd) Hooks.appstart)
 
   fun getleaves tree =

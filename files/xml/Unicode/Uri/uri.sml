@@ -29,6 +29,9 @@ signature Uri =
       val String2Uri : string -> Uri
       val Uri2String : Uri -> string
 
+      (* Constructs non-standard raw-data:<bytes> URIs. *)
+      val rawUri : string -> Uri
+
       val retrieveUri : Uri -> string * string * bool
       (* Like above, but supports in-memory URIs with raw-data:<bytes> url scheme. 
          Can raise IO.Io. *)
@@ -54,6 +57,8 @@ structure Uri :> Uri =
       val Data2Uri = Data2UriUtf8
       val String2Uri = String2UriUtf8
       val Uri2String = decodeUriUtf8 
+
+      fun rawUri s = "raw-data:" ^ s
 
       val slash = "/"
 
