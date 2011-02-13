@@ -39,4 +39,25 @@ struct
         lookup = lookup }
     end
 
+  fun wordlist f =
+    let
+        (* PERF: Could be big, so stream it. *)
+        val lines = linesfromfile f
+        (* PERF: Could use splay set, hashtable, etc. *)
+        val m = ref SM.empty
+
+        fun addone w =
+          let
+              val w = StringUtil.lcase w
+          in
+              m := SM.insert(!m, w, ())
+          end
+      
+        val () = app addone lines
+        val m = !m
+        fun lookup w = Option.isSome (SM.find(m, w))
+    in
+        lookup
+    end
+
 end

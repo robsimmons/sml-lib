@@ -17,6 +17,7 @@ sig
 
   val fromstring : string -> char stream
   val fromfile : string -> BinIO.elem stream
+  val fromfilechar : string -> char stream
   val fromlist : 'a list -> 'a stream
   val fromvector : 'a Vector.vector -> 'a stream
   val fromarray : 'a Array.array -> 'a stream
@@ -24,7 +25,11 @@ sig
      may be smaller than the requested size, particularly
      the final chunk, but never zero length. *)
   val fromfilechunks : int -> string -> string stream
-      
+
+  (* Using \r and \n as delimiters, return a stream of
+     non-empty lines from a stream of characters. *)
+  val tolinestream : char stream -> string stream
+
   val tolist : 'a stream -> 'a list
   val toarrayslice : 'a stream -> 'a ArraySlice.slice
   val tovector : 'a stream -> 'a Vector.vector

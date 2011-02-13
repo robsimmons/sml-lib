@@ -34,14 +34,14 @@ sig
   (* read a whole file into a string. *)
   val readfile : string -> string
   (* writefile file contents *)
-  val writefile : string -> string -> unit 
+  val writefile : string -> string -> unit
 
 
   val delimit : string -> string list -> string
 
 
   (* escape escapechar what input
-     
+
      uses escapechar to escape any character
      in the charspec (see below) 'what', including
      escapechar itself. Tries to do so efficiently
@@ -62,7 +62,7 @@ sig
      The character c is used to escape all other characters (as two
      hex digits) -- so that character is always considered unsafe.
      It cannot be alphanumeric.
-     
+
      the integer argument len gives a maximum length for the output.
 
      *)
@@ -75,7 +75,7 @@ sig
   (* truncate n s
      if s is longer than n characters,
      return the first n characters,
-     otherwise return the whole string. 
+     otherwise return the whole string.
      *)
   val truncate : int -> string -> string
 
@@ -141,18 +141,18 @@ sig
   val matchat : int -> string -> string -> bool
 
   (* matchtail small big
-     true if the string 'big' ends with the string 'small'. 
+     true if the string 'big' ends with the string 'small'.
      *)
   val matchtail : string -> string -> bool
 
   (* matchtail small big
-     true if the string 'big' starts with the string 'small'. 
+     true if the string 'big' starts with the string 'small'.
      *)
   val matchhead : string -> string -> bool
 
-  (* wcmatch w s 
+  (* wcmatch w s
      true if s matches the wildcard w.
-     wildcards are DOS-style *.* things. 
+     wildcards are DOS-style *.* things.
      (? not supported currently.)
    *)
   val wcmatch : string -> string -> bool
@@ -162,8 +162,8 @@ sig
      begins at character n or later. returns NONE if
      there is no such match. *)
   val findat : int -> string -> string -> int option
-      
-  (* find small big 
+
+  (* find small big
      same as findat 0 small big
    *)
   val find : string -> string -> int option
@@ -193,13 +193,13 @@ sig
   val field  : (char -> bool) -> string -> string * string
   val rfield : (char -> bool) -> string -> string * string
 
-  (* like String.fields, but use a specific string as a separator. 
-     example: sfields ".." "a.a..bb...cc" = ["a.a", "bb", ".cc"] 
+  (* like String.fields, but use a specific string as a separator.
+     example: sfields ".." "a.a..bb...cc" = ["a.a", "bb", ".cc"]
      *)
   val sfields : string -> string -> string list
 
   (* replace src dst s
-     
+
      find matches of src in s, and replace them with dst.
      search proceeds left to right, and continues *after*
      the replacement text. src may not be empty.

@@ -88,6 +88,24 @@ struct
            end)
     end
 
+  fun tolinestream s () =
+    (case s () of
+         NONE => NONE
+       | SOME c =>
+         (case c of
+            #"\n" => tolinestream s ()
+          | #"\r" => tolinestream s ()
+          | c => tolinestreamnonempty [c] s))
+  (* PERF could use local growarray implementation. *)
+  and tolinestreamnonempty l s =
+    (case s () of
+         NONE => SOME (implode (rev l))
+       | SOME c =>
+         (case c of
+            #"\n" => SOME (implode (rev l))
+          | #"\r" => SOME (implode (rev l))
+          | c => tolinestreamnonempty (c :: l) s))
+
   fun tolist f =
     (case f () of 
        NONE => nil
@@ -97,6 +115,9 @@ struct
     (case s () of
        NONE => NONE
      | SOME c => SOME (f c))
+
+  fun fromfilechar f =
+    map (chr o Word8.toInt) (fromfile f)
 
   fun toarrayslice f =
     case f () of
