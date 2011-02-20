@@ -25,9 +25,10 @@ struct
 
     fun wf (w : Word8.word) = real (Word8.toInt w) / 255.0
     fun fw (f : Real.real) = Word8.fromInt (Real.trunc (f * 255.0))
+    fun rgbf (r, g, b) = (fw r, fw g, fw b)
     fun hsvtorgb (h, s, v) =
         let val (r, g, b) = hsvtorgbf (wf h, wf s, wf v)
-        in (fw r, fw g, fw b)
+        in rgbf (r, g, b)
         end
 
     val digits = "0123456789ABCDEF"
