@@ -7,13 +7,32 @@ group is
  ../port/mlton.sml
 #endif
 
+  ../njlib/lib-base-sig.sml
+  ../njlib/lib-base.sml
+  ../njlib/ord-key-sig.sml
+  ../njlib/ord-map-sig.sml
+  ../njlib/ord-set-sig.sml
+  ../njlib/splaytree-sig.sml
+  ../njlib/splaytree.sml
+  ../njlib/splay-map-fn.sml
+  ../njlib/splay-set-fn.sml
+
   ../util/growarray-sig.sml
   ../util/growarray.sml
 
   ../algo/heap-sig.sml
   ../algo/heap.sml
 
+  ../util/stream-sig.sml
+  ../util/stream.sml
+  ../util/streamutil-sig.sml
+  ../util/streamutil.sml
+
   undirected-graph-sig.sml
   undirected-graph.sml
 
   undirected-graph-test.sml
+
+  nmarkov-sig.sml
+  nmarkov.sml
+  nmarkov-test.sml
