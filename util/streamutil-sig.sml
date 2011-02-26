@@ -1,5 +1,9 @@
 
-(* utilities for stream package *)
+(* utilities for stream package.
+
+   TODO(twm): Merge into Stream structure, which already
+   has some stream utils including some duplicates of these.
+*)
 
 signature STREAMUTIL =
 sig

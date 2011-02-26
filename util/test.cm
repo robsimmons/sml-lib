@@ -4,3 +4,8 @@ group is
 
   re-test.sml
   
+
+  stream-sig.sml
+  stream.sml
+
+  stream-test.sml

@@ -89,6 +89,7 @@ struct
 
 
     val empty = fn () => Nil
+    fun singleton x () = Cons (x, empty)
     fun cons (h, t) = fn () => Cons (h,t)
 
     fun lcons (x, f) = cons (x, old_delay f)
@@ -131,9 +132,52 @@ struct
           else filt' f rest ()
 
     (* don't bother memoizing *)
-    fun fromList nil = (fn () => Nil)
-      | fromList (h::t) = (fn () => Cons(h, fromList t))
+    fun fromlist nil = (fn () => Nil)
+      | fromlist (h::t) = (fn () => Cons(h, fromlist t))
 
     fun tolist s = foldr op:: nil s
+
+    (* PERF: This can be much more efficient, like by building a kinda
+       co-heap. The data structure would be fairly limited though in
+       the sense that we can't know what the streams contain beyond
+       their horizons, so it's hard to keep it balanced. But at least
+       we don't need to compare to a linear (in l) number of elements each
+       time. *)
+    fun merge_sorted cmp l =
+      let
+          (* Return a stream consisting of all the elements,
+             in sorted order. *)
+          fun ms nil () = Nil
+            | ms (s :: t) () =
+              case force s of
+                  (* Skip empty streams. *)
+                  Nil => ms t ()
+                | Cons (v, ss) =>
+                  (* Have a value, but it might not be
+                     the smallest one. *)
+                  ms_insert v [ss] t
+
+          (* bv is the smallest value so far.
+             sg is the list of streams known to contain
+             only elements larger than it. *)
+          and ms_insert bv sg nil =
+              Cons (bv, delay (ms sg))
+            | ms_insert bv sg (s :: t) =
+              case force s of
+                  (* Skip empty streams. *)
+                  Nil => ms_insert bv sg t
+                | Cons (v, ss) =>
+                    case cmp (bv, v) of
+                      (* Better. *)
+                        GREATER =>
+                          (* FYI, adding the singleton list bv is 
+                             the real tragedy here. *)
+                          ms_insert v (singleton bv :: ss :: sg) t
+                      (* Same or worse. Don't take it. *)
+                      | _ => ms_insert bv (s :: sg) t
+      in
+          delay (ms l)
+      end
+
 
 end

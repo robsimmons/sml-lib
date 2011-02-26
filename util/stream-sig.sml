@@ -15,7 +15,8 @@ sig
 
     val foldr : ('a * 'b -> 'b) -> 'b -> 'a stream -> 'b
     val foldl : ('a * 'b -> 'b) -> 'b -> 'a stream -> 'b
-      
+
+    val fromlist : 'a list -> 'a stream
     val tolist : 'a stream -> 'a list
 
     val empty : 'a stream
@@ -28,7 +29,14 @@ sig
     val countup : int -> int option -> int stream
     val countdown : int -> int option -> int stream
 
+    (* Stream containing just this element, eager. *)
+    val singleton : 'a -> 'a stream
 
+    (* Merge sorted streams so that the result is sorted. 
+       The argument is a list of streams because it must
+       be finite in order to know the next largest element. *)
+    val merge_sorted : ('a * 'a -> order) -> 
+                       'a stream list -> 'a stream
 
     exception Empty
 
