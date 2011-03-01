@@ -63,7 +63,9 @@ sig
      observe_weighted_string. In that case the result is a stream
      (infinite if there are any loops, which is typical) of words,
      ordered from most to least probable, along with their
-     probabilities in (0, 1].
+     probabilities in (0, 1]. The end symbol is not included in the
+     list, since it is usually a sentinel and would be included in
+     any path anyway.
 
      If the n-Markov chain contains a cycle where every transition is
      probability 1, then the stream may loop forever without returning

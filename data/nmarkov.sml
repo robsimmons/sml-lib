@@ -143,8 +143,9 @@ struct
               else
               case cmp_symbol (sym, end_symbol) of
                   EQUAL =>
-                      (* If it's the end symbol, then there is just one result. *)
-                      S.singleton { string = [sym], p = p }
+                      (* If it's the end symbol, then there is just one result
+                         which is the empty path. *)
+                      S.singleton { string = nil, p = p }
                 | _ =>
                      (* Otherwise, we have to recurse. Our
                         current lower bound lb will no longer
