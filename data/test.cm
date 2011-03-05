@@ -33,6 +33,10 @@ group is
 
   undirected-graph-test.sml
 
+  nmarkov-cmp-sig.sml
+  nmarkov-cmp.sml
+  nmarkov-cmp-test.sml
+
   nmarkov-sig.sml
   nmarkov.sml
   nmarkov-test.sml

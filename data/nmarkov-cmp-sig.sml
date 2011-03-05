@@ -1,16 +1,18 @@
-(* Represents imperative dense n-Markov chains. *)
-signature NMARKOV =
+(* Represents imperative sparse n-Markov chains. This older version is
+   implemented using splay trees and is less efficient (both in time
+   and memory), though it is simpler to instantiate because it only
+   requires an ordering function on symbols. If the set of symbols is
+   small and dense, consider using the array-based version in
+   nmarkov-sig.sml which is much more efficient. *)
+signature NMARKOVCMP =
 sig
 
-  exception NMarkov of string
+  exception NMarkovCmp of string
 
   (* Symbols make up observations and are the basis of
      states in the chain. Functor argument. *)
   type symbol
-  (* Functor argument. *)
-  val radix : int
-  val toint : symbol -> int
-  val fromint : int -> symbol
+  val cmp_symbol : symbol * symbol -> order
   (* Number of symbols of history that are used to index the
      probability table. Classic Markov chain is n=1. n=0 is
      just a frequency table. *)
@@ -23,6 +25,7 @@ sig
   val chain : unit -> chain
   val cmp_state : state * state -> order
   val history : state -> symbol list
+
   (* Construct a state. The list of symbols must be exactly n in length. *)
   val state : symbol list -> state
   (* Removes the oldest symbol in the state, adds the new one. *)
@@ -56,8 +59,7 @@ sig
   val probability : chain -> state * symbol -> real
   (* Get all the non-zero symbols and their probabilities for
      the state. *)
-       (* XXX implementable, but currently unused. skipped. *)
- (*   val probabilities : chain -> state -> (symbol * real) list *)
+  val probabilities : chain -> state -> (symbol * real) list
 
   (* Produces a stream of the most probable observations ending with a
      certain symbol. The expected way for this to be used is for the
@@ -75,8 +77,9 @@ sig
      an answer. This will never be the case if the n-Markov chain was
      constructed only by calls to observe_weighted_string.
 
+     If the chain is modified, then the stream XXX.
      *)
-  val most_probable_paths : { lower_bound : real,
+  val most_probable_paths : { lower_bound : real, (* XXX *)
                               chain : chain,
                               state : state,
                               end_symbol : symbol } ->
@@ -84,20 +87,12 @@ sig
 
 end
 
-signature NMARKOVARG =
+signature NMARKOVCMPARG =
 sig
 
   (* As above. *)
   type symbol
+  val cmp : symbol * symbol -> order
   val n : int
 
-  (* Number of total symbols, e.g. 256 for bytes. 
-     Note: The chain has size O(radix^(n+1)). *)
-  val radix : int
-
-  (* For c in [0, radix). *)
-  val fromint : int -> symbol
-  (* Must output an integer in [0, radix); all symbols
-     that produce the same value are considered equal. *)
-  val toint : symbol -> int
 end
