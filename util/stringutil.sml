@@ -209,24 +209,22 @@ struct
       hardtable (map #1 final) sll
     end
 
-  (* XXX PERF this and the next one could be much faster with
-     CharVector.tabulate or map *)
   fun ucase s =
-      let fun uc nil = nil
-            | uc (h :: t) =
-          (if h >= #"a" andalso h <= #"z" then chr(ord h - 32)
-           else h) :: uc t
+      let fun uc h =
+          if h >= #"a" andalso h <= #"z" 
+          then chr (ord h - 32)
+          else h
       in
-          implode (uc (explode s))
+          CharVector.map uc s
       end
 
   fun lcase s =
-      let fun lc nil = nil
-            | lc (h :: t) =
-          (if h >= #"A" andalso h <= #"Z" then chr(ord h + 32)
-           else h) :: lc t
+      let fun lc h =
+          if h >= #"A" andalso h <= #"Z" 
+          then chr (ord h + 32)
+          else h
       in
-          implode (lc (explode s))
+          CharVector.map lc s
       end
 
   fun vconcat vec = Vector.foldr (op ^) "" vec
@@ -372,7 +370,14 @@ struct
             | chars => r (none, chars)
       end
 
-  val whitespec = charspec " \t\n\r\v"
+  (* Written directly instead of using charspec, because the compiler
+     can probably do a better job *)
+  fun whitespec #" " = true
+    | whitespec #"\n" = true
+    | whitespec #"\r" = true
+    | whitespec #"\t" = true
+    | whitespec #"\v" = true
+    | whitespec _ = false
 
   fun losespec sp = filter (not o sp)
   fun losespecl sp s =
@@ -438,7 +443,7 @@ struct
       in f h t
       end
 
-  (* XXX: matchat is speed-critical in findat; it should really be
+  (* XXX PERF: matchat is speed-critical in findat; it should really be
      rewritten to compare character-wise without allocating a
      substring.
    *)

@@ -9,3 +9,8 @@ group is
   stream.sml
 
   stream-test.sml
+
+  stringutil-sig.sml
+  stringutil.sml
+
+  stringutil-test.sml
