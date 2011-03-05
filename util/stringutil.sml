@@ -443,12 +443,11 @@ struct
       in f h t
       end
 
-  (* XXX PERF: matchat is speed-critical in findat; it should really be
-     rewritten to compare character-wise without allocating a
-     substring.
-   *)
+  (* Using Substring to avoid copying. But this could probably be
+     implemented directly and be more efficient that way... *)
   fun matchat n small big =
-      (String.substring (big, n, size small) = small)
+      (Substring.compare (Substring.substring (big, n, size small),
+                          Substring.full small) = EQUAL)
       handle _ => false (* might raise Subscript *)
 
   fun matchtail small big =

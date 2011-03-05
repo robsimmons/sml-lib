@@ -41,6 +41,14 @@ struct
           s 0 l
       end
 
+  fun stateonly (symint, x) =
+      let
+          fun s i 0 = i
+            | s i x = s (symint + i * radix) (x - 1)
+      in
+          s 0 x
+      end
+
   fun advance_state (old : state, sym : symbol) : state =
       (old * radix) mod modulus + (toint sym)
 
@@ -68,7 +76,7 @@ struct
 
   fun observe_weighted_string { chain, weight, begin_symbol : symbol, end_symbol, string } =
     let
-        val start_state = state (List.tabulate (n, fn _ => begin_symbol))
+        val start_state = stateonly (toint begin_symbol, n)
         fun eat state (sym :: rest) =
             let 
             in
