@@ -180,6 +180,13 @@ sig
   (* return n of character c *)
   val tabulate : int -> char -> string
 
+  (* partition s l
+     Split into two substrings, where the first has length l *)
+  val partition : string -> int -> string * string
+  (* rpartition s r
+     Split into two substrings, where the second has length r *)
+  val rpartition : string -> int -> string * string
+
   (* like String.tokenize, but only get the first token
      example: token (ischar #".") "aa..bb..cc" = ("aa", "bb..cc")
      *)

@@ -184,6 +184,7 @@ sig
     val min : ('a * 'a -> order) -> 'a list -> 'a
     val max : ('a * 'a -> order) -> 'a list -> 'a
 
+    (* Deprecated: Use Util.byfirst and Util.bysecond *)
     (* (byfirst String.compare) will sort a (string * 'a) list. *)
     val byfirst  : ('a * 'b -> 'c) -> ('a * 'd) * ('b * 'e) -> 'c
     val bysecond : ('a * 'b -> 'c) -> ('d * 'a) * ('e * 'b) -> 'c

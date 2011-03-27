@@ -1,4 +1,4 @@
-(* String utilities by Tom 7. 
+(* String utilities by Tom 7.
    See stringutil-sig for documentation. *)
 
 structure StringUtil :> STRINGUTIL =
@@ -11,7 +11,7 @@ struct
 
   fun I x = x
   fun K x _ = x
-  
+
   fun unformatted_table sll =
     (foldl (fn (sl, rest) =>
             rest ^ "\n" ^
@@ -19,7 +19,7 @@ struct
 
   fun ischar (c : char) (d : char) = c = d
   fun isn'tchar (c : char) (d : char) = c <> d
-      
+
   (* PERF probably more efficient to use String.concat.
      I use this a LOT, so good to check... *)
   fun delimit _ nil = ""
@@ -27,12 +27,12 @@ struct
         foldl (fn (a, b) => b ^ s ^ a) h t
 
   (* if s is longer than n chars, split it as best as possible
-     to a list of strings less than or equal to n chars in length. 
-     
+     to a list of strings less than or equal to n chars in length.
+
      when encountering a \n character, also use that to break the
      line.
      *)
-  fun wrapto (n : int) (s : string) : string list = 
+  fun wrapto (n : int) (s : string) : string list =
       let
         fun wrapline ss =
           if size ss <= n then [ss]
@@ -40,12 +40,12 @@ struct
             let
                 fun grab nil nil _ = nil
                   | grab nil l _ = [delimit " " (rev l)]
-                  | grab (h :: t) l sof = 
-                    if size h + sof <= n 
+                  | grab (h :: t) l sof =
+                    if size h + sof <= n
                     then grab t (h :: l) (sof + (size h + 1))
-                    else if null l andalso size h > n 
-                         then String.substring (h, 0, n) :: 
-                              grab (String.substring (h, n, size h - n) :: t) 
+                    else if null l andalso size h > n
+                         then String.substring (h, 0, n) ::
+                              grab (String.substring (h, n, size h - n) :: t)
                                    nil 0
                          else (delimit " " (rev l)) :: grab (h :: t) nil 0
             in
@@ -59,7 +59,7 @@ struct
     if (size s >= n) then (s, "")
     else (s, (implode (List.tabulate (n - size s, K c))))
 
-  fun padex c n s = 
+  fun padex c n s =
     if n < 0 then
         let val (a, b) = pad' c (~ n) s
         in b ^ a
@@ -73,10 +73,10 @@ struct
 
   (* this one takes a hard width for each column (as il) *)
   fun hardtable il sll =
-    let 
+    let
       fun f nil = ""
         | f (sl :: rest) =
-        let 
+        let
           (* split up each string at its corresponding length *)
           val psl : string list list =
                 let fun g (nil, nil) = nil
@@ -85,16 +85,16 @@ struct
                 in
                   g (sl, il)
                 end
- 
+
           fun maybetl nil = nil
             | maybetl (_ :: t) = t
-        
+
           fun j (sll : string list list) =
                 if (List.all List.null sll) then ""
                 else let
                        fun k (nil : string list list, nil : int list) = "\n"
                          | k (nil :: r, n :: t) = (pad n "") ^ " " ^ k (r, t)
-                         | k ((s :: _) :: r, n :: t) = 
+                         | k ((s :: _) :: r, n :: t) =
                            (pad n s) ^ " " ^ k (r, t)
                          | k _ = raise StringUtil "inconsistent hardtables(2)"
                      in
@@ -130,7 +130,7 @@ struct
     end
 
 
-  (* same as size, but if the string includes newlines, 
+  (* same as size, but if the string includes newlines,
      instead treat those as separate lines and return the
      longest one. *)
   fun maxwidth s =
@@ -151,7 +151,7 @@ struct
          required minimum width (mn) and desired max width
          (mx). *)
       val initial =
-          foldl (ListPair.map (fn (a, (mn, mx)) => 
+          foldl (ListPair.map (fn (a, (mn, mx)) =>
                                (max (minwidth a, mn),
                                 max (maxwidth a, mx))))
                     (List.tabulate (cols, K (0, 0))) sll
@@ -163,7 +163,7 @@ struct
           let
               (* actual current width. hardtable puts
                  a space between each column at a minimum *)
-              val w = (cols - 1) + 
+              val w = (cols - 1) +
                   foldl (fn ((c, _), acc) => c + acc) 0 cl
 
               val surplus = n - w
@@ -171,18 +171,18 @@ struct
               (* if there's surplus, give it to the most
                  needy columns *)
               if surplus > 0
-              then 
+              then
                   let
                       (* find each column's need *)
-                      val nc = map (fn (c, d) => 
+                      val nc = map (fn (c, d) =>
                                     (c, d, max(d - c, 0))) cl
 
-                      val need = 
-                          foldl (fn ((_, _, n), acc) => 
+                      val need =
+                          foldl (fn ((_, _, n), acc) =>
                                  n + acc) 0 nc
 
                       (* allocate surplus proportionally *)
-                      fun alloc remain [(c, d, n)] = 
+                      fun alloc remain [(c, d, n)] =
                           [(Int.min(c + n, c + remain), d)]
                         | alloc _ nil = nil (* ??? *)
                         | alloc remain ((c, d, 0) :: rest) =
@@ -190,7 +190,7 @@ struct
                         | alloc remain ((c, d, n) :: rest) =
                           let
                               val frac = (real n / real need)
-                              val amt = min(Real.trunc (frac * 
+                              val amt = min(Real.trunc (frac *
                                                         real surplus),
                                             remain)
                           in
@@ -211,7 +211,7 @@ struct
 
   fun ucase s =
       let fun uc h =
-          if h >= #"a" andalso h <= #"z" 
+          if h >= #"a" andalso h <= #"z"
           then chr (ord h - 32)
           else h
       in
@@ -220,7 +220,7 @@ struct
 
   fun lcase s =
       let fun lc h =
-          if h >= #"A" andalso h <= #"Z" 
+          if h >= #"A" andalso h <= #"Z"
           then chr (ord h + 32)
           else h
       in
@@ -229,7 +229,7 @@ struct
 
   fun vconcat vec = Vector.foldr (op ^) "" vec
 
-  fun filter f s = 
+  fun filter f s =
     let
       val len = size s
       fun count acc i =
@@ -243,7 +243,7 @@ struct
       val off = ref 0
       fun get () =
         let val c = String.sub(s, !off)
-        in 
+        in
           off := !off + 1;
           if f c
           then c
@@ -257,12 +257,12 @@ struct
      reasons. Also, note that this does CRLF conversion
      on Win32, which might not be the desired behavior.
      Should probably rewrite to use BinIO. *)
-  fun readfile f = 
+  fun readfile f =
     let
       val l = TextIO.openIn f
       val s = TextIO.inputAll l
     in
-      TextIO.closeIn l; 
+      TextIO.closeIn l;
       s
     end
 
@@ -274,7 +274,7 @@ struct
       TextIO.closeOut l
     end
 
-  fun truncate l s = 
+  fun truncate l s =
       if size s > l then String.substring(s, 0, l)
       else s
 
@@ -292,7 +292,7 @@ struct
           (* will need at most this many chars, but don't bother
              translating any more... *)
           val ss = truncate l s
-            
+
           fun ff c = if (c <> esc andalso f c)
                      orelse Char.isAlphaNum c then str c
                      else str esc ^ hexdig (ord c)
@@ -300,7 +300,7 @@ struct
           truncate l (String.translate ff ss)
       end
 
-  fun wordtohex_be w = 
+  fun wordtohex_be w =
     let
       val a = mkbyte (Word.>> (w, 0w24))
       val b = mkbyte (Word.>> (w, 0w16))
@@ -341,7 +341,7 @@ struct
      This hash function is taken from pages 56-57 of
      The Practice of Programming by Kernighan and Pike. *)
   fun hash s : Word.word =
-    CharVector.foldl (fn (c, h) => 
+    CharVector.foldl (fn (c, h) =>
                       Word.fromInt (ord c) + Word.* (h, 0w31)) 0w0 s
 
   fun all f s =
@@ -357,7 +357,7 @@ struct
           fun none _ = false
           fun r (f, nil) = f
             | r (f, (#"\\" :: c :: t)) = r ((fn d => d = c orelse f d), t)
-            | r (f, (c :: #"-" :: d :: t)) = 
+            | r (f, (c :: #"-" :: d :: t)) =
               let val (c, d) = if c > d then (c, d) else (d, c)
               in r ((fn e => (e <= c andalso e >= d) orelse f e), t)
               end
@@ -383,7 +383,7 @@ struct
   fun losespecl sp s =
       let
           fun go n =
-              if n >= size s 
+              if n >= size s
               then ""
               else
                   if sp (CharVector.sub(s, n))
@@ -396,7 +396,7 @@ struct
   fun losespecr sp s =
       let
           fun go n =
-              if n < 0 
+              if n < 0
               then ""
               else
                   if sp (CharVector.sub(s, n))
@@ -420,14 +420,14 @@ struct
 
           val sp = charspec (what ^ implode[c])
           fun f st n =
-              if n >= size s 
+              if n >= size s
               then [range st (n - 1)]
-              else 
+              else
                   let val ch = (String.sub (s, n))
                   in
                       if sp ch
-                      then range st (n - 1) :: 
-                           ss_all (implode[c, ch]) :: 
+                      then range st (n - 1) ::
+                           ss_all (implode[c, ch]) ::
                            f (n + 1) (n + 1)
                       else f st (n + 1)
                   end
@@ -453,11 +453,11 @@ struct
   fun matchtail small big =
       matchat (size big - size small) small big
 
-  val matchhead = matchat 0 
+  val matchhead = matchat 0
 
   (* XXX: kmp is more appropriate for really big 'big'. (but properly
      staged, we wouldn't know what 'big' is until too late (perhaps
-     use thunks?)). Right now, we do m*n time search. 
+     use thunks?)). Right now, we do m*n time search.
    *)
   fun findat n small big =
       if (size big - n) < size small then NONE
@@ -496,8 +496,8 @@ struct
       in
           case String.tokens (ischar #"*") w of
               nil => true (* *, **, etc. matches anything. *)
-            | parts => 
-                  let 
+            | parts =>
+                  let
                     val first = hd parts
                     val last = llast parts
                   in
@@ -521,8 +521,8 @@ struct
   val printable = charspec "-A-Za-z0-9 ,./;':<>?[]{}\\|=_+^~`!@#$%^&*()"
 
   (* trick: (ch | 4400) % 55 *)
-  fun hexvalue ch =  
-      SysWord.toInt (SysWord.orb(SysWord.fromInt(ord ch), 
+  fun hexvalue ch =
+      SysWord.toInt (SysWord.orb(SysWord.fromInt(ord ch),
                                  SysWord.fromInt 4400)) mod 55
 
   fun hexdump s =
@@ -559,12 +559,22 @@ struct
   fun tabulate n c = CharVector.tabulate (n, fn _ => c)
 
 
-  local 
+  fun partition s l =
+      let val r = size s - l
+      in (String.substring(s, 0, l), String.substring(s, l, r))
+      end
 
-      fun try lose f n s = 
-        if n >= size s 
+  fun rpartition s r =
+      let val l = size s - r
+      in (String.substring(s, 0, l), String.substring(s, l, r))
+      end
+
+  local
+
+      fun try lose f n s =
+        if n >= size s
         then (s, "")
-        else 
+        else
           if f (CharVector.sub(s, n))
           then
             (String.substring(s, 0, n),
@@ -576,7 +586,7 @@ struct
           then ("", s)
           else
               if f (CharVector.sub(s, n))
-              then 
+              then
                   (lose (String.substring(s, 0, n)),
                    String.substring(s, n + 1, size s - (n + 1)))
               else rtry lose f (n - 1) s
@@ -590,7 +600,7 @@ struct
           let val begin = losespecr f s
           in rtry (losespecr f) f (size begin - 1) begin
           end
-    
+
       fun field f s =
           try I f 0 s
 
@@ -614,11 +624,11 @@ struct
               else
                   case findat n src s of
                       NONE => [String.substring(s, n, size s - n)]
-                    | SOME idx => 
+                    | SOME idx =>
                           String.substring(s, n, idx - n) ::
                           dst ::
                           collect (idx + size src)
-              
+
       in
           case size src of
               0 => raise StringUtil "replacement src can't be empty string"
@@ -628,7 +638,7 @@ struct
   (* RFC 1783 apparently allows all of these, but
      web server/browser behavior is different (especially + being
      used to encode spaces)
-     val urlspec = charspec "0-9A-Za-z$_.+!*'()-" 
+     val urlspec = charspec "0-9A-Za-z$_.+!*'()-"
      *)
   val urlspec = charspec "0-9A-Za-z_.-"
   (* PERF *)
@@ -644,7 +654,7 @@ struct
      so this thinks that's a space. *)
   fun urldecode s =
     let
-      fun dec (#"%" :: c1 :: c2 :: rest) = 
+      fun dec (#"%" :: c1 :: c2 :: rest) =
           (chr (hexvalue c1 * 16 + hexvalue c2)) :: dec rest
         | dec (#"+" :: rest) = #" " :: dec rest
         | dec (c :: rest) = c :: dec rest
@@ -655,7 +665,7 @@ struct
 
   fun jsunescape s =
     let
-      fun dec (#"%" :: c1 :: c2 :: rest) = 
+      fun dec (#"%" :: c1 :: c2 :: rest) =
           (chr (hexvalue c1 * 16 + hexvalue c2)) :: dec rest
         | dec (c :: rest) = c :: dec rest
         | dec nil = nil

@@ -31,4 +31,10 @@ sig
   (* convert a binary string to one built of hex digits *)
   val bintohex : string -> string
 
+  (* Same, but supply the initialization vector manually. *)
+  val md5_advanced : { iv : Word32.word * Word32.word * Word32.word * Word32.word,
+                       msg : string } -> string
+  (* The reference IV. *)
+  val initialization_vector : Word32.word * Word32.word * Word32.word * Word32.word                  
+
 end

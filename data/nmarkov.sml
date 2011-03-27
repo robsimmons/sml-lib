@@ -88,12 +88,28 @@ struct
         eat start_state string
     end
 
-
   fun probability { weights, totals } (state, symbol) =
       let val tot = Array.sub (totals, state)
           val w = Array.sub (weights, weight_index (state, symbol))
-          val p = w / tot
-      in p
+      in if tot > 0.0
+         then w / tot
+         else 0.0
+      end
+
+  fun string_probability { chain, begin_symbol, end_symbol, string } : real =
+      let
+          val start_state = stateonly (toint begin_symbol, n)
+          fun prob state p (sym :: rest) =
+              let
+                  (* Attenuate probability by this transition *)
+                  val p = p * probability chain (state, sym)
+              in
+                  prob (advance_state (state, sym)) p rest
+              end
+            (* At the end, observe the end symbol *)
+            | prob state p nil = p * probability chain (state, end_symbol)
+      in
+          prob start_state 1.0 string
       end
 
 (*

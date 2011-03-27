@@ -52,6 +52,11 @@ struct
     | option_compare _ (NONE, SOME _) = LESS
     | option_compare f (SOME x, SOME y) = f(x, y)
 
+  fun descending f (a, b) = f (b, a)
+
+  fun byfirst f ((a, _), (aa, _)) = f (a, aa)
+  fun bysecond f ((_, b), (_, bb)) = f (b, bb)
+
   fun lex_order oa ob ((a, b), (aa, bb)) =
     (case oa (a, aa) of
        LESS => LESS

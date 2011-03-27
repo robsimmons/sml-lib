@@ -34,6 +34,13 @@ sig
   val bool_compare : bool orderer
   val sum_compare : 'a orderer -> 'b orderer -> ('a, 'b) sum orderer
 
+  (* Apply the orderer to the first or second element of a pair *)
+  val byfirst  : 'a orderer -> ('a * 'b) orderer
+  val bysecond : 'b orderer -> ('a * 'b) orderer
+
+  (* Reverse the direction of any ordering *)
+  val descending : 'a orderer -> 'a orderer
+
   val option_compare : 'a orderer -> 'a option orderer
 
   (* Generalization of 'a orderer -> 'b orderer -> ('a * 'b) orderer *)

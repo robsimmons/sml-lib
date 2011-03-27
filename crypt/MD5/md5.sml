@@ -148,17 +148,13 @@ struct
     (Word32.fromInt (ord c) << 0w16) +
     (Word32.fromInt (ord d) << 0w24)   
 
-  fun md5_advanced {len, msg} =
+  fun md5_advanced {iv = (a, b, c, d), msg} =
     let
+      val len = size msg
       val m = pad msg len
       val m = applen m len
 
       val len = size m
-
-      val (a,b,c,d) = (wc 0wx6745 0wx2301,
-                       wc 0wxefcd 0wxab89,
-                       wc 0wx98ba 0wxdcfe,
-                       wc 0wx1032 0wx5476)
 
       fun mkx off x =
         b2w (CharVector.sub (m, off + (x*4)    ),
@@ -175,7 +171,12 @@ struct
       implode (w2b a @ w2b b @ w2b c @ w2b d)
     end
 
-  fun md5 m = md5_advanced {len = size m, msg = m}
+  val initialization_vector = (wc 0wx6745 0wx2301,
+                               wc 0wxefcd 0wxab89,
+                               wc 0wx98ba 0wxdcfe,
+                               wc 0wx1032 0wx5476)
+
+  fun md5 m = md5_advanced {iv = initialization_vector, msg = m}
 
   val digits = "0123456789ABCDEF"
   fun bintohex s =

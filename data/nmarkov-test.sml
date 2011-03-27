@@ -75,6 +75,61 @@ struct
   in ()
   end handle (e as (TestFail s)) => (print ("Failed: " ^ s ^ "\n"); raise e)
 
+
+
+  structure M1C : NMARKOVARG =
+  struct
+    type symbol = char
+    val toint = ord
+    val fromint = chr
+    val n = 1
+    val radix = 256
+  end
+
+  structure M = MarkovFn(M1C)
+
+  val () =
+  let
+    val rtos = Real.fmt (StringCvt.FIX (SOME 2))
+    val rtos9 = Real.fmt (StringCvt.FIX (SOME 9))
+
+    val chain = M.chain ()
+    fun ows s = 
+        M.observe_weighted_string { begin_symbol = chr 1,
+                                    end_symbol = chr 0,
+                                    weight = 1.0,
+                                    chain = chain,
+                                    string = explode s }
+
+    fun state s = M.state (explode s)
+
+    val () = ows "hello"
+    val () = ows "helpful"
+
+    val _ = rtos (M.probability chain (state "\001", #"h")) = "1.00"
+        orelse raise TestFail "all words start with h"
+
+    val _ = 
+        let val p = rtos (M.probability chain (state "\001", #"h"))
+        in
+            p = "1.00" orelse 
+            raise TestFail ("all words start with h: " ^ p)
+        end
+
+    val () = ows "felafel"
+
+    val beginstate = state "\001"
+    val tops = StreamUtil.headn 20 (M.most_probable_paths { lower_bound = 0.000001,
+                                                            chain = chain,
+                                                            state = beginstate,
+                                                            end_symbol = #"\000" })
+    val () = print (Int.toString (length tops) ^ " top paths:\n");
+    val () = app (fn { string, p } =>
+                  print (rtos9 p ^ " " ^ implode string ^ "\n")) tops
+    val () = print "(check manually)\n"
+  in ()
+  end handle (e as (TestFail s)) => (print ("Failed: " ^ s ^ "\n"); raise e)
+
   val () = print "All N-Markov tests passed.\n"
 
 end

@@ -116,9 +116,16 @@ struct
   type svgtext = (string * string) list
   fun svgtext { x, y, face, size = fontsize, text } = 
       let 
+          (* XXX need to escape for SVG. This is insufficient. *)
+          fun escape s =
+              let val s = StringUtil.replace "<" "&lt;" s
+                  val s = StringUtil.replace ">" "&gt;" s
+                  val s = StringUtil.replace "\"" "&quot;" s (* " *)
+              in
+                  s
+              end
           fun onetext (color, s) =
-              (* XXX need to escape for SVG. *)
-              "<tspan fill=\"" ^ color ^ "\">" ^ s ^ "</tspan>"
+              "<tspan fill=\"" ^ color ^ "\">" ^ escape s ^ "</tspan>"
       in
           "<text x=\"" ^ rtos x ^ "\" y=\"" ^ rtos y ^ "\" font-family=\"" ^
           face ^ "\" font-size=\"" ^ rtos fontsize ^ "\">" ^

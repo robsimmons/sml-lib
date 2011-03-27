@@ -54,6 +54,14 @@ sig
   (* Get the probability of seeing the given symbol after the
      observation. *)
   val probability : chain -> state * symbol -> real
+
+  (* Give the probability of observing a word, assuming the chain
+     was built as by observe_weighted_string *)
+  val string_probability : { chain : chain,
+                             begin_symbol : symbol,
+                             end_symbol : symbol,
+                             string : symbol list } -> real
+
   (* Get all the non-zero symbols and their probabilities for
      the state. *)
        (* XXX implementable, but currently unused. skipped. *)
