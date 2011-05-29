@@ -771,6 +771,7 @@ void b2World::DestroyJoint(b2Joint* j)
           (* Update all the valid contacts on this body and build a contact island. 
              Port note: This was a fixed array in Box2D. *)
           val contacts = ref nil
+          (* Port note: 'count' var reused in Box2D. *)
           val ncontacts = ref 0
           fun one_edge ce =
             if !ncontacts >= BDDSettings.max_toi_contacts
@@ -784,34 +785,34 @@ void b2World::DestroyJoint(b2Joint* j)
                      (* Only perform correction with static bodies, so the
                         body won't get pushed out of the world. *)
                      if typ = D.Dynamic
-                     then ()
+                     then print "* skipped -- dynamic\n"
                      else
                      (* Check for a disabled contact. *)
                      if not (D.C.get_flag (contact, D.C.FLAG_ENABLED))
-                     then ()
+                     then print "* skipped -- disabled\n"
                      else
                      (* Cull sensors. *)
                      if Fixture.is_sensor fixture_a orelse 
                         Fixture.is_sensor fixture_b
-                     then ()
+                     then print "* skipped -- sensors\n"
                      else
                      let in
                          (* The contact likely has some new contact points. The listener
                             gives the client a chance to disable the contact. *)
                          if contact <> toi_contact
                          then Contact.update (contact, world)
-                         else ();
+                         else print "* (not update)\n";
                          
                          (* Did the user disable the contact? *)
-                         if D.C.get_flag (contact, D.C.FLAG_ENABLED)
-                         then ()
+                         if not (D.C.get_flag (contact, D.C.FLAG_ENABLED))
+                         then print "* skipped -- disabled during callback\n"
                          else
                          if not (Contact.is_touching contact)
-                         then ()
+                         then print "* skipped -- not touching\n"
                          else 
                              let in
                                  contacts := contact :: !contacts;
-                                 count := !count + 1
+                                 ncontacts := !ncontacts + 1
                              end
                      end
                  end
@@ -827,7 +828,7 @@ void b2World::DestroyJoint(b2Joint* j)
               else loop (iter + 1)
         in
           loop 0;
-          print "(done toi-solving)\n");
+          print "(done toi-solving)\n";
           if D.B.get_typ toi_other <> D.Static
           then D.C.set_flag (toi_contact, D.C.FLAG_BULLET_HIT)
           else ()
