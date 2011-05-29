@@ -327,7 +327,8 @@ struct
             val { distance, ... } = 
                 BDDDistance.distance (distance_input (xfa, xfb), cache)
         in
-            print ("  toi distance: " ^ rtos distance ^ "\n");
+            print ("  toi distance: " ^ rtos distance ^ " targ " ^ rtos target ^ " tol " ^
+             rtos tolerance ^ "\n");
             (* If the shapes are overlapped, we give up on continuous collision. *)
             if distance < 0.0
             then (SOverlapped, 0.0) (* Failure! *)

@@ -71,6 +71,7 @@ struct
       val xf_a = D.B.get_xf body_a
       val xf_b = D.B.get_xf body_b
     in
+      print("  xfa " ^ xftos xf_a ^ " xfb " ^ xftos xf_b ^ "\n");
       (* Is this contact a sensor? *)
       if sensor
       then
@@ -137,7 +138,9 @@ struct
 
       if not sensor andalso !touching
       then D.W.get_pre_solve world (c, old_manifold)
-      else ()
+      else ();
+
+      print("<- done updating contact\n")
     end
 
 end

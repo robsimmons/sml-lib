@@ -826,6 +826,8 @@ void b2World::DestroyJoint(b2Joint* j)
               then ()
               else loop (iter + 1)
         in
+          loop 0;
+          print "(done toi-solving)\n");
           if D.B.get_typ toi_other <> D.Static
           then D.C.set_flag (toi_contact, D.C.FLAG_BULLET_HIT)
           else ()

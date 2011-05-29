@@ -135,6 +135,7 @@ struct
      Obviously it would be better to factor out this common routine. *)
   fun solve (solver : ('b, 'f, 'j) solver, baumgarte : real) : bool =
     let
+      val () = print ("* toi solve\n")
       val min_separation = ref 0.0
       fun oneconstraint (c : ('b, 'f, 'j) constraint) =
         let
@@ -184,18 +185,33 @@ struct
                  val impulse : real = if k > 0.0 then ~ capital_c / k else 0.0
                  val p : vec2 = impulse *: normal
 
+(*
                  fun update_sweep (body, inv_mass, inv_i, r) =
-                   let
-                     val sweep : sweep = D.B.get_sweep body
+                   let val sweep : sweep = D.B.get_sweep body
                    in
                      sweep_set_a (sweep, sweepa sweep - 
                                   (inv_i * cross2vv (r, p)));
                      sweep_set_c (sweep, sweepc sweep :-: (inv_mass *: p));
                      D.B.synchronize_transform body
                    end
+*)
+
+                 val sweep_a = D.B.get_sweep body_a
+                 val () = sweep_set_c (sweep_a, sweepc sweep_a :-: inv_mass_a *: p);
+                 val () = sweep_set_a (sweep_a, sweepa sweep_a - inv_i_a * cross2vv (r_a, p))
+                 val () = D.B.synchronize_transform body_a
+
+                 val sweep_b = D.B.get_sweep body_b
+                 val () = sweep_set_c (sweep_b, sweepc sweep_b :+: inv_mass_b *: p);
+                 val () = sweep_set_a (sweep_b, sweepa sweep_b + inv_i_b * cross2vv (r_b, p))
+                 val () = D.B.synchronize_transform body_b
+
              in
+                 (*
                  update_sweep (body_a, inv_mass_a, inv_i_a, r_a);
                  update_sweep (body_b, inv_mass_b, inv_i_b, r_b)
+                 *)
+                 ()
              end)
         end
     in
