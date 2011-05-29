@@ -24,6 +24,11 @@ struct
     | STouching
     | SSeparated
 
+  fun stos SFailed = "failed"
+    | stos SOverlapped = "overlapped"
+    | stos STouching = "touching"
+    | stos SSeparated = "separated"
+
   datatype separation_type = TPoints | TFaceA | TFaceB
   type separation_function = 
       { proxya : distance_proxy,
@@ -34,9 +39,15 @@ struct
         local_point : vec2,
         axis : vec2 }
 
-  (* Port note: Original separates construction and initialization. Initialization
-     returns the magnitude of the axis, but it is unused. Removed here. *)
-  fun separation_function (cache, proxya, sweepa, proxyb, sweepb) : separation_function =
+  fun typtos TPoints = "points"
+    | typtos TFaceA = "facea"
+    | typtos TFaceB = "faceb"
+
+  (* Port note: Original separates construction and initialization. 
+     Initialization returns the magnitude of the axis, but it is unused. 
+     Removed here. *)
+  fun separation_function (cache, proxya, sweepa, proxyb, sweepb) :
+      separation_function =
     let
         val count = !(#count cache)
         (* PERF assertion *)
@@ -64,7 +75,8 @@ struct
                   proxyb = proxyb,
                   sweepa = sweepa,
                   sweepb = sweepb,
-                  (* PERF uninitialized in original; consider datatype taking args *)
+                  (* PERF uninitialized in original; consider datatype taking 
+                     args *)
                   local_point = vec2 (0.0, 0.0),
                   axis = axis }
             end
@@ -206,6 +218,8 @@ struct
         val xfa : transform = sweep_transform (sweepa, t)
         val xfb : transform = sweep_transform (sweepb, t)
     in
+        print ("    ev: xfa " ^ xftos xfa ^ " xfb " ^ xftos xfb ^ 
+               " t " ^ rtos t ^ " typ " ^ typtos typ ^ "\n");
         case typ of
             TPoints =>
               let
@@ -248,8 +262,12 @@ struct
                   *)
                   val local_point_a : vec2 = #vertex proxya indexa
                   val point_a : vec2 = xfa @*: local_point_a
+
+                  val sep = dot2(point_a :-: point_b, normal)
               in
-                  dot2(point_a :-: point_b, normal)
+                  print("    pa " ^ vtos point_a ^ " pb " ^ vtos point_b ^ " n " ^
+                        vtos normal ^ " sep " ^ rtos sep ^ "\n");
+                  sep
               end
     end
 
@@ -295,6 +313,7 @@ struct
          This loop terminates when an axis is repeated (no progress is made). *)
       fun outer_loop iter =
         let
+            val () = print ("outer loop #" ^ itos iter ^ "\n")
             val () = print ("sa: " ^ sweeptos sweepa ^ " time " ^ rtos (!t1) ^ "\n")
             val xfa : transform = sweep_transform (sweepa, !t1)
             val xfb : transform = sweep_transform (sweepb, !t1)
@@ -336,6 +355,10 @@ struct
                       val (s2 : real, indexa : int, indexb : int) = 
                           find_min_separation (fcn, !t2)
                   in
+                      print ("  inner_loop #" ^ itos push_back_iter ^ 
+                             ": t2 " ^ rtos (!t2) ^ " s2 " ^ rtos s2 ^
+                             " a " ^ itos indexa ^ " b " ^ itos indexb ^ "\n");
+
                       (* Is the final configuration separated? *)
                       if s2 > target + tolerance
                       then SOME (SSeparated, tmax) (* Victory! *)
@@ -348,6 +371,7 @@ struct
                       let
                           (* Compute the initial separation of the witness points. *)
                           val s1 : real = evaluate (fcn, indexa, indexb, !t1)
+                          val () = print ("    evaluated: " ^ rtos s1 ^ "\n");
                       in
                           (* Check for initial overlap. This might happen if the root finder
                              runs out of iterations. *)
@@ -362,7 +386,7 @@ struct
                           let
                               (* Compute 1D root of: f(x) - target = 0 *)
                               fun root_loop (s1, s2, a1, a2, root_iters) =
-                                  if root_iters > 50
+                                  if root_iters < 50
                                   then 
                                   let
                                       (* Use a mix of the secant rule and bisection. *)
@@ -372,6 +396,11 @@ struct
                                               1 => a1 + (target - s1) * (a2 - a1) / (s2 - s1)
                                               (* Bisection to guarantee progress *)
                                             | _ => 0.5 * (a1 + a2)
+                                      val () = print ("      rl #" ^ itos root_iters ^
+                                                      " s1 " ^ rtos s1 ^ " s2 " ^
+                                                      rtos s2 ^ " a1 " ^ rtos a1 ^ 
+                                                      " a2 " ^ rtos a2 ^ " t " ^
+                                                      rtos t ^ "\n");
                                       val s : real = evaluate (fcn, indexa, indexb, t)
                                   in
                                       if Real.abs (s - target) < tolerance
@@ -406,7 +435,10 @@ struct
                   | SOME ret => ret
             end
         end
+
+      val (s, r) = outer_loop 0
     in
-        outer_loop 0
+      print ("  toi returns: " ^ stos s ^ ": " ^ rtos r ^ "\n");
+      (s, r)
     end
 end
