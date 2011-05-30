@@ -1,0 +1,74 @@
+
+  BoxDiaDia Physics Library for Standard ML           Tom Murphy VII
+                                                        30 May 2011
+
+
+This is a source port of the popular Box2D library (originally C++) to
+Standard ML. It is pure ML and has no dependencies other than the
+Basis, so it should be easy to use with any codebase or compiler. Like
+Box2D, there is no graphics code to be found. You might try my SDL
+wrappers "sdlml", though this is mainly focused on blitting 2D sprites
+so far.
+
+= Status =
+
+ - All of the core collision and dynamics are implemented. The major
+   missing functionality from Box2D is joints. I do plan to implement
+   these.
+ - The library appears to function correctly. Some of the math in it
+   I do not understand, and it is easy to make mistakes when
+   porting. I tested it fairly carefully against the C++ version,
+   using traces to expose its internal state over a number of
+   iterations in a sample world. Eventually they do diverge, but only
+   in the third or fourth decimal place. There may still be latent
+   bugs in paths that the tests don't exercise.
+ - The library is currently much slower than the C++ version, mostly
+   because when porting I used an inefficient representation of
+   functional records for bodies, fixtures, etc. The code is generated
+   by metautil.sml. I did this for sanity and correctness, but the
+   plan is to replace it with an efficient version that uses
+   mutation.
+ - I left most of the interfaces mimicking the C++ version, but it
+   probably makes sense to make a wrapper for these things that use
+   convenient ML types like lists. For now, BDDOps.oapp is useful
+   for iterating over the pervasive doubly-linked list structures in
+   BDD.
+
+= Bugs =
+
+I intend to write up my experiences porting this library when it's done,
+since I think they are interesting. For now, some common bugs that I
+encountered:
+
+ - Often we will do something to both "transform A" and 
+   "transform B"; I would accidentally do the same thing when one 
+   of them needed to have its sign reversed, or I would do the same 
+   thing to A twice.
+ - C++ 'for' loops are usually made into recursive functions, and
+   I would define these but forget to call them. Since many of
+   these loops are iteratively refining some estimation, sometimes
+   these would not affect the apparent correctness of the simulation
+   but make it much slower.
+ - Aliasing (rarer), where the C++ code or ML code was nontrivially
+   aliasing some matrix being passed to a function, that was
+   being copy-constructed in C++, or that I had errantly made
+   immutable in ML. This is the scariest kind of bug because it
+   may work most of the time, or be dependent on particulars of
+   data flow within a given execution.
+
+I also encountered a number of small bugs in Box2D, mostly typos and
+dead code. These are collected in box2dbugs.txt if you're curious.
+
+= Name =
+
+BoxDiaDia is a play on "Box2D" and modal logic, which was the subject
+of my PhD thesis. The library doesn't really have anything to do with
+modal logic (and the modality []<><> is at best redundant in most
+modal systems). It also doesn't have anything to do with Binary
+Decision Diagrams, which is what BDD usually stands for, although
+those are cool too.
+
+= License =
+
+BDD uses a permissive BSD-style license. See the file COPYING for
+details.

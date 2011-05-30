@@ -1,9 +1,9 @@
 
-  All files in this directory are Copyright (c) 2006-2010 Tom Murphy VII
+  All files in this directory are Copyright (c) 2006-2011 Tom Murphy VII
   and Erin Catto.
 
 
-  BoxDiaDia Copyright (c) 2010 Tom Murphy VII http://tom7.org/
+  BoxDiaDia Copyright (c) 2010-2011 Tom Murphy VII http://tom7.org/
 
   This is a more-or-less literal port of Box2D to Standard ML. 
   It is based on the C++ Box2D source code by Erin Catto. It is not obvious
