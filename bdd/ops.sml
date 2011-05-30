@@ -80,6 +80,7 @@ struct
         "(low: " ^ vtos lowerbound ^ " up: " ^ vtos upperbound ^ ")"
 
     fun dprint f = print (f ())
+    val dprint = ignore
   end
 
 end
