@@ -76,11 +76,11 @@ struct
   fun debugprint pa (tree as ref { node_count, path, root }) =
       let
           fun indent 0 = ()
-            | indent n = (print " "; indent (n - 1))
+            | indent n = (dprint (fn () => " "); indent (n - 1))
           fun pr (depth, Empty) = 
               let in
                   indent depth;
-                  print "Empty\n"
+                  dprint (fn () => "Empty\n")
               end
             | pr (depth, Node { data = SOME _, left = ref (Node _), ... }) =
               raise BDDDynamicTree "node has data and a left child"
@@ -93,9 +93,9 @@ struct
             | pr (depth, Node { data = SOME dat, left, right, aabb, ... }) =
               let in
                   indent depth;
-                  print ("Leaf: " ^ aabbtos aabb ^ "\n");
+                  dprint (fn () => "Leaf: " ^ aabbtos aabb ^ "\n");
                   indent depth;
-                  print (" dat: " ^ pa dat ^ "\n");
+                  dprint (fn () => " dat: " ^ pa dat ^ "\n");
                   (* Should be empty *)
                   pr (depth + 2, !left);
                   pr (depth + 2, !right)
@@ -103,12 +103,12 @@ struct
             | pr (depth, Node { data = NONE, left, right, aabb, ... }) =
               let in
                   indent depth;
-                  print ("Node: " ^ aabbtos aabb ^ "\n");
+                  dprint (fn () => "Node: " ^ aabbtos aabb ^ "\n");
                   pr (depth + 2, !left);
                   pr (depth + 2, !right)
               end
       in
-          print ("DT: " ^ Int.toString node_count ^ " " ^
+          dprint (fn () => "DT: " ^ Int.toString node_count ^ " " ^
                  Word32.toString path ^ ":\n");
           pr (0, !root);
           checktreestructure "dp" tree
@@ -366,7 +366,7 @@ struct
           fun pxy v = 
               Real.fmt (StringCvt.FIX (SOME 2)) (vec2x v) ^ " " ^
               Real.fmt (StringCvt.FIX (SOME 2)) (vec2y v)
-          val () = print ("  inc aabb: " ^
+          val () = dprint (fn () => "  inc aabb: " ^
                           pxy (#lowerbound aabb) ^ " to " ^
                           pxy (#upperbound aabb) ^ "\n")
 
@@ -431,9 +431,9 @@ struct
             fun pxy v = 
                 Real.fmt (StringCvt.FIX (SOME 2)) (vec2x v) ^ " " ^
                 Real.fmt (StringCvt.FIX (SOME 2)) (vec2y v)
-            val () = print ("  moved_aabb: " ^
-                            pxy (#lowerbound b) ^ " to " ^
-                            pxy (#upperbound b) ^ "\n")
+            val () = dprint (fn () => "  moved_aabb: " ^
+                             pxy (#lowerbound b) ^ " to " ^
+                             pxy (#upperbound b) ^ "\n")
 
         in
             proxy := Node { aabb = b, data = data, parent = ref Empty,

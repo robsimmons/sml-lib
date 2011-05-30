@@ -51,7 +51,7 @@ struct
      fields are flattened into world. *)
   fun update (c : contact, world : world) =
     let
-      val () = print "-> Update contact.\n"
+      val () = dprint (fn () => "-> Update contact.\n")
 
       val old_manifold = get_manifold c
       (* Re-enable this contact. *)
@@ -71,7 +71,7 @@ struct
       val xf_a = D.B.get_xf body_a
       val xf_b = D.B.get_xf body_b
     in
-      print("  xfa " ^ xftos xf_a ^ " xfb " ^ xftos xf_b ^ "\n");
+      dprint (fn () => "  xfa " ^ xftos xf_a ^ " xfb " ^ xftos xf_b ^ "\n");
       (* Is this contact a sensor? *)
       if sensor
       then
@@ -140,7 +140,7 @@ struct
       then D.W.get_pre_solve world (c, old_manifold)
       else ();
 
-      print("<- done updating contact\n")
+      dprint (fn () => "<- done updating contact\n")
     end
 
 end

@@ -62,7 +62,7 @@ struct
                                 (Array.sub(#points manifold, j))) }
             end
      in
-        print ("* toi initialize " ^ itos (length contacts) ^ "\n");
+        dprint (fn () => "* toi initialize " ^ itos (length contacts) ^ "\n");
         { constraints = Array.fromList (map onecontact contacts),
           toi_body = body }
      end
@@ -136,8 +136,8 @@ struct
      Obviously it would be better to factor out this common routine. *)
   fun solve (solver : ('b, 'f, 'j) solver, baumgarte : real) : bool =
     let
-      val () = print ("* toi solve " ^ 
-                      itos (Array.length (#constraints solver)) ^ "\n")
+      val () = dprint (fn () => "* toi solve " ^ 
+                       itos (Array.length (#constraints solver)) ^ "\n")
       val min_separation = ref 0.0
       fun oneconstraint (c : ('b, 'f, 'j) constraint) =
         let
@@ -157,8 +157,8 @@ struct
 
             (* Solve normal constraints. *)
         in
-            print ("  ma " ^ rtos mass_a ^ " mb " ^ rtos mass_b ^
-                   " pc " ^ itos (#point_count c) ^ "\n");
+            dprint (fn () => "  ma " ^ rtos mass_a ^ " mb " ^ rtos mass_b ^
+                    " pc " ^ itos (#point_count c) ^ "\n");
             for 0 (#point_count c - 1)
             (fn j =>
              let

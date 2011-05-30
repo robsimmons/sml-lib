@@ -145,7 +145,6 @@ struct
       let val c = Math.cos angle
           val s = Math.sin angle
       in
-          (* print ("c: " ^ rtos c ^ " s: " ^ rtos s ^ "\n"); *)
           (* FUN BUG "right": if this is (c, s, ~s, c), then polygons stand
              themselves up instead of falling over (angular impulses
              are reversed). *)
@@ -162,7 +161,6 @@ struct
       let val c = Math.cos angle
           val s = Math.sin angle
       in
-          (* print ("c: " ^ rtos c ^ " s: " ^ rtos s ^ "\n");*)
           vec2set(col1, c, 
                         s);
                              vec2set(col2, ~s, 
@@ -502,12 +500,12 @@ struct
       let 
           val twopi = 2.0 * BDDSettings.pi
           val d = twopi * real (Real.floor(!a0 / twopi))
-          val () = print ("sweep_normalize: " ^ rtos (!a0) ^
-                          " a0 / 2pi " ^ rtos (!a0 / twopi) ^
-                          " floor " ^ Int.toString (Real.floor(!a0 / twopi)) ^
-                          " d " ^ rtos d ^ 
-                          " res: " ^ rtos (!a0 - d) ^ 
-                          " " ^ rtos (!a - d) ^ "\n")
+          val () = dprint (fn () => "sweep_normalize: " ^ rtos (!a0) ^
+                           " a0 / 2pi " ^ rtos (!a0 / twopi) ^
+                           " floor " ^ Int.toString (Real.floor(!a0 / twopi)) ^
+                           " d " ^ rtos d ^ 
+                           " res: " ^ rtos (!a0 - d) ^ 
+                           " " ^ rtos (!a - d) ^ "\n")
       in
           a0 := !a0 - d;
           a := !a - d;

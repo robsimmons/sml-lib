@@ -711,7 +711,7 @@ struct
           points = points }
     end handle NoCollision _ =>
         let in
-            (* print ("NO: " ^ s ^ "\n"); *)
+            (* dprint (fn () => "NO: " ^ s ^ "\n"); *)
             (* XXX should return NONE in the no collision case.
                These are uninitialized in Box2D, and I guess client
                code just checks point_count. *)

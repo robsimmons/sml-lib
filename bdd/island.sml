@@ -73,9 +73,9 @@ struct
           val bodies = Vector.fromList bodies
           val joints = Vector.fromList joints
 
-          val () = print ("Solve island with " ^ 
-                          Int.toString (Vector.length bodies) ^ " bodies and " ^
-                          Int.toString (length contacts) ^ " contacts\n")
+          val () = dprint (fn () => "Solve island with " ^ 
+                           Int.toString (Vector.length bodies) ^ " bodies and " ^
+                           Int.toString (length contacts) ^ " contacts\n")
           (* Contacts are partitioned so that constraints with
              static bodies are solved last. *)
           val contacts = partition_contacts_to_vector contacts
@@ -125,10 +125,10 @@ struct
                                   #dt step * D.B.get_angular_damping body,
                                   0.0, 1.0));
 
-                         print ("  vel: " ^ vtos (D.B.get_linear_velocity body) ^ 
-                                " " ^ rtos (D.B.get_angular_velocity body) ^ "\n" ^
-                                "  xf: " ^ xftos (D.B.get_xf body) ^ "\n" ^
-                                "  sweep: " ^ sweeptos (D.B.get_sweep body) ^ "\n")
+                         dprint (fn () => "  vel: " ^ vtos (D.B.get_linear_velocity body) ^ 
+                                 " " ^ rtos (D.B.get_angular_velocity body) ^ "\n" ^
+                                 "  xf: " ^ xftos (D.B.get_xf body) ^ "\n" ^
+                                 "  sweep: " ^ sweeptos (D.B.get_sweep body) ^ "\n")
                      end
                  | _ => ()) bodies
 
@@ -147,7 +147,7 @@ struct
                    Vector.app (fn j => 
                                D.J.solve_velocity_constraints (j, step))
                               joints;
-                   print ("* Vel iter " ^ Int.toString i ^ "\n");
+                   dprint (fn () => "* Vel iter " ^ Int.toString i ^ "\n");
                    CS.solve_velocity_constraints solver
                end)
 
@@ -182,15 +182,15 @@ struct
                           else ()
 
                  val () =
-                     print ("  new vel: " ^ vtos (D.B.get_linear_velocity b) ^ 
-                            " " ^ rtos (D.B.get_angular_velocity b) ^ "\n")
+                     dprint (fn () => "  new vel: " ^ vtos (D.B.get_linear_velocity b) ^ 
+                             " " ^ rtos (D.B.get_angular_velocity b) ^ "\n")
 
 
                  val sweep = D.B.get_sweep b
 
                in
-                 print ("  dt: " ^ rtos (#dt step) ^ "\n");
-                 print ("  orig sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
+                 dprint (fn () => "  dt: " ^ rtos (#dt step) ^ "\n");
+                 dprint (fn () => "  orig sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
 
                  (* Store positions for continuous collision. *)
                  sweep_set_c0 (sweep, sweepc sweep);
@@ -202,15 +202,15 @@ struct
                  sweep_set_a (sweep, sweepa sweep +
                               #dt step * D.B.get_angular_velocity b);
 
-                 print ("  uync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
-                 print ("  uync xf: " ^ xftos (D.B.get_xf b) ^ "\n");
+                 dprint (fn () => "  uync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
+                 dprint (fn () => "  uync xf: " ^ xftos (D.B.get_xf b) ^ "\n");
 
                  (* Compute new transform. *)
                  D.B.synchronize_transform b;
 
-                 print ("  sync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
+                 dprint (fn () => "  sync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
 
-                 print ("  sync xf: " ^ xftos (D.B.get_xf b) ^ "\n")
+                 dprint (fn () => "  sync xf: " ^ xftos (D.B.get_xf b) ^ "\n")
 
                  (* Note: shapes are synchronized later. *)
                end

@@ -22,7 +22,7 @@ struct
      case. This is probably significantly faster, for circles. *)
   fun shape_proxy (BDDShape.Circle { radius, p }) =
       let in
-          print ("Proxy CIRCLE " ^ vtos p ^ " >" ^ rtos radius ^ "\n");
+          dprint (fn () => "Proxy CIRCLE " ^ vtos p ^ " >" ^ rtos radius ^ "\n");
       { vertex_count = 1,
         vertex = (fn _ => p),
         support = (fn _ => 0),
@@ -32,13 +32,13 @@ struct
 
     | shape_proxy (BDDShape.Polygon (p as { vertices, normals = _, centroid = _ })) =
       let in
-          print ("Proxy POLYGON ");
+          dprint (fn () => "Proxy POLYGON ");
           for 0 (Array.length vertices - 1)
           (fn i =>
-           (print (vtos (Array.sub(vertices, i)));
-            print " ")
+           (dprint (fn () => vtos (Array.sub(vertices, i)));
+            dprint (fn () => " "))
            );
-          print "\n";
+          dprint (fn () => "\n");
 
       (* PERF could just use intrinsic length, like elsewhere. *)
       { vertex_count = Array.length vertices,
@@ -105,11 +105,11 @@ struct
                   proxyb : distance_proxy, transformb) : simplex =
       let fun new() =
           let 
-              val () = print "new simplex cache\n"
-              val () = print ("vertexa: " ^ vtos (#vertex proxya 0) ^ "\n")
-              val () = print ("vertexb: " ^ vtos (#vertex proxyb 0) ^ "\n")
-              val () = print ("transforma: " ^ xftos transforma ^ "\n");
-              val () = print ("transformb: " ^ xftos transformb ^ "\n");
+              val () = dprint (fn () => "new simplex cache\n")
+              val () = dprint (fn () => "vertexa: " ^ vtos (#vertex proxya 0) ^ "\n")
+              val () = dprint (fn () => "vertexb: " ^ vtos (#vertex proxyb 0) ^ "\n")
+              val () = dprint (fn () => "transforma: " ^ xftos transforma ^ "\n");
+              val () = dprint (fn () => "transformb: " ^ xftos transformb ^ "\n");
               val wa = transforma @*: #vertex proxya 0
               val wb = transformb @*: #vertex proxyb 0
           in
@@ -122,7 +122,7 @@ struct
                     a = 0.0 }
           end
       in
-        print ("There are " ^ Int.toString (!(#count cache)) ^ " in cache.\n");
+        dprint (fn () => "There are " ^ Int.toString (!(#count cache)) ^ " in cache.\n");
         if !(#count cache) = 0
         then new()
         else
@@ -398,7 +398,7 @@ struct
           val start_simplex = 
               read_cache(cache, proxya, transforma, proxyb, transformb)
 
-          val () = print ("distance start simplex:\n  " ^ stos start_simplex ^ "\n")
+          val () = dprint (fn () => "distance start simplex:\n  " ^ stos start_simplex ^ "\n")
 
           (* Port note: In the Box2D source code there are loop
              variables distance_sqr1 and 2. But they are dead,

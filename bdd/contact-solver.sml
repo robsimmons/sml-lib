@@ -71,7 +71,7 @@ struct
             val w_a : real = D.B.get_angular_velocity body_a
             val w_b : real = D.B.get_angular_velocity body_b
 
-            val () = print ("CS: ra " ^ rtos radius_a ^ 
+            val () = dprint (fn () => "CS: ra " ^ rtos radius_a ^ 
                             " rb " ^ rtos radius_b ^ 
                             " f " ^ rtos friction ^
                             " r " ^ rtos restitution ^ "\n" ^
@@ -175,7 +175,7 @@ struct
                       val rn2_a = cross2vv(#r_a ccp2, normal)
                       val rn2_b = cross2vv(#r_b ccp2, normal)
 
-                      val () = print ("Block solver: " ^
+                      val () = dprint (fn () => "Block solver: " ^
                                       rtos rn1_a ^ " " ^
                                       rtos rn1_b ^ " " ^
                                       rtos rn2_a ^ " " ^
@@ -192,7 +192,7 @@ struct
                           inv_i_a * rn1_a * rn2_a +
                           inv_i_b * rn1_b * rn2_b
 
-                      val () = print ("          ks: " ^ rtos k11 ^ 
+                      val () = dprint (fn () => "          ks: " ^ rtos k11 ^ 
                                       " " ^ rtos k22 ^
                                       " " ^ rtos k12 ^ "\n")
 
@@ -206,7 +206,7 @@ struct
                               val k = mat22cols (vec2(k11, k12), vec2(k12, k22))
                               val norm = mat22inverse k
                           in
-                              print ("    inverted: " ^ mat22tos norm ^ "\n");
+                              dprint (fn () => "    inverted: " ^ mat22tos norm ^ "\n");
                               (k, norm, points)
                           end
                       else
@@ -371,7 +371,7 @@ struct
             (* Compute normal velocity *)
             val vn1 = dot2(dv1, normal)
           in
-            print ("Case 2: dv1 " ^ vtos dv1 ^ " vn1 " ^ rtos vn1 ^ "\n");
+            dprint (fn () => "Case 2: dv1 " ^ vtos dv1 ^ " vn1 " ^ rtos vn1 ^ "\n");
             if Real.abs(vn1 - #velocity_bias cp1) < ERROR_TOL
             then ()
             else raise BDDContactSolver "assertion failure"
@@ -439,13 +439,13 @@ struct
       val inv_i_b : real = D.B.get_inv_i body_b
       val tangent : vec2 = cross2vs (normal, 1.0)
 
-      val () = print("Solve vel: v_a " ^ vtos (!v_a) ^
-                     " v_b " ^ vtos (!v_b) ^
-                     " w_a " ^ rtos (!w_a) ^
-                     " w_b " ^ rtos (!w_b) ^
-                     " norm " ^ vtos normal ^ "\n")
-      val () = print("      xfa " ^ xftos (D.B.get_xf body_a) ^
-                     " xfb " ^ xftos (D.B.get_xf body_b) ^ "\n")
+      val () = dprint (fn () => "Solve vel: v_a " ^ vtos (!v_a) ^
+                       " v_b " ^ vtos (!v_b) ^
+                       " w_a " ^ rtos (!w_a) ^
+                       " w_b " ^ rtos (!w_b) ^
+                       " norm " ^ vtos normal ^ "\n")
+      val () = dprint (fn () => "      xfa " ^ xftos (D.B.get_xf body_a) ^
+                       " xfb " ^ xftos (D.B.get_xf body_b) ^ "\n")
 
       (* PERF assert *)
       val () = if point_count = 1 orelse point_count = 2
@@ -578,10 +578,10 @@ struct
       D.B.set_linear_velocity (body_b, !v_b);
       D.B.set_angular_velocity (body_b, !w_b);
 
-      print("      aft alv " ^ vtos (!v_a) ^
-            " aav " ^ rtos (!w_a) ^
-            " blv " ^ vtos (!v_b) ^
-            " bav " ^ rtos (!w_b) ^ "\n")
+      dprint (fn () => "      aft alv " ^ vtos (!v_a) ^
+              " aav " ^ rtos (!w_a) ^
+              " blv " ^ vtos (!v_b) ^
+              " bav " ^ rtos (!w_b) ^ "\n")
   end
 
   fun solve_velocity_constraints 
@@ -597,10 +597,10 @@ struct
           val { local_point, id, ... } =
               Array.sub(#points manifold, j)
       in
-          print ("SI #" ^ itos j ^ 
-                 " lp " ^ vtos local_point ^
-                 " ni " ^ rtos (!(#normal_impulse (Array.sub (points, j)))) ^
-                 " ti " ^ rtos (!(#tangent_impulse (Array.sub (points, j)))) ^ "\n");
+          dprint (fn () => "SI #" ^ itos j ^ 
+                  " lp " ^ vtos local_point ^
+                  " ni " ^ rtos (!(#normal_impulse (Array.sub (points, j)))) ^
+                  " ti " ^ rtos (!(#tangent_impulse (Array.sub (points, j)))) ^ "\n");
           Array.update (#points manifold, j,
                         { local_point = local_point,
                           id = id,
@@ -633,7 +633,7 @@ struct
                 then vec2normalized (point_b :-: point_a)
                 else vec2 (1.0, 0.0)
           in
-              print ("    circles: pa " ^ vtos (point_a) ^ 
+              dprint (fn () => "    circles: pa " ^ vtos (point_a) ^ 
                      " pb " ^ vtos (point_b) ^ 
                      " sep " ^ rtos(dot2(point_b :-: point_a, normal) - #radius cc) ^ "\n");
               { normal = normal,
@@ -653,7 +653,7 @@ struct
               val separation : real =
                   dot2(clip_point :-: plane_point, normal) - #radius cc
           in
-              print ("    facea: pp " ^ vtos plane_point ^ 
+              dprint (fn () => "    facea: pp " ^ vtos plane_point ^ 
                      " cp " ^ vtos clip_point ^ 
                      " sep " ^ rtos separation ^ "\n");
               { normal = normal,
@@ -673,7 +673,7 @@ struct
               val separation : real =
                   dot2(clip_point :-: plane_point, normal) - #radius cc
           in
-              print ("    faceb: pp " ^ vtos plane_point ^ 
+              dprint (fn () => "    faceb: pp " ^ vtos plane_point ^ 
                      " cp " ^ vtos clip_point ^ 
                      " sep " ^ rtos separation ^ "\n");
               (* Ensure normal points from A to B. *)
@@ -692,8 +692,9 @@ struct
                                   baumgarte : real) : bool =
     let
 
-      val () = print 
-          ("SolvePositionConstraints: " ^ Int.toString (Array.length (#constraints solver)) ^
+      val () = dprint 
+          (fn () => 
+           "SolvePositionConstraints: " ^ Int.toString (Array.length (#constraints solver)) ^
            "\n")
 
       val min_separation = ref 0.0
@@ -707,7 +708,7 @@ struct
             val inv_mass_b = D.B.get_mass body_b * D.B.get_inv_mass body_b
             val inv_i_b = D.B.get_mass body_b * D.B.get_inv_i body_b
 
-            val () = print ("  Solve pos: ima " ^ rtos inv_mass_a ^
+            val () = dprint (fn () => "  Solve pos: ima " ^ rtos inv_mass_a ^
                             " imb " ^ rtos inv_mass_b ^
                             " iia " ^ rtos inv_i_a ^ 
                             " iib " ^ rtos inv_i_b ^
@@ -724,7 +725,7 @@ struct
                  val r_a : vec2 = point :-: sweepc (D.B.get_sweep body_a)
                  val r_b : vec2 = point :-: sweepc (D.B.get_sweep body_b)
 
-                 val () = print ("    pt " ^ vtos point ^
+                 val () = dprint (fn () => "    pt " ^ vtos point ^
                                  " sep " ^ rtos separation ^
                                  " ra " ^ vtos r_a ^
                                  " rb " ^ vtos r_b ^ "\n")
@@ -757,21 +758,21 @@ struct
                  sweep_set_c (sweep_a, sweepc sweep_a :-: (inv_mass_a *: p));
                  sweep_set_a (sweep_a, sweepa sweep_a - 
                               (inv_i_a * cross2vv (r_a, p)));
-                 print ("    ba sweep: " ^ sweeptos (sweep_a) ^ "\n");
+                 dprint (fn () => "    ba sweep: " ^ sweeptos (sweep_a) ^ "\n");
                  D.B.synchronize_transform body_a;
 
                  sweep_set_c (sweep_b, sweepc sweep_b :+: (inv_mass_b *: p));
                  sweep_set_a (sweep_b, sweepa sweep_b +
                               (inv_i_b * cross2vv (r_b, p)));
-                 print ("    bb sweep: " ^ sweeptos (sweep_b) ^ "\n");
+                 dprint (fn () => "    bb sweep: " ^ sweeptos (sweep_b) ^ "\n");
                  D.B.synchronize_transform body_b
              end);
-            print ("  sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^
+            dprint (fn () => "  sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^
                    "\n  sweepb: " ^ sweeptos (D.B.get_sweep body_b) ^ "\n")
         end
     in
       Array.app oneconstraint (#constraints solver);
-      print ("  minsep: " ^ rtos (!min_separation) ^ "\n");
+      dprint (fn () => "  minsep: " ^ rtos (!min_separation) ^ "\n");
       (* We can't expect minSeparation >= -b2_linearSlop because we don't
          push the separation above -b2_linearSlop. *)
       !min_separation >= ~1.5 * linear_slop

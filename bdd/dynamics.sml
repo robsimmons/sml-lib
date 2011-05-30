@@ -393,7 +393,7 @@ struct
                     fun pxy v = 
                         Real.fmt (StringCvt.FIX (SOME 2)) (vec2x v) ^ " " ^
                         Real.fmt (StringCvt.FIX (SOME 2)) (vec2y v)
-                    val () = print ("  fix_aabb: " ^
+                    val () = dprint (fn () => "  fix_aabb: " ^
                                     pxy (#lowerbound aabb) ^ " to " ^
                                     pxy (#upperbound aabb) ^ "\n")
                 in
@@ -1034,7 +1034,7 @@ struct
    fun synchronize_transform b : unit =
        let 
            val sweep : sweep = get_sweep b
-           val () = print ("s_t angle: " ^ rtos (sweepa sweep) ^ "\n")
+           val () = dprint (fn () => "s_t angle: " ^ rtos (sweepa sweep) ^ "\n")
 (* not error
            val () = if sweepa sweep > (2.0 * BDDSettings.pi + BDDSettings.epsilon)
                     then raise BDDDynamics "ANGLE OVERFLOW."
@@ -1078,7 +1078,7 @@ struct
 
     fun get_world_point (b, p) = 
         let in
-            print ("[getworldpoint lp " ^ vtos p ^
+            dprint (fn () => "[getworldpoint lp " ^ vtos p ^
                    " xf " ^ xftos (get_xf b) ^ 
                    " -> " ^ vtos (get_xf b @*: p) ^ "]\n");
 
@@ -1492,21 +1492,21 @@ struct
               else ()
           val () = oapp E.get_next one_edge (B.get_contact_list body_b)
 
-          val () = print "Should collide?\n"
+          val () = dprint (fn () => "Should collide?\n")
 
           (* Does a joint override collision? Is at least one body dynamic? *)
           val () = if B.should_collide (body_b, body_a)
                    then ()
                    else raise Return
 
-          val () = print " ok 1\n"
+          val () = dprint (fn () => " ok 1\n")
 
           (* Check user filtering. *)
           val () = if get_should_collide world (fixture_a, fixture_b)
                    then ()
                    else raise Return
 
-          val () = print " ok 2\n"
+          val () = dprint (fn () => " ok 2\n")
 
           (* Call the factory. *)
           val c = C.new (fixture_a, fixture_b)

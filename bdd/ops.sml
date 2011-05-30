@@ -78,6 +78,8 @@ struct
 
     fun aabbtos { lowerbound, upperbound } =
         "(low: " ^ vtos lowerbound ^ " up: " ^ vtos upperbound ^ ")"
+
+    fun dprint f = print (f ())
   end
 
 end

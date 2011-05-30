@@ -28,7 +28,7 @@ struct
   fun debugprint pa (BP { tree, count, move_buffer }) =
       let
       in
-          print ("BP with " ^ Int.toString (!count) ^ " moves: " ^
+          dprint (fn () => "BP with " ^ Int.toString (!count) ^ " moves: " ^
                  Int.toString (length (!move_buffer)) ^ "\n");
           BDDDynamicTree.debugprint pa tree
       end
@@ -132,7 +132,7 @@ struct
   fun update_pairs (BP { tree, move_buffer, ... } : 'a broadphase, 
                     add : 'a * 'a -> unit) : unit =
       let
-          val () = print ("Update pairs... " ^ Int.toString (length (!move_buffer)) ^ " moves\n");
+          val () = dprint (fn () => "Update pairs... " ^ Int.toString (length (!move_buffer)) ^ " moves\n");
 
           (* PERF: Maybe should use a growarray for this.
              Port note: This is a member variable of broadphase in Box2D, but
@@ -150,7 +150,7 @@ struct
                    fun pxy v = 
                        Real.fmt (StringCvt.FIX (SOME 2)) (vec2x v) ^ " " ^
                        Real.fmt (StringCvt.FIX (SOME 2)) (vec2y v)
-                   val () = print ("  fat_aabb: " ^
+                   val () = dprint (fn () => "  fat_aabb: " ^
                                    pxy (#lowerbound fat_aabb) ^ " to " ^
                                    pxy (#upperbound fat_aabb) ^ "\n")
 
