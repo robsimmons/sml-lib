@@ -185,13 +185,13 @@ struct
                      end
           end
 
-          (* PERF could be less eager *)
-          val streams = nexts 0
-          (* Comparison to sort by descending probability *)
-          fun bysecond_real_descending ({p, string = _}, 
-                                        {p = pp, string = _}) = Real.compare (pp, p)
-      in
-          S.merge_sorted bysecond_real_descending streams
-      end
+      (* PERF could be less eager *)
+      val streams = nexts 0
+      (* Comparison to sort by descending probability *)
+      fun bysecond_real_descending ({p, string = _}, 
+                                    {p = pp, string = _}) = Real.compare (pp, p)
+    in
+        S.merge_sorted bysecond_real_descending streams
+    end
 
 end
