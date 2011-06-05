@@ -37,20 +37,25 @@ struct
   val atan2 = Math.atan2
   val abs = Real.abs
 
+  (* Doesn't seem to work. Triggers assertions. *)
+  (*
   local
       val B = 1.273239545 (* 4/pi *)
       val C = ~0.405284734569 (* -4/(pi^2) *)
       val P = 0.225 (* empirical; weighted fraction
                        between the parabola and
                        its square *)
-  fun fastsin (x : real) =
-    let 
-        val y = B * x + C * x * abs x
-        (* Adds precision *)
-        val y = P * (y * abs y - y) + y
-    in
-        y
-    end
+  in
+      fun fastsin (x : real) =
+        let 
+            val y = B * x + C * x * abs x
+            (* Adds precision *)
+            val y = P * (y * abs y - y) + y
+        in
+            y
+        end
+  end
+*)
 
   (* A 2D column vector. *)
   type vec2 = { x : real ref, y : real ref }
@@ -158,7 +163,7 @@ struct
   fun mat22angle angle =
       (* PERF compute sin and cos together *)
       let val c = Math.cos angle
-          val s = fastsin angle
+          val s = Math.sin angle
       in
           (* FUN BUG "right": if this is (c, s, ~s, c), then polygons stand
              themselves up instead of falling over (angular impulses

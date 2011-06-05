@@ -22,7 +22,7 @@ struct
 
   fun length (ref (l, _)) = l
 
-  fun app f (r as ref (l, a)) =
+  fun app f (ref (l, a)) =
       let
           fun ap n = 
               if n < l
@@ -35,7 +35,7 @@ struct
           ap 0
       end
 
-  fun appi f (r as ref (l, a)) =
+  fun appi f (ref (l, a)) =
       let
           fun ap n = 
               if n < l
@@ -121,5 +121,10 @@ struct
     Vector.tabulate (n, (fn x => case Array.sub(a, x) of
                                     NONE => raise Subscript
                                   | SOME z => z))
+
+  fun fromlist l =
+      let val a = Array.fromList (map SOME l)
+      in ref (Array.length a, a)
+      end
 
 end

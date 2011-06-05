@@ -45,4 +45,6 @@ sig
   val app : ('a -> unit) -> 'a growarray -> unit
   val appi : (int * 'a -> unit) -> 'a growarray -> unit
 
+  val fromlist : 'a list -> 'a growarray
+
 end

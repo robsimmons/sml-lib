@@ -2,32 +2,79 @@
    (Functional record update and fetch.)
    You don't need this to use BDD.
 
+   This generates a structure implementing an abstract type with the given fields.
+   There are multiple strategies for generating the code.
+
    TODO: Line wrapping in generated code. *)
 
 (* nb, no field may be named "r" *)
-val world = ("W",
-             ["flags",
-              "body_list",
-              "joint_list",
-              "body_count",
-              "joint_count",
-              "gravity",
-              "allow_sleep",
-              "ground_body",
-              "goodbye_joint_hook",
-              "goodbye_fixture_hook",
-              "inv_dt0",
-              "warm_starting",
-              "continuous_physics",
-              "broad_phase",
-              "contact_list",
-              "contact_count",
-              "should_collide",
-              "begin_contact",
-              "end_contact",
-              "pre_solve",
-              "post_solve"])
 
+val world = ("W", "World", "world", "WORLD",
+             [("flags", "Word32.word"),
+              ("body_list", "('b, 'f, 'j) bodycell ref option"),
+              ("joint_list", "('b, 'f, 'j) jointcell ref option"),
+              ("body_count", "int"),
+              ("joint_count", "int"),
+              ("gravity", "BDDMath.vec2"),
+              ("allow_sleep", "bool"),
+              ("ground_body", "('b, 'f, 'j) bodycell ref option"),
+              ("goodbye_joint_hook", "('b, 'f, 'j) jointcell ref -> unit"),
+              ("goodbye_fixture_hook", "('b, 'f, 'j) fixturecell ref -> unit"),
+              ("inv_dt0", "real"),
+              ("warm_starting", "bool"),
+              ("continuous_physics", "bool"),
+              ("broad_phase", "('b, 'f, 'j) fixturecell ref BDDBroadPhase.broadphase"),
+              ("contact_list", "('b, 'f, 'j) contactcell ref option"),
+              ("contact_count", "int"),
+              ("should_collide", "('b, 'f, 'j) fixturecell ref * ('b, 'f, 'j) fixturecell ref -> bool"),
+              ("begin_contact", "('b, 'f, 'j) contactcell ref -> unit"),
+              ("end_contact", "('b, 'f, 'j) contactcell ref -> unit"),
+              ("pre_solve", "('b, 'f, 'j) contactcell ref * BDDTypes.manifold -> unit"),
+              ("post_solve", "('b, 'f, 'j) contactcell ref * contact_impulse -> unit")])
+
+(* The single output structure is:
+
+   1. Declarations of the 'cells'.
+   datatype worldcell = W of ...
+        and fixturecell = F of ...
+        and ...
+
+   2. Structure declarations defining the get and set functions.
+   
+   The single output signature is:
+   
+   1. abstract type definitions for each of the types (in terms of the cell type)
+   2. 
+   
+*)
+
+fun gendata
+
+fun gensig (shortn, structn, typen, sign, fields) =
+    let 
+        fun sig_getter (name, typ) =
+            "  val get_" ^ name ^ " : ('b, 'f, 'j) " ^ typen ^ " -> (" ^
+            typ ^ ")\n"
+
+        fun sig_setter (name, typ) =
+            "  val set_" ^ name ^ " : ('b, 'f, 'j) " ^ typen ^ " * (" ^
+            typ ^ ") -> unit\n"
+    in
+        "structure " ^ shortn ^ " : " ^ sign ^ (* HERE *)
+        "signature " ^ sign ^ " =\n" ^
+        "sig\n" ^
+        "  type ('b, 'f, 'j) " ^ typen ^ "\n\n" ^
+        String.concat (map sig_getter fields) ^ "\n" ^
+        String.concat (map sig_setter fields) ^
+        "end\n"
+    end
+
+
+
+val () = print (gensig world)
+
+
+(*
 val jointedge = ("G",
                  ["other",
                   "joint",
@@ -50,7 +97,8 @@ val joint = ("J",
               "inv_i_a",
               "inv_mass_b",
               "inv_i_b"])
-
+*)
+(*
 fun printl s = (print s; print "\n")
 fun make_get (ctor, fields) =
     let 
@@ -82,7 +130,7 @@ fun make_set (ctor, fields) =
 
 val () = make_get world
 val () = make_set world
-
+(*
 val () = printl ""
 
 val () = make_get jointedge
@@ -93,3 +141,6 @@ val () = printl ""
 val () = make_get joint
 val () = make_set joint
 
+*)
+
+*)
