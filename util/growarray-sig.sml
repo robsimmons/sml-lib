@@ -33,6 +33,9 @@ sig
      can raise subscript if the array has holes. *)
   val finalize : 'a growarray -> 'a Array.array
   val vector : 'a growarray -> 'a Vector.vector
+  val tolist : 'a growarray -> 'a list
+
+  val fromlist : 'a list -> 'a growarray
 
   (* Remove characters from the end so that it is the given length.
      Raises subscript if the array is not at least this long already. *)
@@ -45,6 +48,6 @@ sig
   val app : ('a -> unit) -> 'a growarray -> unit
   val appi : (int * 'a -> unit) -> 'a growarray -> unit
 
-  val fromlist : 'a list -> 'a growarray
+  val copy : 'a growarray -> 'a growarray
 
 end

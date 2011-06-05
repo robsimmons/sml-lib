@@ -6,7 +6,8 @@ struct
 
   val eq = op = : 'a growarray * 'a growarray -> bool
 
-  (* start with 16 cells, why not? *)
+  (* start with 16 cells to avoid doing a lot of doubling
+     early. PERF: Could tune this on some set of programs? *)
   fun empty () = ref (0, Array.array(16, NONE))
 
   fun clear r = r := (0, Array.array(16, NONE))
@@ -52,6 +53,9 @@ struct
       let val a = Array.tabulate (n, SOME o f)
       in  ref (n, a)
       end
+
+  fun copy (ref (n, a)) =
+      ref (n, Array.tabulate (n, fn x => Array.sub(a, x)))
 
   fun has (ref (used, a)) n = 
       if n < 0 then raise Subscript
@@ -121,6 +125,18 @@ struct
     Vector.tabulate (n, (fn x => case Array.sub(a, x) of
                                     NONE => raise Subscript
                                   | SOME z => z))
+
+  fun tolist (ref (n, a)) =
+    let
+      fun r i =
+          if i = n
+          then nil
+          else (case Array.sub (a, i) of
+                    NONE => raise Subscript
+                  | SOME z => z :: r (i + 1))
+    in
+        r 0
+    end
 
   fun fromlist l =
       let val a = Array.fromList (map SOME l)

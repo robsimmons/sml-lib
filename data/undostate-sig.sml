@@ -38,6 +38,16 @@ sig
        the length of the undo state, just moving the cursor. *)
     val redo : 'a undostate -> 'a option
 
+    (* Return the state that we'd undo to, if any. Doesn't make
+       any modification to the internal state. This can be used
+       to prevent putting duplicate states into the history,
+       for example. *)
+    val peek : 'a undostate -> 'a option
+
+    (* Get rid of all history and future, for example after loading
+       a new file. *)
+    val clear : 'a undostate -> unit
+
     (* Total number of states. *)
     val length : 'a undostate -> int
     (* Number of states before the cursor, after *)

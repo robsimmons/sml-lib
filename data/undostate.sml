@@ -24,7 +24,7 @@ struct
 
     fun truncate (U { history_size, future_size,
                       history, future }) n =
-        if n > !history_size
+        if n < !history_size
         then (history_size := n;
               history := List.take (!history, n))
         else ()
@@ -41,8 +41,7 @@ struct
         end
 
     fun undo (U { history_size = ref 0, 
-                  future_size,
-                  history = ref nil, future }) = NONE
+                  history = ref nil, ... }) = NONE
       | undo (U { history_size, future_size,
                   history = history as (ref (a :: h)), future }) =
         let in
@@ -55,9 +54,8 @@ struct
         end
       | undo _ = raise UndoState "impossible"
 
-    fun redo (U { history_size, 
-                  future_size = ref 0,
-                  history, future = ref nil }) = NONE
+    fun redo (U { future_size = ref 0, 
+                  future = ref nil, ... }) = NONE
       | redo (U { history_size, future_size,
                   history, future = future as (ref (a :: f)) }) =
         let in
@@ -69,6 +67,20 @@ struct
             SOME a
         end
       | redo _ = raise UndoState "impossible"
+
+    fun peek (U { history_size = ref 0, 
+                  history = ref nil, ... }) = NONE
+      | peek (U { history = ref (a :: _), ... }) = SOME a
+      | peek _ = raise UndoState "impossible"
+
+    fun clear (U { history_size, future_size,
+                   history, future }) = 
+        let in
+            history_size := 0;
+            future_size := 0;
+            history := nil;
+            future := nil
+        end
 
     fun length (U { history_size, future_size, ... }) =
         !history_size + !future_size
