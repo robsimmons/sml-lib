@@ -40,3 +40,7 @@ group is
   nmarkov-sig.sml
   nmarkov.sml
   nmarkov-test.sml
+
+  (* Just compilation *)
+  undostate-sig.sml
+  undostate.sml

@@ -9,3 +9,4 @@ nmarkov       -  Sparse markov chains, generalized to n states of history.
 queue         -  Efficient functional queues (double-list trick).
 trie          -  Standard trie data structure, functorized.
 unionfind     -  Classic Union-Find algorithm for equivalence classes.
+undostate     -  Simple implementation of undo buffers.
