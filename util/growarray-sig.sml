@@ -27,6 +27,12 @@ sig
   (* stick an element at the end *)
   val append : 'a growarray -> 'a -> unit
 
+  (* Insert at the given index, shifting anything
+     after it to the right. The index may not be
+     negative. Shifting takes time linear in the
+     number of elements shifted. *)
+  val insertat : 'a growarray -> int -> 'a -> unit
+
   (* converts the growarray to a regular array
      and clears the growarray.
 
@@ -47,6 +53,10 @@ sig
   (* Apply to all non-missing elements in order *)
   val app : ('a -> unit) -> 'a growarray -> unit
   val appi : (int * 'a -> unit) -> 'a growarray -> unit
+
+  (* Like the standard basis functions. Both ignore holes. *)
+  val all : ('a -> bool) -> 'a growarray -> bool
+  val exists : ('a -> bool) -> 'a growarray -> bool
 
   val copy : 'a growarray -> 'a growarray
 

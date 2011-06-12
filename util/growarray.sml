@@ -1,4 +1,3 @@
-
 structure GrowArray :> GROWARRAY =
 struct
 
@@ -49,6 +48,15 @@ struct
           ap 0
       end
 
+  (* PERF: These also check the region we know is empty,
+     in exchange for using the (fast?) built-ins. *)
+  fun all f (ref (l, a)) =
+      Array.all (fn NONE => true
+                  | SOME x => f x) a
+  fun exists f (ref (l, a)) =
+      Array.exists (fn NONE => false
+                     | SOME x => f x) a
+
   fun tabulate n f =
       let val a = Array.tabulate (n, SOME o f)
       in  ref (n, a)
@@ -95,6 +103,27 @@ struct
         then r := (n + 1, a)
         else ()
       end
+
+  fun util_for lo hi f =
+      if lo > hi then ()
+      else (ignore (f lo); util_for (lo + 1) hi f)
+
+  fun insertat (r as ref(n, _)) i x =
+    let
+      val _ = accommodate r (n + 1)
+      val (_, a) = !r
+
+      (* Shift everything over *)
+      fun copy j =
+          if j = i
+          then ()
+          else (Array.update (a, j, Array.sub(a, j - 1));
+                copy (j - 1))
+    in
+        copy n;
+        Array.update (a, i, SOME x);
+        r := (n + 1, a)
+    end
 
   fun append (r as ref(n, _)) x =
     let
