@@ -172,4 +172,40 @@ struct
       in ref (Array.length a, a)
       end
 
+  (* XXX should probably (?) update n if we are
+     erasing the last one. *)
+  fun erase (r as ref (n, a)) i = 
+      if i >= n
+      then raise Subscript
+      else
+        let 
+            fun shrink x =
+                if x < 0
+                then clear r
+                else (case Array.sub (a, x) of
+                          NONE => shrink (x - 1)
+                        | SOME _ => r := (x + 1, a))
+        in
+            Array.update(a, i, NONE);
+            (* If this is the last element, shrink
+               notional size of the array. *)
+            if i = n - 1
+            then shrink (i - 1)
+            else ()
+        end
+
+  (* PERF, could keep low water mark as well. *)      
+  fun update_next (ga as (ref (n, a))) x =
+      let
+          fun findy i =
+              if i = n
+              then (append ga x; i)
+              else
+                  (case Array.sub(a, i) of
+                       NONE => (Array.update (a, i, SOME x); i)
+                     | SOME _ => findy (i + 1))
+      in
+          findy 0
+      end
+
 end

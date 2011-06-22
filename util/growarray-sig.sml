@@ -60,4 +60,14 @@ sig
 
   val copy : 'a growarray -> 'a growarray
 
+  (* Erase the contents of the cell, replacing it with a hole. Reduces
+     the length if this is the last element, which takes time
+     proportional to the number of holes immediately before the last
+     element. *)
+  val erase : 'a growarray -> int -> unit
+
+  (* put the element in the next empty cell, returning the index.
+     Linear time. *)
+  val update_next : 'a growarray -> 'a -> int
+
 end
