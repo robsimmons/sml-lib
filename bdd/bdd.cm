@@ -42,6 +42,10 @@ group is
 
   dynamics.sml
 
+  (* XXX
+  cells-sig.sml
+  cells.sml *)
+
   contact-sig.sml
   contact.sml
 
