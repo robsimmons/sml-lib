@@ -23,6 +23,12 @@ sig
   (* same, but give the character with which to pad. *)
   val padex : char -> int -> string -> string
 
+  (* if s is longer than n chars, split it (if possible)
+     to a list of strings less than or equal to n chars in length.
+     Splits on space characters only.
+
+     when encountering a \n character, also use that to break the
+     line. *)
   val wrapto : int -> string -> string list
 
   val unformatted_table : string list list -> string

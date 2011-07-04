@@ -57,7 +57,8 @@ struct
 
   fun pad' c n s =
     if (size s >= n) then (s, "")
-    else (s, (implode (List.tabulate (n - size s, K c))))
+    else (s, CharVector.tabulate (n - size s, K c))
+(*(implode (List.tabulate (n - size s, K c)))) *)
 
   fun padex c n s =
     if n < 0 then
