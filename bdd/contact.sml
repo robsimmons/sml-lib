@@ -19,8 +19,10 @@ struct
   infix 7 *: *% +*: +*+ #*% @*:
 
   structure D = BDDDynamics
+(*
   datatype bodycell = datatype D.bodycell
   datatype body_type = datatype D.body_type
+*)
   structure DT = BDDDynamicsTypes(Arg)
   open DT
   type filter = D.filter

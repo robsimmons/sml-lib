@@ -10,6 +10,7 @@ struct
   infix 6 :+: :-: %-% %+% +++
   infix 7 *: *% +*: +*+ #*% @*:
 
+  structure T = BDDDynamicsTypes
   structure D = BDDDynamics
   structure CS = BDDContactSolver
 
@@ -28,8 +29,8 @@ struct
               let val ba = D.F.get_body (D.C.get_fixture_a c)
                   val bb = D.F.get_body (D.C.get_fixture_b c)
               in case (D.B.get_typ ba, D.B.get_typ bb) of
-                  (D.Static, _) => false
-                | (_, D.Static) => false
+                  (T.Static, _) => false
+                | (_, T.Static) => false
                 | _ => true
               end
           (* PERF: Too much allocation. *)
@@ -61,7 +62,7 @@ struct
                     contacts : ('b, 'f, 'j) D.contact list,
                     joints : ('b, 'f, 'j) D.joint list,
                     world : ('b, 'f, 'j) D.world,
-                    step : D.time_step,
+                    step : BDDDynamicsTypes.time_step,
                     gravity : BDDMath.vec2,
                     allow_sleep : bool) : unit =
       let
@@ -84,7 +85,7 @@ struct
           val () = Vector.app 
               (fn body =>
                case D.B.get_typ body of
-                   D.Dynamic =>
+                   T.Dynamic =>
                      let
                      in
                          D.B.set_linear_velocity 
@@ -157,7 +158,7 @@ struct
           (* Integrate positions. *)
           fun integrate_onebody b =
             case D.B.get_typ b of
-               D.Static => ()
+               T.Static => ()
              | _ =>
                let 
                  (* Check for large velocities. *)
@@ -253,7 +254,7 @@ struct
 
               fun sleep_one_body (b : ('b, 'f, 'j) D.body) : unit =
                   case D.B.get_typ b of
-                      D.Static => ()
+                      T.Static => ()
                     | _ =>
                       (* Stays awake if it's not allowed to auto_sleep,
                          or it has too much velocity. *)

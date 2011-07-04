@@ -2,34 +2,45 @@
    (Functional record update and fetch.)
    You don't need this to use BDD.
 
-   This generates a structure implementing an abstract type with the given fields.
-   There are multiple strategies for generating the code.
+   This generates a structure implementing an abstract type with the
+   given fields. There are multiple strategies for generating the
+   code.
 
-   TODO: Line wrapping in generated code. *)
+   TODO: Better line wrapping in generated code. *)
 
 (* nb, no field may be named "r___" *)
 val tmp = "r___"
 
-(* XXX these should be called as 'celltype body'? *)
+(* TODO: I put the comments describing fields here, but this is a
+   strange place. Make it possible for these to appear in the code
+   that's output. *)
+
+(* TODO: Explain what's going on with jointedge and contactedge. *)
 fun body cc = ("B", "Body", "body", "BODY",
-            [("typ", "BDDDynamics.body_type"),
+            [("typ", "BDDDynamicsTypes.body_type"),
              ("flags", "Word8.word"),
              ("island_index", "int"),
+             (* Body origin transform *)
              ("xf", "BDDMath.transform"),
+             (* Sept motion for CCD *)
              ("sweep", "BDDMath.sweep"),
              ("linear_velocity", "BDDMath.vec2"),
              ("angular_velocity", "real"),
              ("force", "BDDMath.vec2"),
              ("torque", "real"),
              ("world", cc "world"),
+             (* XXX option? *)
              ("prev", cc "body" ^ " option"),
              ("next", cc "body" ^ " option"),
              ("fixture_list", cc "fixture" ^ " option"),
              ("fixture_count", "int"),
              ("joint_list", cc "jointedge" ^ " option"),
+             (* Port note: a pointer in body.h,
+                but members in contact.h. Using refs everywhere. *)
              ("contact_list", cc "contactedge" ^ " option"),
              ("mass", "real"),
              ("inv_mass", "real"),
+             (* Rotational inertia about the center of mass. *)
              ("i", "real"),
              ("inv_i", "real"),
              ("linear_damping", "real"),
@@ -41,42 +52,68 @@ fun fixture cc = ("F", "Fixture", "fixture", "FIXTURE",
                [("aabb", "BDDTypes.aabb"),
                 ("density", "real"),
                 ("next", cc "fixture" ^ " option"),
+                (* Should always be SOME unless deleted. *)
                 ("body", cc "body" ^ " option"),
                 ("shape", "BDDShape.shape"),
                 ("friction", "real"),
                 ("restitution", "real"),
+                (* Broad phase proxy, where the user data is
+                   this fixture. *)
                 ("proxy", cc "fixture" ^ " BDDBroadPhase.proxy option"),
-                ("filter", "BDDDynamics.filter"),
+                ("filter", "BDDDynamicsTypes.filter"),
                 ("sensor", "bool"),
                 ("data", "'f")])
 
 fun contact cc = ("C", "Contact", "contact", "CONTACT",
                [("flags", "Word32.word"),
+                (* All contacts in the world. *)
                 ("prev", cc "contact" ^ " option"),
                 ("next", cc "contact" ^ " option"),
-                ("node_a", cc "contactedge" ^ " ref"),
-                ("node_b", cc "contactedge" ^ " ref"),
-                ("fixture_a", cc "fixture" ^ " ref option"),
-                ("fixture_b", cc "fixture" ^ " ref option"),
+                (* nodes for connecting bodies *)
+                ("node_a", cc "contactedge"),
+                ("node_b", cc "contactedge"),
+                (* XXX made these non-optional. 
+                   Is okay? *)
+                ("fixture_a", cc "fixture"),
+                ("fixture_b", cc "fixture"),
                 ("manifold", "BDDTypes.manifold"),
                 ("toi_count", "int")])
 
+(* A contact edge is used to connect bodies and contacts together
+   in a contact graph where each body is a node and each contact
+   is an edge. A contact edge belongs to a doubly linked list
+   maintained in each attached body. Each contact has two contact
+   nodes, one for each attached body. *)
 fun contactedge cc = ("E", "ContactEdge", "contactedge", "CONTACTEDGE",
-                   [("other", cc "body" ^ " option"),
+                   [
+                    (* provides quick access to the other body attached. 
+                       PERF: Do these really need to be optional? 
+                       See World.ContactManager.add_pair. Could pass them
+                       to 'new' or do initialization in that function. *)
+                    ("other", cc "body" ^ " option"),
                     ("contact", cc "contact" ^ " option"),
-                    ("prev", cc "contactedge" ^ " ref option"),
-                    ("next", cc "contactedge" ^ " ref option")])
+                    (* the previous and next contact edge in the 
+                       body's contact list *)
+                    ("prev", cc "contactedge" ^ " option"),
+                    ("next", cc "contactedge" ^ " option")])
 
 fun joint cc = ("J", "Joint", "joint", "JOINT",
-             [("flags", "Word8.word"),
-              ("typ", "BDDDynamics.joint_type"),
-              ("rev", cc "joint" ^ " option"),
+             [
+              (* Port note: These were individual boolean fields
+                 in Box2D. *)
+              ("flags", "Word8.word"),
+              ("typ", "BDDDynamicsTypes.joint_type"),
+              (* the previous and next joints in the world joint list. 
+                 the body joint lists are stored in joint edges. *)
+              ("prev", cc "joint" ^ " option"),
               ("next", cc "joint" ^ " option"),
               ("edge_a", cc "jointedge" ^ ""),
               ("edge_b", cc "jointedge" ^ ""),
               ("body_a", cc "body" ^ ""),
               ("body_b", cc "body" ^ ""),
               ("data", "'j"),
+              (* Cache here per time step to reduce cache misses.
+                 PERF: This is probably not a good idea in the SML port. *)
               ("local_center_a", "BDDMath.vec2"),
               ("local_center_b", "BDDMath.vec2"),
               ("inv_mass_a", "real"),
@@ -84,9 +121,18 @@ fun joint cc = ("J", "Joint", "joint", "JOINT",
               ("inv_mass_b", "real"),
               ("inv_i_b", "real")])
 
+(* A joint edge is used to connect bodies and joints together
+   in a joint graph where each body is a node and each joint
+   is an edge. A joint edge belongs to a doubly linked list
+   maintained in each attached body. Each joint has two joint
+   nodes, one for each attached body. *)
 fun jointedge cc = ("G", "JointEdge", "jointedge", "JOINTEDGE",
-                 [("other", cc "body" ^ ""),
+                 [(* The other body of the joint. *)
+                  ("other", cc "body" ^ ""),
+                  (* The joint. *)
                   ("joint", cc "joint" ^ ""),
+                  (* The previous and next joint edges in the body's
+                     joint list. *)
                   ("prev", cc "jointedge" ^ " option"),
                   ("next", cc "jointedge" ^ " option")])
                     
@@ -97,21 +143,31 @@ fun world cc = ("W", "World", "world", "WORLD",
               ("body_count", "int"),
               ("joint_count", "int"),
               ("gravity", "BDDMath.vec2"),
+              (* Why not a flag? *)
               ("allow_sleep", "bool"),
               ("ground_body", cc "body" ^ " option"),
               ("goodbye_joint_hook", cc "joint" ^ " -> unit"),
-              ("goodbye_fixture_hook", cc "fixture" ^ " ref -> unit"),
+              ("goodbye_fixture_hook", cc "fixture" ^ " -> unit"),
+              (* Port note: Skipped debug drawing. *)
+
+              (* This is used to compute the time step ratio to
+                 support a variable time step. *)
               ("inv_dt0", "real"),
+              (* For debugging the solver. Why not flags? *)
               ("warm_starting", "bool"),
               ("continuous_physics", "bool"),
-              ("broad_phase", cc "fixture" ^ " ref BDDBroadPhase.broadphase"),
+              (* Port Note: Folded the "contact manager" object into the world
+                 object. *)
+              (* The broad phase uses the userdata to point back to the 
+                 fixture cell. *)
+              ("broad_phase", cc "fixture" ^ " BDDBroadPhase.broadphase"),
               ("contact_list", cc "contact" ^ " option"),
               ("contact_count", "int"),
-              ("should_collide", cc "fixture" ^ " ref * " ^ cc "fixture" ^ " -> bool"),
+              ("should_collide", cc "fixture" ^ " * " ^ cc "fixture" ^ " -> bool"),
               ("begin_contact", cc "contact" ^ " -> unit"),
               ("end_contact", cc "contact" ^ " -> unit"),
               ("pre_solve", cc "contact" ^ " * BDDTypes.manifold -> unit"),
-              ("post_solve", cc "contact" ^ " * BDDDynamics.contact_impulse -> unit")])
+              ("post_solve", cc "contact" ^ " * BDDDynamicsTypes.contact_impulse -> unit")])
 
 val master = ("BDDCells", "BDDCELLS")
 val typs = [body, fixture, contact, contactedge, joint, jointedge, world]
@@ -128,7 +184,7 @@ fun internal FUNCTIONAL t = "('b, 'f, 'j) " ^ celltype t ^ " ref"
         and fixturecell = F of ...
         and ...
 
-   2. Structure declarations defining the get and set functions.
+   2. Structure declarations defining the get and set and new functions.
 *)
 
 
@@ -181,6 +237,22 @@ fun setter FUNCTIONAL (shortn, structn, typen, sign, fields) (field, typ) =
         assign
     end
 
+fun newer FUNCTIONAL (shortn, structn, typen, sign, fields) =
+    let
+        val record = 
+            wraplines 6
+            ("ref (" ^ shortn ^ " { " ^
+            (StringUtil.delimit ", " (map (fn (f, _) => f ^ " = " ^ f) fields) ^
+             " })"))
+    in
+        wraplines 4
+        ("fun new ({ " ^ StringUtil.delimit ", " (map #1 fields) ^
+         " }) = ") ^
+        record
+    end
+
+fun eqer FUNCTIONAL _ = "    val eq = op=\n"
+
 fun genonestructdecl mode (t as (shortn, structn, typen, sign, fields)) =
     let
     in
@@ -188,6 +260,8 @@ fun genonestructdecl mode (t as (shortn, structn, typen, sign, fields)) =
         "  struct\n" ^
         String.concat (map (getter mode t) fields) ^
         String.concat (map (setter mode t) fields) ^
+        newer mode t ^
+        eqer mode t ^
         "  end\n"
     end
 
@@ -214,6 +288,8 @@ fun genstructdecl mode ((mstruct, msig), typs) =
 (* Generate the type declaration for the signature. *)
 fun gensigtype (_, _, typen, _, _) =
     let in
+        (* Not using eqtype because we sometimes need to compare
+           when 'b/'f/'j themselves are not eqtypes. *)
         "  type ('b, 'f, 'j) " ^ typen ^ "\n"
     end
 
@@ -228,11 +304,22 @@ fun genonestructsig (shortn, structn, typen, sign, fields) =
         fun sig_setter (name, typ) =
             "    val set_" ^ name ^ " : ('b, 'f, 'j) " ^ typen ^ " * (" ^
             typ ^ ") -> unit\n"
+
+        val sig_newer =
+            "    val new : {\n" ^
+            StringUtil.delimit ",\n" (map (fn (f, t) =>
+                                                  "      " ^ f ^ " : " ^ t) fields) ^
+            " } -> ('b, 'f, 'j) " ^ typen
+
+        val sig_eq =
+            "    val eq : ('b, 'f, 'j) " ^ typen ^ " * ('b, 'f, 'j) " ^ typen ^ " -> bool"
     in
         "  structure " ^ shortn ^ " :\n" ^
         "  sig\n" ^
         String.concat (map sig_getter fields) ^ "\n" ^
-        String.concat (map sig_setter fields) ^
+        String.concat (map sig_setter fields) ^ "\n" ^
+        sig_newer ^ "\n" ^
+        sig_eq ^ "\n" ^
         "  end\n\n"
     end
 

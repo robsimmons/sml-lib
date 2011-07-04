@@ -28,8 +28,8 @@ struct
        "or before being initialized.")
 
   structure D = BDDDynamics
-  datatype bodycell = datatype D.bodycell
-  datatype body_type = datatype D.body_type
+  (* datatype bodycell = datatype D.bodycell
+  datatype body_type = datatype D.body_type *)
   structure DT = BDDDynamicsTypes(Arg)
   open DT
   type filter = D.filter
@@ -66,15 +66,15 @@ struct
   fun get_world_center b = sweepc (get_sweep b)
   fun get_local_center b = sweeplocalcenter (get_sweep b)
 
-  fun get_inertia (ref (B { i, mass, sweep, ... })) =
-      let val lc = sweeplocalcenter sweep
-      in i * mass * dot2(lc, lc)
+  fun get_inertia b =
+      let val lc = sweeplocalcenter (get_sweep b)
+      in get_i b * get_mass b * dot2(lc, lc)
       end
 
-  fun get_mass_data (ref (B { i, mass, sweep, ... })) =
-      let val lc = sweeplocalcenter sweep
-      in { mass = mass,
-           i = i * mass * dot2(lc, lc),
+  fun get_mass_data b =
+      let val lc = sweeplocalcenter (get_sweep b)
+      in { mass = get_mass b,
+           i = get_i b * get_mass b * dot2(lc, lc),
            center = lc }
       end
 
@@ -131,8 +131,8 @@ struct
           val () = sweep_set_localcenter (D.B.get_sweep b, vec2 (0.0, 0.0))
       in
           (* Static and kinematic bodies have zero mass. *)
-          if D.B.get_typ b = D.Static orelse
-             D.B.get_typ b = D.Kinematic
+          if D.B.get_typ b = BDDDynamicsTypes.Static orelse
+             D.B.get_typ b = BDDDynamicsTypes.Kinematic
           then
              let in
                  sweep_set_c0 (D.B.get_sweep b, 
@@ -142,7 +142,7 @@ struct
              end
           else
              let
-                 val () = if D.B.get_typ b = D.Dynamic
+                 val () = if D.B.get_typ b = BDDDynamicsTypes.Dynamic
                           then ()
                           else raise BDDBody "assertion failed"
 
@@ -401,7 +401,7 @@ struct
                      else ()
         in
             case D.B.get_typ b of
-                D.Dynamic =>
+                BDDDynamicsTypes.Dynamic =>
                 let
                     (* Port note: Assignment to inv_mass here is dead *)
                     val () = D.B.set_i (b, 0.0)
@@ -473,14 +473,14 @@ struct
             D.W.CM.find_new_contacts world
         end
 
-    fun set_type (b : body, typ : D.body_type) =
+    fun set_type (b : body, typ : BDDDynamicsTypes.body_type) =
         if D.B.get_typ b = typ
         then ()
         else
             let in
                 D.B.set_typ (b, typ);
                 reset_mass_data b;
-                (if typ = D.Static
+                (if typ = BDDDynamicsTypes.Static
                  then (D.B.set_linear_velocity (b, vec2 (0.0, 0.0));
                        D.B.set_angular_velocity (b, 0.0))
                  else ());

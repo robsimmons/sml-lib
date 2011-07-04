@@ -25,8 +25,8 @@ struct
 
   (* Port note: contacts arrive (in a list) in the reverse order that
      they would appear in the array in Box2D. *)
-  fun solver (contacts : ('b, 'f, 'j) BDDDynamics.contact list,
-              body : ('b, 'f, 'j) BDDDynamics.body) : ('b, 'f, 'j) solver =
+  fun solver (contacts : ('b, 'f, 'j) D.contact list,
+              body : ('b, 'f, 'j) D.body) : ('b, 'f, 'j) solver =
      let
         (* PERF. Probably not necessary. *)
         val contacts = rev contacts
@@ -146,7 +146,7 @@ struct
 
             (* Only the TOI body should move. *)
             val (mass_a, mass_b) =
-                if body_a = #toi_body solver
+                if D.B.eq (body_a, #toi_body solver)
                 then (D.B.get_mass body_a, 0.0)
                 else (0.0, D.B.get_mass body_b)
 

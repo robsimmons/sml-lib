@@ -28,7 +28,7 @@ struct
        "or before being initialized.")
 
   structure D = BDDDynamics
-  datatype fixturecell = datatype D.fixturecell
+  (* datatype fixturecell = datatype D.fixturecell *)
   structure DT = BDDDynamicsTypes(Arg)
   open DT
 
@@ -84,9 +84,9 @@ struct
   fun set_filter (f : fixture, filter : D.filter) =
       let in
           D.F.set_filter (f, filter);
-          (case !f of
+          (case D.F.get_body_opt f of
                (* Flag associated contacts for filtering. *)
-               F { body = SOME body, ... } =>
+               SOME body =>
                    (oapp D.E.get_next 
                     (fn edge =>
                      let
@@ -94,7 +94,8 @@ struct
                          val fixture_a = D.C.get_fixture_a contact
                          val fixture_b = D.C.get_fixture_b contact
                      in
-                         if fixture_a = f orelse fixture_b = f
+                         if D.F.eq (fixture_a, f) orelse 
+                            D.F.eq (fixture_b, f)
                          then D.C.flag_for_filtering contact
                          else ()
                      end) (D.B.get_contact_list body))

@@ -7,8 +7,8 @@ struct
 
   exception BDDMath of string
 
-    (* XXX *)
-    fun rtos r = Real.fmt (StringCvt.FIX (SOME 4)) r
+  (* XXX *)
+  fun rtos r = Real.fmt (StringCvt.FIX (SOME 4)) r
 
   (* This function is used to ensure that a floating point number is
      not a NaN or infinity. *)

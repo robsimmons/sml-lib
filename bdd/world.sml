@@ -19,6 +19,7 @@ struct
 
   exception BDDWorld of string
 
+  structure T = BDDDynamicsTypes
   structure D = BDDDynamics
   structure Body = BDDBody(Arg)
   structure Fixture = BDDFixture(Arg)
@@ -116,8 +117,8 @@ struct
   struct
 
     open D.W
-    type contact_impulse = D.contact_impulse
-    datatype raycast_action = datatype D.raycast_action
+    type contact_impulse = T.contact_impulse
+    datatype raycast_action = datatype T.raycast_action
 
     (* Should probably expose this *)
     fun default_collision_filter (fixture_a : fixture, 
@@ -139,31 +140,31 @@ struct
       end
 
     fun world (gravity, do_sleep) : world =
-        ref (D.W { flags = FLAG_CLEAR_FORCES,
-                   body_list = NONE,
-                   joint_list = NONE,
-                   body_count = 0,
-                   joint_count = 0,
-                   gravity = gravity,
-                   allow_sleep = do_sleep,
+        D.W.new { flags = FLAG_CLEAR_FORCES,
+                  body_list = NONE,
+                  joint_list = NONE,
+                  body_count = 0,
+                  joint_count = 0,
+                  gravity = gravity,
+                  allow_sleep = do_sleep,
                     
-                   ground_body = NONE,
-                   goodbye_joint_hook = ignore,
-                   goodbye_fixture_hook = ignore,
+                  ground_body = NONE,
+                  goodbye_joint_hook = ignore,
+                  goodbye_fixture_hook = ignore,
                     
-                   inv_dt0 = 0.0,
+                  inv_dt0 = 0.0,
                    
-                   warm_starting = true,
-                   continuous_physics = true,
+                  warm_starting = true,
+                  continuous_physics = true,
                    
-                   broad_phase = BDDBroadPhase.broadphase (),
-                   contact_list = NONE,
-                   contact_count = 0,
-                   should_collide = default_collision_filter,
-                   begin_contact = ignore,
-                   end_contact = ignore,
-                   pre_solve = ignore,
-                   post_solve = ignore })
+                  broad_phase = BDDBroadPhase.broadphase (),
+                  contact_list = NONE,
+                  contact_count = 0,
+                  should_collide = default_collision_filter,
+                  begin_contact = ignore,
+                  end_contact = ignore,
+                  pre_solve = ignore,
+                  post_solve = ignore }
 
 
     fun get_proxy_count world =
@@ -357,6 +358,10 @@ void b2World::DestroyJoint(b2Joint* j)
 }
 *)
 
+    fun oeq e (NONE, NONE) = true
+      | oeq e (SOME a, SOME b) = e (a, b)
+      | oeq _ _ = false
+
     fun destroy_body (body : body) : unit =
       let val world = D.B.get_world body
       in if is_locked world
@@ -403,7 +408,7 @@ void b2World::DestroyJoint(b2Joint* j)
                  NONE => ()
                | SOME next => D.B.set_prev (next, prev)
 
-             val () = if get_body_list world = SOME body
+             val () = if oeq D.B.eq (get_body_list world, SOME body)
                       then set_body_list (world, next)
                       else ()
 
@@ -466,7 +471,7 @@ void b2World::DestroyJoint(b2Joint* j)
         end
     (* Find islands, integrate and solve constraints, solve position
        constraints. *)
-    fun solve (world : world, step : D.time_step) =
+    fun solve (world : world, step : T.time_step) =
       let
         (* Port note: Box2D creates an island on the stack and keeps reusing 
            it. I made it just be a function, for simplicity. 
@@ -514,7 +519,7 @@ void b2World::DestroyJoint(b2Joint* j)
          then ()
          else if not (Body.get_awake seed) orelse not (Body.get_active seed)
          then ()
-         else if D.B.get_typ seed = D.Static
+         else if D.B.get_typ seed = T.Static
          (* Must be dynamic or kinematic. *)
          then ()
          else
@@ -546,7 +551,7 @@ void b2World::DestroyJoint(b2Joint* j)
                in
                    (* To keep islands as small as possible, we don't
                       propagate islands across static bodies. *)
-                   if D.B.get_typ b = D.Static
+                   if D.B.get_typ b = T.Static
                    then ()
                    else
                    let
@@ -628,7 +633,7 @@ void b2World::DestroyJoint(b2Joint* j)
              
              (* Post solve cleanup: Allow static bodies to participate in 
                 other islands. *)
-             app (fn b => if D.B.get_typ b = D.Static
+             app (fn b => if D.B.get_typ b = T.Static
                           then D.B.clear_flag (b, D.B.FLAG_ISLAND)
                           else ()) (!bodies)
          end
@@ -637,7 +642,7 @@ void b2World::DestroyJoint(b2Joint* j)
        fun one_sync (b : body) =
            (* If the body was not in an island, then it didn't move. *)
            if not (D.B.get_flag (b, D.B.FLAG_ISLAND)) orelse
-              D.B.get_typ b = D.Static
+              D.B.get_typ b = T.Static
            then ()
            (* Otherwise update its fixtures for the broad phase. *)
            else D.B.synchronize_fixtures (b, get_broad_phase world)
@@ -668,7 +673,7 @@ void b2World::DestroyJoint(b2Joint* j)
               fun one_edge ce =
                   (* n.b. weird behavior if contact 
                      was not initialized *)
-                if D.E.get_contact ce = !toi_contact  
+                if oeq D.C.eq (D.E.get_contact ce, !toi_contact)
                 then ()
                 else
                   let val other = !! (D.E.get_other ce)
@@ -682,8 +687,8 @@ void b2World::DestroyJoint(b2Joint* j)
                           then (* Bullets only perform TOI with bodies that have their TOI resolved. *)
                                not (D.B.get_flag (other, D.B.FLAG_TOI)) orelse
                                (* No repeated hits on non-static bodies *)
-                               (typ <> D.Static andalso D.C.get_flag (contact, D.C.FLAG_BULLET_HIT))
-                          else typ = D.Dynamic)
+                               (typ <> T.Static andalso D.C.get_flag (contact, D.C.FLAG_BULLET_HIT))
+                          else typ = T.Dynamic)
                       then ()
                       else (* check for a disabled contact *)
                       if not (D.C.get_flag (contact, D.C.FLAG_ENABLED))
@@ -788,7 +793,7 @@ void b2World::DestroyJoint(b2Joint* j)
                  in
                      (* Only perform correction with static bodies, so the
                         body won't get pushed out of the world. *)
-                     if typ = D.Dynamic
+                     if typ = T.Dynamic
                      then dprint (fn () => "* skipped -- dynamic\n")
                      else
                      (* Check for a disabled contact. *)
@@ -803,7 +808,7 @@ void b2World::DestroyJoint(b2Joint* j)
                      let in
                          (* The contact likely has some new contact points. The listener
                             gives the client a chance to disable the contact. *)
-                         if contact <> toi_contact
+                         if not (D.C.eq (contact, toi_contact))
                          then Contact.update (contact, world)
                          else dprint (fn () => "* (not update)\n");
                          
@@ -833,7 +838,7 @@ void b2World::DestroyJoint(b2Joint* j)
         in
           loop 0;
           dprint (fn () => "(done toi-solving)\n");
-          if D.B.get_typ toi_other <> D.Static
+          if D.B.get_typ toi_other <> T.Static
           then D.C.set_flag (toi_contact, D.C.FLAG_BULLET_HIT)
           else ()
         end
@@ -862,9 +867,9 @@ void b2World::DestroyJoint(b2Joint* j)
                If a body was not in an island then it did not move. *)
             if not (D.B.get_flag (b, D.B.FLAG_ISLAND)) orelse
                (case D.B.get_typ b of
-                    D.Kinematic => true
-                  | D.Static => true
-                  | D.Dynamic => false) 
+                    T.Kinematic => true
+                  | T.Static => true
+                  | T.Dynamic => false) 
             then D.B.set_flag (b, D.B.FLAG_TOI)
             else D.B.clear_flag (b, D.B.FLAG_TOI)
           val () = oapp D.B.get_next onebody_toi (get_body_list world)

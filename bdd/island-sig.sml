@@ -18,7 +18,7 @@ sig
                      ('b, 'f, 'j) BDDDynamics.contact list *
                      ('b, 'f, 'j) BDDDynamics.joint list *
                      ('b, 'f, 'j) BDDDynamics.world *
-                     BDDDynamics.time_step *
+                     BDDDynamicsTypes.time_step *
                      BDDMath.vec2 *
                      bool ->
                      unit
