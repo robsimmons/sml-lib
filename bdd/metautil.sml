@@ -8,6 +8,8 @@
 
    TODO: Better line wrapping in generated code. *)
 
+exception MetaUtil of string
+
 (* nb, no field may be named "r___" *)
 val tmp = "r___"
 
@@ -72,8 +74,7 @@ fun contact cc = ("C", "Contact", "contact", "CONTACT",
                 (* nodes for connecting bodies *)
                 ("node_a", cc "contactedge"),
                 ("node_b", cc "contactedge"),
-                (* XXX made these non-optional. 
-                   Is okay? *)
+                (* Port note: made these non-optional. *)
                 ("fixture_a", cc "fixture"),
                 ("fixture_b", cc "fixture"),
                 ("manifold", "BDDTypes.manifold"),
@@ -175,7 +176,11 @@ val typs = [body, fixture, contact, contactedge, joint, jointedge, world]
 datatype mode = FUNCTIONAL | REF
 fun celltype typen = typen ^ "cell"
 fun external t = "('b, 'f, 'j) " ^ t
+(* Not backwards! In the functional representation, the whole record is
+   updated. In the ref representation, each field is a ref so the record
+   does not have to be. *)
 fun internal FUNCTIONAL t = "('b, 'f, 'j) " ^ celltype t ^ " ref"
+  | internal REF t = "('b, 'f, 'j) " ^ celltype t
 
 (* The single output structure is:
 
@@ -189,27 +194,33 @@ fun internal FUNCTIONAL t = "('b, 'f, 'j) " ^ celltype t ^ " ref"
 
 
 (* Generates the single internal datatype declaration. *)
-fun gendata FUNCTIONAL l =
+fun gendata mode l =
     let
-        fun onearm (f, t) = "    " ^ f ^ " : " ^ t
+        fun onearm FUNCTIONAL (f, t) = "    " ^ f ^ " : " ^ t
+          | onearm REF (f, t)        = "    " ^ f ^ " : (" ^ t ^ ") ref"
 
         fun onet (shortn, structn, typen, sign, fields) =
             "('b, 'f, 'j) " ^ celltype typen ^ " = " ^
             shortn ^ " of {\n" ^
-            StringUtil.delimit ",\n" (map onearm fields) ^ " }"
+            StringUtil.delimit ",\n" (map (onearm mode) fields) ^ " }"
     in
         "  datatype " ^ StringUtil.delimit "\n\n  and " (map onet l)
     end
 
-fun genstructtype FUNCTIONAL (_, _, typen, _, _) =
+fun genstructtype mode (_, _, typen, _, _) =
     let in
-        "  type ('b, 'f, 'j) " ^ typen ^ " = ('b, 'f, 'j) " ^ celltype typen ^ " ref\n"
+        "  type ('b, 'f, 'j) " ^ typen ^ " = " ^ internal mode typen
     end
 
 fun getter FUNCTIONAL (shortn, structn, typen, sign, fields) (field, typ) =
     let in
         "    fun get_" ^ field ^ " (ref (" ^ shortn ^ " { " ^ 
         field ^ ", ... })) = " ^ field ^ "\n"
+    end
+  | getter REF (shortn, structn, typen, sign, fields) (field, typ) =
+    let in
+        "    fun get_" ^ field ^ " (" ^ shortn ^ " { " ^ 
+        field ^ ", ... }) = !" ^ field ^ "\n"
     end
 
 (* Not that good, but better than 300 character lines *)
@@ -236,6 +247,11 @@ fun setter FUNCTIONAL (shortn, structn, typen, sign, fields) (field, typ) =
          " }), " ^ field ^ ") =") ^
         assign
     end
+  | setter REF (shortn, structn, typen, sign, fields) (field, typ) =
+    let in
+        "    fun set_" ^ field ^ " (" ^ shortn ^ " { " ^ 
+        field ^ ", ... }, v) = " ^ field ^ " := v\n"
+    end
 
 fun newer FUNCTIONAL (shortn, structn, typen, sign, fields) =
     let
@@ -250,8 +266,32 @@ fun newer FUNCTIONAL (shortn, structn, typen, sign, fields) =
          " }) = ") ^
         record
     end
+  | newer REF (shortn, structn, typen, sign, fields) =
+    let
+        val record = 
+            wraplines 6
+            (shortn ^ " { " ^
+            (StringUtil.delimit ", " (map (fn (f, _) => f ^ " = ref " ^ f) fields) ^
+             " }"))
+    in
+        wraplines 4
+        ("fun new ({ " ^ StringUtil.delimit ", " (map #1 fields) ^
+         " }) = ") ^
+        record
+    end
 
 fun eqer FUNCTIONAL _ = "    val eq = op=\n"
+  | eqer REF (shortn, structn, typen, sign, fields) =
+    (* Instead of making the whole record a ref, or adding a stamp, we
+       can just use any one of the fields as the identity of the value. *)
+    (case fields of
+         (f, _) :: _ =>
+             ("    fun eq (" ^ shortn ^ " { " ^ f ^ ", ... }, " ^ 
+                               shortn ^ " { " ^ f ^ " = " ^ tmp ^ ", ... }) =\n" ^
+              "        " ^ f ^ " = " ^ tmp ^ "\n")
+             (* Could just return true, but this is probably a bug if
+                this happens? *)
+          | nil => raise MetaUtil "Empty records unsupported.")
 
 fun genonestructdecl mode (t as (shortn, structn, typen, sign, fields)) =
     let
@@ -347,7 +387,7 @@ val () = print (genstructdecl FUNCTIONAL (master, typs))
 *)
 
 val () = StringUtil.writefile "cells-sig.sml" (gensigdecl (master, typs))
-val () = StringUtil.writefile "cells.sml" (genstructdecl FUNCTIONAL (master, typs))
+val () = StringUtil.writefile "cells.sml" (genstructdecl REF (master, typs))
 
 (*
 val jointedge = ("G",
