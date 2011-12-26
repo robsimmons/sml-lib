@@ -46,7 +46,7 @@ struct
                    if dot2 (v, v) > 0.0
                    then set_awake (b, true)
                    else ();
-                   set_linear_velocity (b, v)
+                   D.B.set_linear_velocity (b, v)
                end
 
   fun set_angular_velocity (b : body, w : real) : unit =
@@ -56,7 +56,7 @@ struct
                    if w * w > 0.0
                    then set_awake (b, true)
                    else ();
-                   set_angular_velocity (b, w)
+                   D.B.set_angular_velocity (b, w)
                end
 
   val get_transform = get_xf
